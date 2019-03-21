@@ -1,0 +1,1757 @@
+/* main home index */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.m_home_topbox
+{
+  height: 128px;
+  background-color: #3D3D3D;
+  text-align: center;
+  padding: .5rem;
+}
+
+.m_home_topbox img
+{
+  width: 300px;
+}
+
+.m_home_titlemenu
+{
+  display: block;
+  height: 22.5vmax;
+  overflow:hidden;
+  padding: 2.5rem 1rem 0 5rem;
+  /* border-bottom: solid .5px #3D3D3D; */
+}
+
+.m_home_iconbox
+{
+  width: 160px;
+  height: 160px;
+  padding: .9rem;
+  float: left;
+}
+
+
+.m_home_maintext
+{font-size: 3rem;}
+
+.m_home_subtext
+{font-size: 2rem;}
+
+.m_home_menutext
+{
+  float: left;
+  text-align: left;
+  padding: .5rem .5rem .5rem 5rem;
+  width: calc(100% - 160px);
+}
+
+.m_yf_navfooter {
+  width: 100%;
+  height: 150px;
+  padding:10px 0 0 0;
+  background-color: #373F51;
+  color:white;
+  font-weight:bold;
+  font-size:18px;
+  text-align:center;
+  position:fixed;   
+  bottom:0;        
+  left:0;            
+ }
+
+ .m_appmanu
+{
+  background-color: #373F51;
+  width: 18%;
+  text-align: center;
+  border: 0;
+  margin: 0;
+  padding: 1rem;
+  margin: 0 0 0 4rem;
+}
+
+.m_appmanu img
+{
+  width: 10%;
+}
+
+/* signup */
+
+
+.m_signup_yf_box
+{
+ text-align: center;
+
+}
+
+.m_signup_yf_h1
+{
+   font-size: 1.1em;
+   margin: 2rem 0 1rem 0;
+}
+
+.m_signup_input
+{
+  height: 4rem;
+  width: 100%;
+  font-size: 2rem;
+  
+}
+
+.m_signup_yf_inputbox
+{
+  margin: 3rem 0 5rem 0 ;
+}
+
+.control.has-icons-left .m_sign_input
+{
+  padding-left: 4rem;
+}
+
+.m_sign_input
+{
+ font-size: 3rem;
+ height: 5rem;
+}
+
+.m_signup_yf_terms
+{
+  color: blue;
+  text-decoration: underline;
+  margin-top:20px;
+}
+
+.sign_icon{
+  font-size: 2rem;
+  margin: 2rem 0 0 1rem;
+}
+
+.m_signup_yf_box2
+{
+  text-align:  center;
+  margin: 0 1rem 0 1rem;
+}
+
+.m_signup_yf_darkbut
+{
+  width: 80%;
+  height: 7rem;
+  display: block;
+  margin: auto;
+  margin-top: 5rem;
+  font-size: 3rem;
+}
+
+/* login */
+.m_login_logo img
+{
+margin-top: 3rem;
+}
+
+.m_login_yf_inputbox
+{
+  margin: 3rem 1rem 5rem 1rem;
+}
+
+.m_emailloginbtn
+{
+background-color: #019489;
+color:white;
+font-size: 3rem;
+height: 8rem;
+width: 80%;
+}
+
+.m_emailsignup
+{
+height: 8rem;
+width: 80%;
+font-size: 3rem;
+}
+
+/* yourfitExercise */
+
+
+.commonHeader
+{
+  width: 100%;
+  height: 128px;
+  background-color: #CC5154;
+  text-align: center;
+  color: white;
+  font-size: 2rem;
+}
+
+.m_nextbtn
+{ height: 128px;
+ width: 128px;
+}
+
+.m_backbtn
+{float: left;}
+
+.m_nextbtn
+{float:right;
+ font-size: 4rem;
+  padding:  1rem 0 0 0;
+}
+
+.m_yf_topboxtitle
+{text-align: center;
+ padding: .8rem 0 0 0;
+ /* height: 64px; */
+ float: left; 
+ width: calc(100% - 256px); 
+ font-size: 4rem;
+}
+
+.m_yf_workoutvideo_lavel_bg
+{
+  background:url(/image/m_video_label.png) no-repeat;
+  width: 80px;
+  height: 80px;
+  position: absolute;
+  top:0px;
+  right:-20px;
+}
+
+.m_level{
+  color: white;
+  font-weight: 800;
+  font-size: 30px;
+  position: absolute;
+  left:17px;
+  top:3px;
+}
+
+.m_yf_workoutmenubox
+{
+  width: 2600px;
+  height: 328px;
+  /* white-space: nowrap; */
+  float: left;
+  margin: 0 0 2rem 0;
+} 
+
+.m_pic1
+{
+  float: left;
+  height: 328px;
+}
+
+.m_yf_workouttext
+{
+  position: relative;
+  bottom:15rem;
+  font-size: 3rem;
+  font-weight: 700;
+  color: white;
+  width:20px;
+  word-wrap: break-word;
+  text-align:center;
+  line-height:5rem;
+  margin-left: 2rem;
+}
+
+.m_yfwo_menubox1
+{
+  height: 100vh;
+  overflow: auto;
+}
+
+.m_menubox_wrap
+{
+  height: 25rem;
+}
+
+.m_workoutvideoboxwrap
+{
+width: 380px;
+height: 328px;
+border-width: .1rem;
+border-style: solid;
+border-color: #E4E4E4;
+margin-left: 11px;
+float: left;
+position: relative;
+}
+
+.m_workoutvpic
+{
+  width: 100%;
+}
+
+.m_yf_workoutworkout_title
+{
+  font-size: 1.5rem;
+  text-align: left;
+  font-weight: 700;
+}
+
+.m_yf_workoutadd
+{
+  width: 102px;
+  height: 328px;
+  background-color: #27A590;
+  margin-left: 10px;
+  float: left;
+  position: relative;
+}
+
+.m_yf_stretchingtext
+{
+  position: relative;
+  bottom:20rem;
+  font-size: 3rem;
+  font-weight: 700;
+  color: white;
+  width:20px;
+  word-wrap: break-word;
+  text-align:center;
+  line-height:5rem;
+  margin-left: 2rem;
+}
+
+.m_addtext
+{
+  font-size: 3rem;
+  color: white;
+  font-weight: 700;
+  word-wrap: break-word;
+  text-align:center;
+  line-height:5rem;
+  margin: 3rem 1rem 0 1rem;
+
+}
+
+/* yourfitListDetail */
+
+
+
+
+
+/* youtfitdetailpage */
+
+.yourfitHeader
+{
+  width: 100%;
+  height: 128px;
+  background-color: #CC5154;
+  text-align: center;
+  color: white;
+  font-size: 1.5rem;
+}
+
+.m_backbtn
+{ height: 128px;
+ width: 128px;
+ padding: .3rem;
+ float: left;
+  font-size: 5rem;
+}
+
+.m_topboxtitle
+{text-align: center;
+ padding: 2rem 0 0 0;
+ height: 64px;
+ float: left; 
+ width: calc(100% - 128px); 
+ font-size: 2.5rem;
+}
+
+
+.m_yf_container img{
+  width: 100%;
+}
+
+.m_yf_work_textbox
+{
+  height: 100px;
+  padding: 0.5rem;
+  width: 100%;
+  display: flex;
+  float: left;
+  border-bottom:solid #9A9A9A .1px;
+  text-align: center;
+}
+
+.m_yf_work_time{
+ font-size: 3rem;
+ width: 30%;
+}
+
+.m_yf_timeicon
+{
+  margin-right: 1rem;
+}
+
+.m_yf_work_text
+{ font-size:3rem;
+  width: 50%;
+}
+.m_yf_scrapt
+{width: 10%;
+margin-left: 2rem;}
+
+
+.m_work_script
+{
+  display: block;
+  float: left;
+  padding: 1rem;
+  text-align: left;
+}
+
+/* makeExercise */
+
+.makeExerHeader
+{
+  background-color: #8ABB5A;
+}
+
+.make_m_yf_box
+{
+  border: solid #CCCCCC;
+  border-width: .1rem;
+  margin: auto;
+}
+
+.m_make_yf_h1
+{
+  display: block;
+  text-align: center;
+  font-size: 3rem;
+  margin: 1rem 0px 2rem 0px;
+ }
+
+ .m_make_yf_darkbut
+ {
+   width: 80%;
+   height: 5rem;
+   display: block;
+   margin: auto;
+   font-size: 2rem;
+ }
+
+ .m_make_box_title
+ {margin-top: 3rem;
+ }
+
+ .m_make_yf_h2
+ {
+  display: block;
+  text-align: center;
+  font-size: 3rem;
+  background-color: #56BC8A;
+  color: white;
+  padding: .5rem;
+ }
+
+ .m_make_yf_box2
+ {
+   border: solid #CCCCCC;
+   border-width: .1rem;
+   text-align:  center;
+   display: inline-block;
+   width: 100%;
+ }
+ 
+ .m_make_videoimg
+ {
+  float: left;
+  padding: 5px;
+  width: 40%;
+  margin-left: 5px;
+   }
+
+.m_make_del_btn
+{float: right;}
+
+.m_make_yf_box_title
+{
+  width: 90%;
+  font-size: 2.5rem;
+  margin-top: 5px;
+  text-align: left;
+}
+
+.make_yf_ul
+{
+ font-size: 1.2rem;
+  float: left;
+  margin-top: 1rem;
+  width: 50%;
+  text-align: left;
+  font-size: 2rem;
+}
+
+.make_m_yf_il
+{float: left;}
+
+.m_make_share
+{
+  margin-bottom: 1rem;
+}
+
+.m_makeExercise_share,.m_makeExercise_dete
+{
+  font-size: 1.5rem;
+}
+
+.m_makeExercise_share
+{
+  margin-right: 2rem;
+}
+
+.m_filter_yf_box
+{
+  border: none;
+  text-align: left;
+  padding: 1rem;
+}
+
+.m_filter_btn div
+{
+  width: 18rem;
+  height: 9rem;
+  font-size: 4rem;
+  margin: 0 1rem 3rem 0; 
+}
+
+.m_yf_on{color: white; background-color: #56BC8A;}
+
+
+/* filterStep1 */
+
+.filterstepHeader2
+{
+  background-color: #8ABB5A;
+  height: 256px;
+  color:white;
+}
+
+
+.m3_topboxtitle
+{text-align: center;
+ padding: 1rem 0 0 0;
+ float: left; 
+ width: calc(100% - 256px); 
+ font-size: 4rem;
+}
+
+.m2_nextbtn
+{ height: 128px;
+ width: 128px;
+float:right;
+font-size: 3rem;
+padding:  1.8rem 0 0 0
+}
+
+.m_filterinput
+{
+  width: 80%;
+  margin: 0 0 0 6rem;
+}
+
+.m_filterinput, .m_filtersearch
+{
+  font-size: 2.5rem;
+}
+
+.m_filtersearch
+{ margin: 0 0 0 6rem;}
+
+.m_fa-filter
+{
+  float: right;
+  margin-right: 2%;
+  font-size: 3rem;
+}
+
+.m_filterStep1_filter_box
+{
+  border: solid #CCCCCC;
+  border-width: .1rem;
+  margin: auto;
+  font-size: 1.5em;
+  overflow: auto;
+  display: flex;
+}
+
+
+.m_filterStep1_listbox,.m_filterStep1_listbox2,.m_select_listresult
+{
+  width: 60rem;
+  font-size: 3rem;
+}
+
+.m_searchlistCount
+{
+background-color: #ECECEC;
+text-align: center;
+padding: 10px;
+}
+
+
+.m_filterStep1_listsrollbox
+{
+  overflow: scroll;
+  height: 100%; 
+  border-right: .1rem solid #CCCCCC;
+}
+
+.m_select_listresult
+{
+  background-color:#FFEE80;
+  text-align: center;
+  padding: 10px;
+  font-size: 3rem;
+}
+
+/* appbreakTime */
+.m_breaktimetbox,.m_worklistbox
+{
+  background-color: white;
+  height:15rem;
+  border-bottom: 1px solid #CCCCCC;
+  text-align:left;
+  width: 60rem;
+  float: left;
+}
+
+.m_filterStep1_iconbox,.m_filterStep1_iconbox
+{
+  text-align: center;
+  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  float: left;
+
+}
+
+.m_filterStep1_iconbox img,.m_filterStep1_iconbox img{
+  width: 180px;
+  height: 180px;
+}
+
+.m_filterStep1_filtertextbox
+{
+  float: left;
+  width: 50%;
+}
+
+.m_filtertextbox_area
+{
+  float: left;
+  margin:2rem 0 0 2rem; 
+  width: 50%;
+  text-align: left;
+}
+.m_filter_work1,.m_filter_work3,.m_filter_work2
+{
+  font-size: 2rem;
+}
+
+.m_filter_work2
+{
+  color: #9A9A9A;
+}
+
+.m_filter_addbox{
+  float:right;
+  width: 10%;
+  margin: 5rem 0 0 0;
+}
+
+.m_warningText {
+  font-weight: bold;
+  color: #cacaca;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+ padding: 4rem 0 0 0;
+  }
+
+
+/* filterStep2 */
+
+.makeExerHeader
+{
+  background-color: #8ABB5A;
+}
+
+.m_filterstep2_yf_box
+{
+  border: solid #CCCCCC;
+  border-width: .1rem;
+  margin: auto;
+  font-size: 1.5em;
+  text-align: left;
+}
+
+.m_yf_box_top
+{
+  padding: 1rem;
+  height: 15rem;
+}
+
+.m_yf_thumbnail
+{
+  font-size: 1.5rem;
+  width: 11rem;
+  float: left;
+}
+
+.m_yf_thumbnail img
+{
+ width: 160px;
+ height: 160px;
+}
+
+.m_yf_titleinput
+{
+ width: 70%;
+  margin-left: 10px;
+  margin-top: 25px;
+  float: left;
+}
+
+.m_yf_titleinput
+{
+  font-size: 3rem;
+}
+
+.m_filterstep2_yf_select
+{ 
+  background-color: #F2F2F2;
+  text-align: center;
+  font-size: 3rem;
+  height: 6rem;
+  padding: 1rem;
+  clear: both;
+}
+
+.m_filterstep2_videolistbox
+{
+  float: left;
+  width: 100%;
+}
+
+.m_yf_switch
+{
+  height: 15rem;
+  background-color: #E1E1E1;
+  float: left;
+ width: 2.8rem;
+}
+
+.m_downIcon
+{margin: 0rem 0 1rem 0;
+}
+
+.m_upIcon
+{
+margin: 4.2rem 0rem 0rem 0rem;
+}
+
+.m_filterstep2_yf_listselect .m_filterstep2_videolistbox:first-child .m_downIcon
+{
+ display: none;
+}
+
+.m_filterstep2_yf_listselect .m_filterstep2_videolistbox:first-child .m_upIcon
+{
+ margin-top: 11.2rem;
+}
+
+.m_filterstep2_yf_listselect .m_filterstep2_videolistbox:last-child .m_upIcon
+{
+ display: none;
+}
+
+.m_filterstep2_worklistbox
+{
+  height: 15rem;
+  border-bottom: .5px solid;
+}
+
+.m_filterstep2_iconbox
+{
+  text-align: center;
+  padding:1.5rem;
+  float: left;
+}
+
+.m_filterstep2_iconbox img
+{
+  width: 150px;
+  height: 150px;
+}
+
+.m_filterstep2_work1,.m_filterstep2_work2,.m_filterstep2_work3
+{
+  font-size: 2rem;
+  margin-top:3px;
+}
+
+.m_filterstep2_addbox
+{
+  float: right;
+  margin: 3rem 3rem 0 0;
+  width: 5%;
+ }
+
+.m_filterstep2_addbox img
+{
+ width: 50px;
+}
+
+.m_filterstep2_yf_listselect
+{
+  height: 100%;
+  overflow: visible;
+}
+
+.m_filterstep2_yf_setting
+ { background-color: #F2F2F2;
+  text-align: center;
+  font-size: 2rem;
+  height: 5rem;
+  padding: 15px;
+  clear: both;
+  width: 100%;
+}
+
+.m_filterstep2_yf_setting2
+{
+  margin-top:2rem;
+  text-align: center;
+  border-bottom: .5px solid;
+}
+
+.m_expandOn {
+  height: 23.5rem;
+  -webkit-transition: height 1s;
+  transition: height 1s;
+  overflow: hidden;
+}
+
+.m_filterstep2_yf_num
+{
+  max-width: 9rem;
+  font-size: 3rem;
+}
+
+.m_filterstep2_mbtn
+{
+ width: 6rem;
+ font-size: 3rem;
+ margin-right: 3rem;
+}
+
+.m_filterstep2_fbtn
+{
+  width: 6rem;
+  font-size: 3rem;
+  margin-left: 3rem;
+}
+
+.m_filterstep2_save_btn,.m_filterstep2_del_btn
+{
+  margin: 2rem 0 2rem 0;
+}
+
+.m_filterstep2_save_btn,.m_filterstep2_del_btn
+{
+  font-size: 2.5rem;
+}
+
+.m_filterstep2_save_btn
+{
+  margin-right: 5rem;
+}
+
+/* together */
+
+.togetherHeader
+{
+  background-color: #148ACD;
+}
+
+.m_to_menubox
+{
+  width: 100%;
+  display: flex;
+}
+
+.m_to_menubox div
+{width: 20%;
+ font-size:2.5rem;
+ padding:.2rem;
+margin-top: 0rem;
+border: solid gray .1px;
+}
+
+.m_together_yf_active
+{
+  background-color: #89cff0;
+  text-align: center;
+  font-size:3rem;
+  padding:.2rem;
+  color: white;
+  width: 20%;
+}
+
+.m_to_menubox_icon
+{
+  width: 100%;
+  font-size: 2.5rem;
+}
+
+.m_to_mediabox
+{
+ border:solid;
+ border-width: .1rem;
+ padding: 1rem;
+ border-color: #E4E4E4; 
+ height: 15rem;
+}
+.m_to_mediabox2
+{
+  border:solid;
+  border-width: .1rem;
+  border-color: #E4E4E4; 
+  margin-top:4rem;
+}
+
+.m_to_yf_content
+{
+  text-align: center;
+   color: #9A9A9A;
+  font-size: 3rem;
+}
+
+.m_to_edit_btn
+{
+width: 80%;
+margin-top: 2rem;
+font-size: 2.5rem;
+}
+
+.m_to_yf_boxtop
+{
+  display: flex;
+  padding: 1rem;
+}
+
+.m_to_yf_id
+{
+  float: left;
+  padding: 1.5rem 0 3rem 1rem;
+}
+
+
+.m_to_video img
+{width: 100%;}
+
+.m_to_yf_more,.m_to_yf_text{
+  text-align: left;
+}
+
+.m_to_yf_like,.m_to_yf_text,.m_to_yf_scrap
+{padding: .5rem;}
+
+.m_to_yf_more
+{
+  padding: .5rem 0 0 .5rem;
+}
+
+.m_to_yf_like,.m_to_yf_scrap
+{
+  width: 50%;
+  display: inline-block;
+  border-top: solid #E4E4E4 .1px;
+  
+}
+
+.together_heart,.together_bookmark
+{
+  margin-left: .5rem;
+}
+
+
+
+/* togetherWrite*/
+
+.m_togetherWrite_textarea
+{
+
+height: 30rem;
+font-size: 3rem;
+}
+
+
+/* myPage */
+.myPageHeader{
+  background-color: #3D3D3D;
+}
+
+.m_mypage_loginbox
+{
+  height: 240px;
+  width: 100%;
+  font-size: 2rem;
+  float: left;
+  border-bottom:solid #9A9A9A .1px;
+  padding: 2rem;
+  display: block;
+  height: 20rem;
+}
+
+.m_mypage_loginbox img
+{
+  height: 180px;
+  width: 180px;
+  padding: .2rem;
+}
+
+.m_mypage_profilebox
+{float: left;
+}
+
+.m_mypage_subbox
+{ width: 24%;
+  text-align: center;
+  height: 70px;
+  font-size: 3rem;
+  font-weight: 700;
+  float: left;
+  padding: 1rem;
+  margin-left: 1rem;
+}
+
+.m_mypage_mybtn
+{
+  width:60%;
+  height: 4rem;
+  margin-top: 7rem;
+  font-size: 2rem;
+}
+
+.m_mypage_mypagemenu
+{
+  height: 120px;
+  width: 100%;
+  border-bottom:solid #9A9A9A .1px;
+  display: block;
+  float: left;
+  padding: 1.5rem 1rem 1rem 3rem;
+  text-align: left;
+  font-size: 3rem;
+}
+
+.m_mypage_mypagemenu img
+{
+  width: 4rem;
+  margin-right:3rem;
+  vertical-align: top;
+}
+
+/* MyAccount */
+
+.m_topboxback
+{text-align: center;
+ padding: 1rem 0 0 0;
+ float: left; 
+ width: calc(100% - 256px); 
+ font-size: 4rem;
+}
+
+
+.m_mypage_profilebox2
+{
+height: 17rem;
+clear: both;
+margin-top: 2rem;
+}
+.m_mypage_profilebox2 img
+{
+  height: 200px;
+  width: 200px;
+}
+
+.m_account_id
+{
+  font-size: 2rem;
+}
+
+
+.m_mypage_loginbox_info
+{
+ margin-top: 2rem;
+  text-align: center;
+  font-size: 2rem;
+}
+
+.login_id
+{
+ margin-left: 2rem;
+}
+
+.m_mypage_setting_settingbox
+{
+   margin-top: 2rem;
+}
+
+.m_mypage_setting_settingbox .m_settingmenu
+{
+  text-align: left;
+  font-size: 3rem;
+  margin-bottom:1rem;
+height: 10rem;}
+
+.m_myPage_yf_terms
+{
+  color: blue;
+  text-decoration: underline;
+  margin-top:20px;
+  font-size: 2rem;
+}
+
+  .m_yf_version
+  {
+    text-align: right;
+    color: gray;
+    font-size: 2rem;
+    margin-right: 1rem;
+  }
+
+  /* m_myCalendar */
+  .m_myCalendar_tapbox
+  {
+    text-align: center;
+    font-size:4rem;
+    padding:.5rem;
+    border: solid #E4E4E4 .1rem;
+    height: 7rem;
+  }
+
+  .m_myCalendar_yf_left
+  {
+    float: left;
+    font-size: 6rem;
+  }
+
+  .m_myCalendar_yf_right
+  {
+    float: right;
+    font-size: 6rem;
+  }
+
+.m_myCalendar_goal
+{
+  font-size: 2.8rem;
+  margin-bottom: 2rem;
+
+}
+  .m_myCalendar_food,.m_myCalendar_food_a
+  {
+    text-align: center;
+    border: solid;
+    border-color: #E4E4E4;
+    border-width: .1rem;
+    width: 22%;
+    font-size: 2.5rem;
+    padding: .3rem;
+    display: inline-block;
+    margin-right: 1.5rem;
+    height: 14rem;
+    vertical-align: top;
+  }
+
+
+.m_myCalendar_food img{
+  width: 4rem;
+}
+
+.m_myCalendar_food_a img
+{
+  width: 3rem;
+}
+
+.m_myCalendar_kcalbox
+{
+ text-align: center;
+ border: solid;
+ border-color: #E4E4E4;
+ border-width: .1rem;
+ font-size: 2.4rem;
+ padding: .8rem;
+ display: inline-block;
+ vertical-align: top;
+ width: 100%;
+ margin-top: 2rem;
+  }
+
+.m_myCalendar_weightbox
+ {
+ text-align: center;
+ border: solid;
+ border-color: #E4E4E4; 
+ border-width: .1rem;
+ width: 100%;
+ font-size: 2.5rem;
+ padding: .3rem;
+ display: inline-block;
+ margin-top: 2rem;
+}
+
+.m_myCalendar_phototbox,.m_myCalendar_inforbox,.m_myCalendar_timetbox,.m_myCalendar_finshbox
+{
+  text-align: center;
+  border: solid;
+  border-color: #E4E4E4;
+  border-width: .1rem;
+  padding: .3rem;
+  margin-top: 2rem;
+}
+
+.m_myCalendar_boxtitle
+{
+  float: left;
+  width: 100%;
+  margin-bottom: 1rem;
+  font-size: 2.5rem;
+  text-align: center;
+}
+
+.m_myCalendar_photo,.m_myCalendar_photo1
+{
+  display: inline-block;
+  font-size: 2rem;
+}
+
+.m_myCalendar_photo 
+{
+  margin-right: 1rem;
+}
+
+.m_myCalendar_photo1
+{
+  margin-left: 1rem;
+}
+
+
+.m_myCalendar_photo img,.m_myCalendar_photo1 img
+{
+  width: 25rem;
+}
+.m_myCalendar_infotitle,.m_myCalendar_textbox
+{
+  font-size: 3rem;
+}
+
+.m_myCalendar_workbox
+{
+display: inline-block;
+width: 100%;
+}
+
+.m_myCalendar_iconbox
+{
+  display: inline-block;
+}
+
+.m_myCalendar_iconbox img
+{
+  width: 8rem;
+}
+
+.m_myCalendar_textbox
+{
+  margin-left: 1rem;
+  display: inline-block;
+  text-align: left;
+  font-size: 2rem;
+}
+
+.m_myCalendar_addbtnbtn
+{text-align: center;
+font-size:2rem;
+width: 70%;
+margin-top: 2rem;}
+
+/* mealRecordM */
+.m_settingbox
+{
+  background-color: white;
+  width: 100%;
+  padding: .4rem;
+  text-align: left;
+}
+
+.m_settingmenu img
+{
+  width: 5rem;
+  margin-right: 2rem;
+}
+
+.m_settingmenu1 img
+{
+  width: 5rem;
+  margin-right: 2rem;
+  padding: .8rem;
+}
+
+
+.m_settingmenu,.m_settingmenu1
+{
+  font-size: 3rem;
+  margin-bottom: 2rem;
+  height: 10rem;
+  width: 100%;
+}
+
+
+/* myPost */
+
+.m_myPost_mediabox
+{
+ border:solid;
+ border-width: .1rem;
+ padding: 10px;
+ border-style: solid;
+ border-color: #E4E4E4; 
+ }
+
+.m_cbp_tmtimeline
+{
+	padding: 0;
+	list-style: none;
+	position: relative;
+}
+
+
+/* The line */
+.m_cbp_tmtimeline:before {
+	content: '';
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 10px;
+	background: #019489;
+	left: 20%;
+	margin-left: -10px;
+}
+
+.m_cbp_tmtimeline > li {
+  position: relative;
+  height: 25rem;
+}
+
+/* The date/time */
+.m_cbp_tmtimeline > li .m_cbp_tmtime {
+	display: block;
+	width: 25%;
+	padding-right: 100px;
+	position: absolute;
+}
+
+.m_cbp_tmtimeline > li .m_cbp_tmtime span {
+	display: block;
+	text-align: right;
+}
+
+.m_cbp_tmtimeline > li .m_cbp_tmtime span:first-child {
+	font-size: 2rem;
+	color: #bdd0db;
+}
+
+.m_cbp_tmtimeline > li .m_cbp_tmtime span:last-child {
+	font-size: 2.9em;
+	color:#3d3d3d;
+}
+
+.m_cbp_tmtimeline > li:nth-child(odd) .m_cbp_tmtime span:last-child {
+	color: #606060;
+}
+
+/* Right content */
+.m_cbp_tmtimeline > li .m_cbp_tmlabel {
+	margin: 0 0 15px 25%;
+	background: #F9F9F9;
+	color: #3d3d3d;
+	padding: .2rem;
+	font-size: 3rem;
+	font-weight: 300;
+	line-height: 1.4;
+	position: relative;
+	border-radius: 5px;
+  border: solid #C4C4C4 1px;
+  text-align: left;
+  top:2rem;
+}
+
+.m_cbp_tmtimeline > li:nth-child(odd) .m_cbp_tmlabel {
+	background: #F1F1F1;
+	border: solid #C4C4C4 1px;
+}
+
+.m_cbp_tmtimeline > li .m_cbp_tmlabel h2 { 
+	padding: 0 0 10px 0;
+
+}
+
+/* The triangle */
+.m_cbp_tmtimeline > li .cbp_tmlabel:after {
+	right: 100%;
+	border: solid transparent;
+	content: " ";
+	height: 0;
+	width: 0;
+	position: absolute;
+	pointer-events: none;
+	border-right-color: #3d3d3d;
+	border-width: 10px;
+	top: 10px;
+}
+
+.m_cbp_tmtimeline > li:nth-child(odd) .cbp_tmlabel:after {
+	border-right-color: #3d3d3d;
+}
+
+.icon1
+{
+padding-left: .5rem; 
+}
+
+
+/* The icons */
+.m_cbp_tmtimeline > li .m_cbp_tmicon {
+	width: 5rem;
+	height: 5rem;
+	font-family: 'ecoico';
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+	text-transform: none;
+	font-size: 3rem;
+	line-height: 40px;
+	-webkit-font-smoothing: antialiased;
+	position: absolute;
+	color: #3d3d3d;
+	background: #EEFCFB;
+	border-radius: 50%;
+	box-shadow: 0 0 0 8px #019489;
+	text-align: left;
+	left: 20%;
+	top: 0;
+  margin: 0 0 0 -25px;
+  padding: 1rem;
+}
+
+
+.m_mypost_btn
+{
+  font-size:2rem;
+}
+
+/* info */
+
+
+.m_infor_tableCell
+{
+  font-size: 3rem;
+  padding: 0;
+  width: 80%;
+}
+
+.m_infor_notice_date_tableCell
+{
+  width: 20%;
+  font-size: 2rem;
+  padding: 0;
+  text-align: right;
+}
+
+.m_infoDetail_yf_date
+{
+  text-align: right;
+  font-size: 2rem;
+}
+
+.m_infoDetail_textbox
+{
+  text-align: left;
+}
+
+
+/* myStatistical */
+
+.m_myStatistical_tabs li{
+  height: 8rem;
+  font-size: 3rem; 
+}
+
+.tabs.is-toggle .m_myStatistical_yf_active {
+
+  background-color: #148ACD;
+  border-color: #148ACD;
+  text-decoration: none;
+  color: white;
+  height: 8rem;
+  font-size: 3rem;
+}
+
+/* faq */
+
+.m_qna_w_btn
+{
+ height: 128px;
+ width: 128px;
+ float:right;
+ font-size: 2.2rem;
+ padding:  2.2rem 0 0 0
+}
+
+
+.m_infoDetail_textbox
+{
+  text-align: left;
+  padding: .5rem;
+}
+
+.titleLeft
+{
+  text-align: left;
+  font-size: 3rem;
+  padding: 1rem;
+  width: 80%;
+}
+
+.inlineB
+{
+ 
+  font-size: 2rem;
+  padding: 0;
+  text-align: right;
+}
+
+.faq_q,.tr_showAnswer
+{
+  text-align: left;
+  padding: 1rem;
+  font-size: 2rem;
+}
+
+
+.tr_showAnswer td{
+  font-size: 2rem;
+  padding: 1rem;
+}
+
+
+.m_fnq_btn
+{
+  text-align: right;
+  margin-bottom: 2rem;
+}
+
+.faq_q_btn
+{
+  font-size: 2.5rem;
+  margin-left: 2rem;
+}
+
+.answerbox
+{
+  background-color: #D2D2D2;
+  padding: 1rem;
+  display: block;
+  height: 6rem;
+  font-size: 3rem;
+}
+
+.answerbox_text
+{
+  text-align: left;
+  float: left;
+}
+
+.inlineB
+{
+
+  text-align: right;
+  float: right;
+  font-size: 2rem;
+  padding: .2rem 1rem 0 0;
+}
+
+.fnqapptitle
+{
+margin-bottom: 2rem;
+}
+
+.fnqapptitle, .fnqtapbox
+{
+  font-size: 3rem;
+}
+
+/* meallayout */
+.m_meal_box
+{padding: 2rem;} 
+
+.m_meal_yf_input
+{
+  width: 80%;
+  font-size: 3rem;
+}
+
+.help_searchresult
+{
+  font-size: 2rem;
+  color: #9E9E9E;
+  margin-left: 10%;
+  text-align: left;
+}
+
+.m_meal_direct
+{
+  text-align: center;
+  background-color: #FE9A29;
+  border: none;
+  font-size: 3rem;
+  margin-top: 3rem;
+}
+
+.m_meal_yf_inputbox
+{
+  font-size: 3rem;
+  margin-top: 1rem;
+  border-bottom: solid #3d3d3d .1px;
+}
+
+.m_meal_listinput_box,.m_meal_food_kcal
+{
+  margin-top: 2rem;
+  font-size: 3rem;
+  vertical-align: top;
+}
+
+.m_meal_food_kcal
+{
+  margin-bottom: 2rem;
+}
+
+.m_meal_yf_inputfood
+{
+  margin-right: 2rem;
+}
+
+.m_meal_yf_inputfood,.m_meal_q
+{
+  width: 40%;
+  font-size: 3rem;
+}
+
+.m_meal_q
+{
+  margin-left: 2rem;
+}
+
+.m_meal_yf_inputkacl
+{
+  width: 30%;
+  font-size: 3rem;
+}
+
+.m_meal_trash
+{
+  margin-left: 2rem;
+}
+
+.m_meal_listadd_but
+{
+  text-align: center;
+  background-color: #FE9A29;
+  border: none;
+  font-size: 3rem;
+  margin-top: 3rem;
+}
+
+.m_meal_yf_num2
+{
+  font-size: 3rem;
+  width: 11rem;
+  margin: 0 2rem 0 2rem;
+  text-align: center;
+}
+
+.m_meal_yf_but
+{
+font-size: 3rem;
+width: 6rem;
+background-color: #ECECEC;
+
+}
+
+.m_meal_box1
+{
+margin: 3rem 0 3rem 0;
+}
+
+
+
+/* Example Media Queries */
+@media screen and (min-width: 321px) {
+
+	.m_cbp_tmtimeline > li .m_cbp_tmtime span:last-child {
+		font-size: 1.5em;
+	}
+}
+
+@media screen and (min-width: 321px) {
+	.m_cbp_tmtimeline:before {
+		display: none;
+	}
+
+	.m_cbp_tmtimeline > li .m_cbp_tmtime {
+		width: 100%;
+		position: relative;
+		padding: 0 0 20px 0;
+	}
+
+	.m_cbp_tmtimeline > li .m_cbp_tmtime span {
+		text-align: left;
+	}
+
+	.m_cbp_tmtimeline > li .m_cbp_tmlabel {
+		margin: 0 0 30px 0;
+		padding: 1em;
+		font-weight: 400;
+		font-size: 95%;
+	}
+
+	.m_cbp_tmtimeline > li .m_cbp_tmlabel:after {
+		right: auto;
+		left: 20px;
+		border-right-color: transparent;
+		border-bottom-color: #3d3d3d;
+		top: -20px;
+			}
+
+	.m_cbp_tmtimeline > li:nth-child(odd) .m_cbp_tmlabel:after {
+		border-right-color: transparent;
+		border-bottom-color: #3d3d3d;
+	}
+
+	.m_cbp_tmtimeline > li .m_cbp_tmicon {
+		position: relative;
+		float: right;
+		left: auto;
+		margin: -60px 5px 0 0px;
+	}	
+}
+
