@@ -6,7 +6,7 @@ import Session exposing(..)
 import Html exposing (..)
 import Page.Common exposing(..)
 import Port as P
-import Json.Encode as E
+import Json.Encode as Encode
 import Json.Decode as Decode
 import Route exposing (..)
 import Page.Common exposing (..)
@@ -15,32 +15,110 @@ import Http as Http
 import Api.Endpoint as Endpoint
 import Api.Decoder as Decoder
 
+-- import Regex exposing (Regex)
+
+
+
 type alias Model =
     { session : Session
-    , checkDevice : String
     , check : Bool
-    
+    , data : Data
+    , page : Int
+    , per_page : Int
+    , infiniteLoading : Bool
+    , screenInfo : ScreenInfo
+    , dataList :List DataList
+    , checkList : List String
     }
 
+type alias ScreenInfo = 
+    { scrollHeight : Int
+    , scrollTop : Int
+    , offsetHeight : Int}
 
+type alias Data = 
+    { data : List DataList 
+    , paginate : Paginate }
 
+type alias DataList = 
+    { id : Int
+    , inserted_at : String
+    , is_use : Bool
+    , title : String }
+
+type alias Paginate = 
+    { end_date : String
+    , is_use : Bool
+    , page : Int
+    , per_page : Int
+    , start_date : String
+    , title : String
+    , total_count : Int
+    }
+
+infoEncoder page per_page session = 
+    let
+        body = 
+            Encode.object 
+                [ ("page", Encode.int page )
+                , ("per_page", Encode.int per_page) ]
+                |> Http.jsonBody    
+    in
+    Api.post Endpoint.infolist (Session.cred session) GetList body (Decoder.infoData Data DataList Paginate)
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile
     = (
         { session = session
-        , checkDevice = ""
+        , page = 1
+        , checkList = []
+        , infiniteLoading = False
+        , per_page = 10
+        , dataList = []
+        , screenInfo = 
+            { scrollHeight = 0
+            , scrollTop = 0
+            , offsetHeight = 0}
+        , data = 
+            { data = []
+            , paginate = 
+                { end_date = ""
+                , is_use = False
+                , page = 0
+                , per_page = 0
+                , start_date = ""
+                , title = ""
+                , total_count = 0
+                }
+                } 
         ,  check = mobile}
-        ,Cmd.batch[ P.checkMobile ()
+        ,Cmd.batch[ 
+            infoEncoder 1 10 session
         ]
     )
 
+
+scrollEvent msg = 
+    on "scroll" (Decode.map msg scrollInfoDecoder)
+
+
+
+scrollInfoDecoder =
+    Decode.map3 ScreenInfo
+        (Decode.at [ "target", "scrollHeight" ] Decode.int)
+        (Decode.at [ "target", "scrollTop" ] Decode.int)
+        (Decode.at [ "target", "offsetHeight" ] Decode.int)  
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    P.check CheckDevice
+    Api.successId SaveComplete
 
 type Msg 
-    = CheckDevice E.Value
-    | BackBtn
+    = BackBtn
+    | GetList (Result Http.Error Data)
+    | DetailGo Int
+    | SaveComplete Encode.Value
+    | PageBtn (Int, String)
+    | ScrollEvent ScreenInfo
 
 toSession : Model -> Session
 toSession model =
@@ -54,17 +132,55 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        CheckDevice str ->
-            let
-                result = Decode.decodeValue Decode.string str
-            in
-                case result of
-                    Ok string ->
-                        ({model | checkDevice = string}, Cmd.none)
+        ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
+             if (scrollHeight - scrollTop) <= offsetHeight then
+                -- case toInt of
+                --     Just val ->
+                        -- if (val  < (model.takeList + 10)) then
+                        --     ({model | takeList = val, infiniteLoading = False},Cmd.none)
+                        -- else 
+                if List.length model.checkList > 0 then
+                (model, Cmd.none)
+                else
+                ({model | infiniteLoading = True}, infoEncoder (model.page) model.per_page model.session)
+                    -- Nothing ->
+                    --     (model, Cmd.none)
                 
-                    Err _ ->
-                        ({model | checkDevice = ""} ,Cmd.none)
-        
+            else
+                (model, Cmd.none)
+        PageBtn (idx, str) ->
+            case str of
+                "prev" ->
+                    (model, infoEncoder idx model.per_page model.session)
+                "next" ->
+                    (model, infoEncoder idx model.per_page model.session)
+                "go" -> 
+                    (model, infoEncoder idx model.per_page model.session)
+                _ ->
+                    (model, Cmd.none)
+        SaveComplete str ->
+            let
+                suc = Decode.decodeValue Decode.string str
+            in
+            case suc of
+                Ok ok ->
+                   (model, Route.pushUrl (Session.navKey model.session) Route.InfoD) 
+            
+                Err _->
+                    (model, Cmd.none)
+        GetList (Ok ok)->
+            if ok.data == [] then
+            ({model | infiniteLoading = False, checkList = ["empty"]}, Cmd.none)
+            else
+            ({model | data = ok, dataList = model.dataList ++ ok.data, page = model.page + 1, infiniteLoading = False}, Cmd.none)
+        GetList (Err err)->
+            (model, Cmd.none)
+        DetailGo id ->  
+            let
+                encodeId = 
+                    Encode.string (String.fromInt(id))
+            in
+            (model, Api.saveId encodeId)
         BackBtn ->
             (model , Route.pushUrl (Session.navKey model.session) Route.MyPage)
 
@@ -74,35 +190,64 @@ view model =
     
     title = "YourFitExer"
     , content = 
-       if model.checkDevice == "pc" then
-       web
-       else
-       app
+       if model.check then
+       app model
+       else 
+       web model
+      
     }
 
-web = 
+editorView md textAreaInput readOnly=
+        textarea
+            [ onInput textAreaInput
+            , property "defaultValue" (Encode.string md)
+            , class "editor editorStyle"
+            , spellcheck False
+            , disabled readOnly
+            , placeholder "내용을 입력 해 주세요."
+            ]
+            []
+
+
+web model= 
     div [ class "container" ]
         [
             commonJustHeader "/image/icon_notice.png" "공지사항",
-            contentsBody,
-            pagenation
+            contentsBody model,
+            pagination 
+                PageBtn
+                model.data.paginate
         ]
-app = 
+app model = 
     div [class "container"] [
-        appHeaderback "공지사항" "myPageHeader" BackBtn,
-        div [ class "table yf_table" ]
-        [ tbody []
-            (List.map appContentsBody infoData)
+        appHeaderRDetail "공지사항" "myPageHeader whiteColor" Route.MyPage "fas fa-angle-left",
+        div ([ class "table scrollHegiht" ] ++ [scrollEvent ScrollEvent])
+        [ 
+            if List.length (model.data.data) > 0 then
+            tbody [class ""] 
+            (List.map appContentsBody model.dataList)
+            else
+            tbody [] [
+                tr[] [ 
+                    td [] [text "공지사항이 없습니다."]
+                ]
+            ]
+        ,if model.infiniteLoading then
+                div [class "loadingPosition"] [
+                spinner
+                ]
+        else
+        span [] []
     ]
     ]
 
 appContentsBody item =
-    a [class "tableRow", Route.href Route.InfoD] [
+    div [class "tableRow",  onClick (DetailGo item.id)] [
         td[class "m_infor_tableCell"][text item.title],
-        td[class"notice_date m_infor_notice_date_tableCell"][text item.createDate]
+        td[class"notice_date m_infor_notice_date_tableCell"][text (String.dropRight 10 (item.inserted_at))]
     ]
 
-contentsBody =
+contentsBody model =
     div [ class "info_mediabox" ]
         [ div [ class "table info_yf_table" ]
             [  div [class "tableRow infor_tableRow"]
@@ -113,81 +258,27 @@ contentsBody =
                     , div [class "tableCell info_date"]
                         [ text "등록일" ]
                 ]
-            , tbody []
-                (List.indexedMap (contentsBodyLayout) infoData)
-            ]
-        ]
-contentsBodyLayout idx item =
-        a [ class "tableRow", Route.href Route.InfoD ]
-            [
-                div [class "tableCell info_num_text"] [text (String.fromInt ( idx + 1 ))],
-                div [class "tableCell info_title_text"] [text item.title],
-                div [class "tableCell info_date_text"] [text item.createDate]
-            ]
-pagenation=
-    div [ class "yf_Pagination" ]
-        [ nav [ class "pagination is-centered" ]
-            [ ul [ class "pagination-list" ]
-                [ li [ class "" ]
-                    [ a [ class "pagination-link"]
-                        [ text "<" , text "<" ]
-                    ]
-                , a [ class "pagination-link"]
-                    [ text "<" ]
-                , li []
-                    [ a [ class "pagination-link is-current yf_cut" ]
-                        [ text "5" ]
-                    ]
-                , li []
-                    [ a [ class "pagination-link"]
-                        [ text ">" ]
-                    ]
-                , a [ class "pagination-link" ]
-                    [ text ">>" ]
+            , 
+            if List.length (model.data.data) > 0 then
+            tbody []
+                (List.indexedMap (\idx x -> contentsBodyLayout idx x model) model.data.data)
+            else
+            tbody [] [
+                tr[] [ 
+                    td [] [text "공지사항이 없습니다."]
                 ]
             ]
-        ]
+           
 
-infoData = 
-    [
-        {
-           title ="유어핏 개인정보 처리방침 개정안내",
-           createDate = "19-01-01" 
-        },
-        {
-           title ="[유어핏] 유어핏 개인정보 및 서비스 이전 안내",
-           createDate = "19-01-01" 
-        },
-        {
-           title ="유어핏 사칭 코인 세일 피싱 사이트 피해 주의 안내" ,
-           createDate = "19-01-01" 
-        },
-        {
-           title = "유어핏 위치기반서비스 이용약관 변경 안내",
-           createDate = "19-01-01" 
-        },
-        {
-           title ="유어핏 서비스 운영정책 변경 안내",
-           createDate = "19-01-01" 
-        },
-        {
-           title ="유어핏 쇼핑 개인정보 이전 안내",
-           createDate = "19-01-01" 
-        },
-        {
-           title ="유어핏 통합 약관 및 서비스 약관 변경 안내",
-           createDate = "19-01-01" 
-        },
-        {
-           title ="문의하기 창구를 잠시 닫습니다.",
-           createDate = "19-01-01" 
-        },
-        {
-           title ="유어핏 개인정보처리 개정안내" ,
-           createDate = "19-01-01" 
-        },
-        {
-           title = "유어핏어플 그랜드 오픈!",
-           createDate = "19-01-01" 
-        }
-    ]
+            ]
+        ]
+contentsBodyLayout idx item model =
+        div [ class "tableRow",  onClick (DetailGo item.id)]
+            [
+                div [class "tableCell info_num_text"] [text (
+                    String.fromInt(model.data.paginate.total_count - ((model.data.paginate.page - 1) * 10) - (idx)  )
+                )],
+                div [class "tableCell info_title_text"] [text item.title],
+                div [class "tableCell info_date_text"] [text (String.dropRight 10 (item.inserted_at))]
+            ]
+

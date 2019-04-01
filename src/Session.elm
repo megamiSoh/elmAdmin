@@ -24,9 +24,6 @@ viewer session =
             Just val
 
         Guest _ ->
-            let _ = Debug.log "guest" session
-                
-            in
             Nothing
 
 

@@ -20,7 +20,23 @@ module Api.Endpoint exposing
     , makeDelete
     , myInfo
     , changeNick
-    , accountDelete)
+    , accountDelete
+    , togetherList
+    , togetherShare
+    , myPost
+    , myPostDelete
+    , infolist
+    , detailInfo
+    , togetherLike
+    , bodyRecord
+    , getBodyInfo
+    , scrap
+    , togetherScrap
+    , scrapList
+    , scrapDetail
+    , postList
+    , pwdChange
+    , editComplete)
 
 import Http
 import Url.Builder exposing (QueryParameter)
@@ -55,11 +71,11 @@ url paths queryParams =
 
 refresh : Endpoint
 refresh =
-    url [ "auth", "admin", "refresh"] []
+    url [ "auth", "front", "refresh"] []
 
 login : Endpoint
 login =
-    url [ "auth","admin", "sign_in" ] []
+    url [ "auth","front", "sign_in" ] []
 
 signup = 
     url ["auth", "front", "sign_up"] []
@@ -126,3 +142,63 @@ changeNick=
 
 accountDelete = 
     url ["front","my", "leave"] []
+
+-- together
+
+togetherList = 
+    url ["front", "together"] []
+
+    
+togetherShare id = 
+    url ["front", "fit", id, "share"] []
+
+-- mypage
+
+myPost = 
+    url ["front", "my", "boards"] []
+
+
+myPostDelete id =
+    url ["front", "my", id, "delete"] []
+
+infolist = 
+    url ["front", "notices"] []
+
+detailInfo id = 
+    url ["front","notices",id] []
+
+bodyRecord =
+    url ["front", "body", "new"] []
+
+getBodyInfo = 
+    url ["front" , "body"] []
+
+scrapDetail code id = 
+    url ["front", "scraps", code, id] []
+
+
+-- together
+
+togetherLike id = 
+    url ["front", "together", id, "recommend"] []
+
+    
+scrap id = 
+    url ["front", "exercises", id , "scrap"] []
+
+togetherScrap id = 
+   url ["front", "together", id , "scrap"] []
+
+scrapList = 
+    url ["front", "scraps"] []
+
+postList id = 
+    url ["front", "my", "boards", id] []
+
+
+-- password
+pwdChange = 
+    url ["front","my","password"] []
+editComplete id = 
+    url ["front", "fit", id, "edit"] []
+

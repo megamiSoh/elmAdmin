@@ -1,4 +1,4 @@
-module Page.Filter.FilterStep2 exposing(..)
+module Page.Edit.MakeExerEditStepLast exposing(..)
 
 import Browser exposing (..)
 import Html.Events exposing(..)
@@ -16,6 +16,7 @@ import Api as Api
 import Api.Decoder as Decoder
 import Http as Http
 import Api.Endpoint as Endpoint
+import Page.Edit.MakeExerEdit as Me
 
 type alias Model 
     = {
@@ -32,6 +33,7 @@ type alias Model
         , loading : Bool
         , cannotSave : String
         , saveItem : List Item
+        , videoId : String
     }
 
 type alias FilterData =
@@ -113,7 +115,7 @@ registVideo model edit session=
 
             |> Http.stringBody "application/x-www-form-urlencoded"
     in
-    Api.post (Endpoint.registFilter)(Session.cred session) GoRegistResult body ((Decoder.resultDecoder ResultData))
+    Api.post (Endpoint.editComplete model.videoId)(Session.cred session) GoRegistResult body ((Decoder.resultDecoder ResultData))
 
 init session mobile
     = 
@@ -124,6 +126,7 @@ init session mobile
         , style = ""
         , check= mobile
         , saveItem = []
+        , videoId = ""
         , setData = 3
         , checkDevice = ""
         , title = ""
@@ -132,14 +135,16 @@ init session mobile
         , errTitle = ""
         , loading = True
         } 
-        ,Cmd.batch[Api.sendData ()]
+        ,Cmd.batch[Api.sendData ()
+        , Api.getId ()]
     )
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch[Api.receiveData ReceiveDataFromStorage
     , Api.getsaveFilter FilterSaveSuccess
     , Session.changes GotSession (Session.navKey model.session)
-    , Api.onSucceesSession SessionCheck]
+    , Api.onSucceesSession SessionCheck
+    , Api.receiveId GetId]
    
 type Msg 
     = ReceiveDataFromStorage E.Value
@@ -158,6 +163,8 @@ type Msg
     | FilterSaveSuccess E.Value
     | SessionCheck E.Value
     | GotSession Session
+    | GetId E.Value
+    | GetList (Result Http.Error Me.DetailData)
 
 toSession : Model -> Session
 toSession model =
@@ -178,6 +185,25 @@ dropLists idx model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of 
+        GetList(Ok ok) ->  
+            ({model | title = ok.data.title}, Cmd.none)
+            -- update GoVideo {model | getData = ok.data}
+        GetList(Err err) ->
+            let 
+                serverErrors = 
+                    Api.decodeErrors err  
+            in
+             (model,(Session.changeInterCeptor (Just serverErrors) model.session))
+        GetId id ->
+            let
+                result = Decode.decodeValue Decode.string id
+            in
+            case result of
+                Ok string ->
+                    ({model | videoId = string}, Api.get GetList (Endpoint.makeDetail string) (Session.cred model.session) (Decoder.makeEdit Me.DetailData Me.DetailItem Me.ExItem Me.Pair))
+            
+                Err _ ->
+                    (model,Cmd.none)
         GotSession session ->
             ({model | session = session}
             , registVideo model model.saveItem model.session
@@ -199,7 +225,7 @@ update msg model =
             ] )
         GoRegistResult (Ok ok) ->
             let
-                text = E.string "등록되었습니다."
+                text = E.string "수정되었습니다."
             in
             
             (model, Cmd.batch [
@@ -361,7 +387,7 @@ justokIntData data =
             3
 app model =
     div [] [
-        appHeaderConfirmDetailleft "운동추가" "makeExerHeader" NextPage GoRegist "완료"
+        appHeaderConfirmDetailleft "운동추가" "makeExerHeader" NextPage GoRegist "저장"
         , appcontentsItem model
     ]
 
@@ -404,7 +430,7 @@ thumbSetting model=
         , div [ class "yf_titleinput" ]
             [ 
             div [class model.validation] [
-                input [ class ( "input " ++ model.validation ), type_ "text", placeholder "운동제목을 입력하세요", onInput UpdateTitle ]
+                input [ class ( "input " ++ model.validation ), type_ "text", placeholder "운동제목을 입력하세요", onInput UpdateTitle, value model.title ]
                 []
             ]
             , div [] [text model.errTitle]
@@ -418,7 +444,7 @@ appthumbSetting model =
                 []
             ]
         , div [ class "m_yf_titleinputbox" ]
-            [ input [ class ( "input m_yf_titleinput " ++ model.validation ), type_ "text", placeholder "운동제목을 입력하세요",  onInput UpdateTitle ]
+            [ input [ class ( "input m_yf_titleinput " ++ model.validation ), type_ "text", placeholder "운동제목을 입력하세요",  onInput UpdateTitle, value model.title ]
                 []
             ]
         , div [class "thubmTitle"] [text "썸네일지정" ]
@@ -616,6 +642,6 @@ goBtn =
             ]
         , div [ class "yf_nextbtm" ]
             [ div [ class "button is-dark is-middle next_btn", onClick GoRegist ]
-                [ text "완료" ]
+                [ text "저장" ]
             ]
         ]

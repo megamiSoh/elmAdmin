@@ -14,7 +14,8 @@ import Http as Http
 import Json.Decode as Decode exposing(..)
 import Json.Encode as Encode
 import Api.Decoder as Decoder
-
+import Page.Common exposing (..)
+import Page.YourFitExer as YfE
 type alias Model  = 
     { session : Session
     , isActive : String
@@ -23,6 +24,11 @@ type alias Model  =
     , listData : List DetailData
     , levelData : List Level
     , check : Bool
+    , screenInfo : ScreenInfo
+    , partDataName : List YfE.ListData
+    , infiniteLoading : Bool
+    , takeList : Int
+    , resultLen : Int
     }
 
 
@@ -32,10 +38,13 @@ type alias ListData =
 
 type alias DetailData = 
     { difficulty_name : String
+    , duration : String
     , exercise_part_name : String
     , id : Int
-    , title : String}
-
+    , mediaid : String
+    , thembnail: String
+    , title : String
+    }
 type alias LevelData = 
     { data : List Level }
 
@@ -43,6 +52,10 @@ type alias Level =
     { code : String 
     , name : String}
 
+type alias ScreenInfo = 
+    { scrollHeight : Int
+    , scrollTop : Int
+    , offsetHeight : Int}
 -- levelDecoder
 
 detailEncoder part level session = 
@@ -64,14 +77,23 @@ init session mobile =
         { session = session
         , check = mobile
         , isActive = "" 
+        , takeList = 5
+        , resultLen = 0
         , exercise_part_code = ""
         , difficulty_code = []
+        , infiniteLoading = False
+        , screenInfo = 
+            { scrollHeight = 0
+            , scrollTop = 0
+            , offsetHeight = 0}
         , listData = []
         , levelData = []
+        , partDataName = []
         },
          Cmd.batch
             [ Api.getKey () 
             , Api.get GetLevel Endpoint.level (Session.cred session) (Decoder.levelDecoder LevelData Level)
+            , Api.get GetPart Endpoint.yourfitVideoList (Session.cred session)(Decoder.yourfitList YfE.YourFitList YfE.ListData YfE.ExerciseList )
             ]
     )
 
@@ -90,6 +112,9 @@ type Msg
     | DetailGo Int
     | Success Encode.Value
     | GotSession Session
+    | BackPage
+    | GetPart (Result Http.Error YfE.YourFitList)
+    | ScrollEvent ScreenInfo
     -- | ReceiveId Encode.Value
 
 
@@ -103,10 +128,42 @@ toCheck model =
     model.check
 
 
+scrollEvent msg = 
+    on "scroll" (Decode.map msg scrollInfoDecoder)
+
+
+
+scrollInfoDecoder =
+    Decode.map3 ScreenInfo
+        (Decode.at [ "target", "scrollHeight" ] Decode.int)
+        (Decode.at [ "target", "scrollTop" ] Decode.int)
+        (Decode.at [ "target", "offsetHeight" ] Decode.int)  
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
+             if (scrollHeight - scrollTop) <= offsetHeight then
+                    if model.takeList < model.resultLen then
+                        if model.isActive == "" then
+                            ({model | takeList = model.takeList + 3, infiniteLoading = True}, detailEncoder model.exercise_part_code model.difficulty_code model.session)
+                        else
+                            ({model | takeList = model.takeList + 3, infiniteLoading = True}, detailEncoder model.exercise_part_code [model.isActive] model.session )
+                    else
+                        if model.isActive == "" then
+                            ({model | takeList = model.takeList, infiniteLoading = False}, detailEncoder model.exercise_part_code model.difficulty_code model.session)
+                        else
+                            ({model | takeList = model.takeList, infiniteLoading = False}, detailEncoder model.exercise_part_code [model.isActive] model.session )
+            else
+                (model, Cmd.none)
+        GetPart (Ok ok) ->
+            ({model | partDataName = ok.data}, Cmd.none)
+                
+            
+        GetPart (Err err) ->
+            (model, Cmd.none) 
+        BackPage ->
+            (model, Route.pushUrl (Session.navKey model.session) Route.YourFitExer)
         GotSession session ->
             ({model | session = session}
             , Cmd.none
@@ -135,7 +192,11 @@ update msg model =
                          (model, Cmd.none)
             
         GetList (Ok ok) ->
-            ({model | listData = ok.data}, Cmd.none)
+            let
+                makeList = 
+                    List.take model.takeList ok.data
+            in
+            ({model | listData = makeList, infiniteLoading = False, resultLen = List.length (ok.data)}, Cmd.none)
         GetList (Err err) ->
             (model, Cmd.none)
         IsActive level ->
@@ -150,31 +211,69 @@ view model =
     
     title = "YourFitExer"
     , content = 
-        div [ class "containerwrap" ]
-            [ div [ class "container" ]
-                [ div [ class "notification yf_workout" ]
-                    [
-                        commonHeader "/image/icon_workout.png" "유어핏운동",
-                        div [ class "yf_yfworkout_search_wrap" ]
-                        [
-                            tapbox model,
-                            div [ class "searchbox_wrap" ]
-                                [ 
-                                    if List.length(model.listData) > 0 then
-                                    div [ class "searchbox" ]
-                                    (List.map contentsLayout model.listData)
-                                    else
-                                    div [] [
-                                        text "검색결과가 없습니다."
-                                    ]
-                                ]
-                        ]                                   
-                    ]
-                ] 
-            ]
+        if model.check then 
+         div [] [
+            let
+                f=
+                    List.head (
+                        List.filter (\x -> 
+                            x.code == model.exercise_part_code
+                        )model.partDataName
+                    )
+                
+            in
+            case f of
+                Just result ->
+                    appHeaderRDetailClick result.name "yourfitListDetail yourfitHeader" BackPage "fas fa-angle-left"
+                Nothing ->
+                    appHeaderRDetailClick "" "yourfitListDetail yourfitHeader" BackPage "fas fa-angle-left"
+            ,app model] 
+            else
+            web model
     } 
-
-
+app model =    
+    div ([ class "container" ] ++ [style "max-height" "100%"])
+                [  div [class "heightFix"] [
+                    apptapbox model
+                ],     
+                    if List.length(model.listData) > 0 then
+                    div ([ class "searchbox" ] ++ [scrollEvent ScrollEvent])
+                    (List.indexedMap contentsLayout2 model.listData)
+                    else
+                    div [class "noResult"] [
+                        text "검색결과가 없습니다."
+                    ],
+                    if model.infiniteLoading then
+                    div [class "loadingPosition"] [
+                    spinner
+                    ]
+                    else
+                    span [] [] 
+                                                      
+                ]
+web model= 
+    div [ class "containerwrap" ]
+                [ div [ class "container" ]
+                    [ div [ class "notification yf_workout" ]
+                        [
+                            commonHeader "/image/icon_workout.png" "유어핏운동",
+                            div [ class "yf_yfworkout_search_wrap" ]
+                            [
+                                tapbox model,
+                                div [ class "earchbox_wrap" ]
+                                    [ 
+                                        if List.length(model.listData) > 0 then
+                                        div [ class "yf_searchbox" ]
+                                        (List.map contentsLayout model.listData)
+                                        else
+                                        div [class "yf_noResult"] [
+                                            text "검색결과가 없습니다."
+                                        ]
+                                    ]
+                            ]                                   
+                        ]
+                    ] 
+                ]
 tapbox model =
     div [ class "yf_tapbox" ]
         [ div [ class "tabs is-toggle is-fullwidth is-large" ]
@@ -195,6 +294,23 @@ tapbox model =
             ]
         ]
 
+apptapbox model =    
+    div [ class "m_to_yourfitListDetail" ]
+                 (
+                [
+                div [ classList [
+                    ("m_yourfitListDetail_yf_active", model.isActive == "")
+                    ], onClick (IsActive "") ]
+                    [ text "전체" 
+                    ]] ++ 
+                List.map (\x -> 
+                        div [ classList [
+                            ("m_yourfitListDetail_yf_active", model.isActive == x.code)
+                        ],  onClick (IsActive x.code) ]
+                            [  text x.name ]
+                        ) model.levelData
+                )
+            
 
 goBtnBox backPage = 
     div [ class "searchbox_footer" ]
@@ -207,7 +323,7 @@ goBtnBox backPage =
 contentsLayout item = 
     div [ class "column is-multiline videoboxwrap" , onClick (DetailGo item.id)]
         [ div [ class "video_image" ]
-            [ img [ class "vpic1", src "/image/dummy_video_image.png", alt "dummy_video_image" ]
+            [ img [ class "vpic1", src item.thembnail, alt "dummy_video_image" ]
                 []
             ]
         , div [ class "workout_title" ]
@@ -219,10 +335,34 @@ contentsLayout item =
                 ]
             ]
         , div [ class "timebox" ]
-            [ text " ㅡ " ]
+            [ text item.duration ]
         , div [ class "partbox" ]
             [ text item.exercise_part_name ]
         , div [ class "levelbox" ]
             [ text item.difficulty_name ]
         ]
 
+contentsLayout2 idx item = 
+    div [ class "column is-multiline m_videoboxwrap" , onClick (DetailGo item.id)]
+        [ div [ class "m_work_videobox" ]
+            [ 
+                img [ class "appvpic1", src item.thembnail, alt "dummy_video_image" ]
+                []
+            ]
+        , div [class "m_workout_title"] [
+            div []
+            [ text item.title ]
+            , div [ class "m_iconbox" ]
+                [ div [ class "m_partbox" ]
+                [ text item.exercise_part_name ]
+                , div [ class "m_levelbox" ]
+                [ text item.difficulty_name ]
+                ]
+            , div [class "m_timebox"]
+                [ i [ class "fas fa-clock" ]
+                    []
+                        , div [ class "m_timebox" ]
+                    [ text item.duration ]
+                ]
+        ]
+        ]

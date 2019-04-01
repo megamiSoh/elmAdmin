@@ -16,7 +16,7 @@ import Http as Http
 import Api.Decoder as Decoder
 import Json.Encode as Encode
 import Swiper
-import Html.Lazy exposing (lazy, lazy2)
+import Html.Lazy exposing (lazy, lazy2, lazy3)
 type alias Model 
     = {
         session : Session
@@ -25,10 +25,13 @@ type alias Model
         , data : List ListData
         , check : Bool
         , loading : Bool
+        , sumCount : Int
         , menuOpen : Bool
         , swipingState : Swiper.SwipingState
         , swipeCode : String
         , leftWidth : Int
+        , lazyImg : String
+        , count : Int
     }
 
 type alias YourFitList =
@@ -42,8 +45,11 @@ type alias ListData =
 
 type alias ExerciseList = 
     { difficulty_name : String
-    , exercise_part_name: String
+    , duration : String
+    , exercise_part_name : String
     , id : Int
+    , mediaid : String
+    , thembnail: String
     , title : String
     }
 
@@ -57,8 +63,11 @@ init session mobile =
         , data = []
         , swipeCode = ""
         , loading = True
-        ,  menuOpen = False
+        , sumCount = 0
+        , menuOpen = False
+        , count = 1
         , leftWidth = 0
+        , lazyImg = "../image/05iu6bgl-320.jpg"
         , swipingState = Swiper.initialSwipingState
         }
         , Cmd.batch
@@ -79,6 +88,7 @@ type Msg
     | GotSession Session
     | Swiped String Swiper.SwipeEvent 
     | GetIndex String
+    | OnLoad Int
 
 toSession : Model -> Session
 toSession model =
@@ -88,7 +98,8 @@ toCheck : Model -> Bool
 toCheck model =
     model.check
 
-
+onLoad msg =
+    on "load" (Decode.succeed msg)
 
 subscriptions :Model -> Sub Msg
 subscriptions model=
@@ -101,21 +112,18 @@ subscriptions model=
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        OnLoad idx->
+            if model.count >= model.sumCount then
+            ({model | loading = False}, Cmd.none)
+            else
+            ({model | count = model.count + 1}, Cmd.none)
         GetIndex str -> 
-            let _ = Debug.log "index" str
-                
-            in
-            
             (model, Cmd.none)
         Swiped str evt ->
-            let _ = Debug.log "eve" evt
+            let 
                 ( newState, swipedLeft ) =
                     Swiper.hasSwipedRight evt model.swipingState
             in
-                let _ = Debug.log "left" newState
-                    
-                in
-                
                 ( { model | menuOpen = swipedLeft, swipingState = newState, swipeCode = str , leftWidth = -200}, Cmd.none )
         GotSession session ->
             ({model | session = session}
@@ -138,7 +146,16 @@ update msg model =
             in
             (model, Api.saveKey go)
         GetList (Ok ok) ->
-            ({model | data = ok.data, loading = False}, Cmd.none)
+            let
+                new = List.map (\x ->
+                        List.length (x.exercises)
+                    ) ok.data
+                result = List.sum new
+            in
+            if model.check then
+            ({model | data = ok.data, sumCount = result}, Cmd.none)
+            else 
+            ({model | data = ok.data, sumCount = result, loading = False}, Cmd.none)
         GetList (Err err) ->
             (model, Cmd.none)
 
@@ -157,15 +174,7 @@ update msg model =
 
 
 
-navigation : Model -> Html Msg
-navigation model =
-    nav []
-        [ ul [ class "navigtion swipenavStyle", style "left" (if model.menuOpen then "0" else "-50px") ]
-            [ li [ class "nav-item" ] [ a [] [ text "Home" ] ]
-            , li [ class "nav-item" ] [ a [] [ text "About" ] ]
-            , li [ class "nav-item" ] [ a [] [ text "Contact" ] ]
-            ]
-        ]
+
 
     
 view : Model -> {title : String , content : Html Msg}
@@ -180,16 +189,26 @@ view model =
 
 webOrApp model =
         if model.check then
-        div [] [
-                  
+        div [class "appWrap" ] [
                     appHeaderSearch "유어핏운동" "yourfitHeader",
                     if model.loading then
-                    spinner
+                    div [class "spinnerBack"] [
+                        spinner
+                        ]
                     else 
-                    app model
+                    div [] []
+                   , app model
             ]
         else
-            web model
+            div [] [
+            if model.loading then
+                div [class "spinnerBack"] [
+                spinner
+                ]
+            else 
+            div [] []
+            , web model
+            ]
             
 web model =
     div [ class "yourfitExercise_yf_workoutcontainerwrap" ]
@@ -201,7 +220,7 @@ web model =
                             spinner
                         else
                         div [] (List.map (\x -> 
-                            bodyContents x
+                            lazy bodyContents x
                             ) model.data)
                     ]
                 ]
@@ -210,11 +229,11 @@ web model =
 
 app model =
         div [ class "container" ]
-            [ div []
+            [ div [ class "flexContainer"]
                 [
                        
                     div [] (List.map (\x -> 
-                            bodyContentsApp x model
+                            lazy2 bodyContentsApp x model
                             ) model.data)
                     
                 ]
@@ -222,7 +241,7 @@ app model =
             
 
 bodyContents item = 
-    div [ class "menubox_wrap" ]
+    div [ class "menubox_wrap"]
     [ 
         div [ class "yf_workoutmenubox1" ]
         [ div [ class "yf_workoutvideopic" ]
@@ -256,7 +275,7 @@ bodyContentsApp item model=
     div [ class "m_menubox_wrap" ]
     [
          div ([class "originSwipeStyle"]
-         ++ [style "width" ( String.fromInt (380 * (List.length(item.exercises)) + 220) ++ "px")]
+         ++ [style "width" ( String.fromInt (50 * (List.length(item.exercises))+ 34 ) ++ "vw")]
                         ++ Swiper.onSwipeEvents (Swiped item.code )++ [onClick (GetIndex item.code)]) 
                     [    
          div [ class "m_yf_workoutmenubox" ]
@@ -274,7 +293,7 @@ bodyContentsApp item model=
                 [ text item.name ]
             ]
         ,
-        div [] (List.map (\x -> videoItemApp x model) item.exercises)
+        div [] (List.indexedMap (\idx x -> videoItemApp idx x model) item.exercises)
         , div [ class "yf_workoutaddwarp" ]
                 [ div [ class "m_yf_workoutadd", onClick (GoDetail item.code) ]
                     [ div [ class "m_addtext" ]
@@ -291,7 +310,7 @@ bodyContentsApp item model=
 videoItem item = 
     div [ class "yf_workoutvideoboxwrap" , onClick (GoContentsDetail item.id)]
             [ div [ class "yf_workoutvideo_image" ]
-                [ img [ class "yf_workoutvpic1", src "image/dummy_video_image.png" ]
+                [ img [ class "yf_workoutvpic1", src item.thembnail ]
                     []
                 ]
             , div [ class "yf_workoutvideo_lavel_bg" ]
@@ -300,13 +319,26 @@ videoItem item =
                 ]
             , div [ class "yf_workoutworkout_title" ]
                 [ text item.title ]
+            , div [ class "m_timebox" ]
+                [
+                    i [ class "fas fa-stopwatch" ]
+                    []
+                    , text " "
+                    , text item.duration ]
             ]
+lazyImageview item lazy= 
+    img [class "m_workoutvpic",  src item ] [
+       
+    ]
 
-videoItemApp item model = 
+videoItemApp idx item model = 
     div [ class "m_workoutvideoboxwrap" , onClick (GoContentsDetail item.id)]
             [   
                 div [ class "m_yf_workoutvideo_image" ]
-                [ img [ class "m_workoutvpic", src "image/dummy_video_image.png"  ]
+                [ 
+                    -- lazy2 lazyImageview item.thembnail model.lazyImg
+                    img [ class "m_workoutvpic", 
+                    src item.thembnail, onLoad (OnLoad idx)]
                     []
                 ]
             , div [ class "m_yf_workoutvideo_lavel_bg" ]
@@ -315,6 +347,13 @@ videoItemApp item model =
                 ]
             , div [ class "m_yf_workoutworkout_title" ]
                 [ text item.title ]
+            , div [ class "m_timebox" ]
+                [ 
+                    i [ class "fas fa-stopwatch" ]
+                    []
+                    , text " "
+                    , text item.duration ]
+            
             ]
 
 

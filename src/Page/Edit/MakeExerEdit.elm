@@ -15,6 +15,7 @@ import Api.Endpoint as Endpoint
 import Api as Api
 import Http as Http
 import Api.Decoder as Decoder
+import Swiper
 
 type alias Model 
     = {
@@ -25,10 +26,59 @@ type alias Model
         , next : Bool
         , what : String
         , loading : Bool
+        , swipingState : Swiper.SwipingState
+        , swipeCode : String
         , filterData : List FilterData
         , check : Bool
         , getFilter : GetFilter
+        , menuOpen : Bool
+        , stopEvent :Bool
+        , menuleft :Bool
+        , resultCount : String
+        , screenInfo : ScreenInfo
+        , takeList : Int
+        , infiniteLoading : Bool
+        , offsetH : Int
+        , page : Int
+        , per_page : Int
+        , title : String
+        , videoId : String
     }
+
+type alias DetailData =     
+    { data : DetailItem}
+
+type alias DetailItem = 
+    { difficulty_name : Maybe String
+    , duration : String
+    , exercise_items : List ExItem
+    , exercise_part_name :Maybe (List String)
+    , id : Int
+    , inserted_at : String
+    , pairing : List Pair
+    , title : String }
+
+type alias ExItem = 
+    { action_id : Maybe Int
+    , difficulty_name : Maybe String
+    , duration: String
+    -- , exercise_id : Int
+    , exercise_name : Maybe String
+    , instrument_name : Maybe String
+    -- , is_rest : Bool
+    -- , mediaid : String
+    , part_detail_name : List (Maybe String)
+    -- , sort : Int
+    , thembnail : String
+    , title : String
+    , value : Int
+    }
+
+type alias Pair = 
+    { file: String
+    , image : String
+    , title : String }
+
 type alias FilterResult = 
     {data : List FilterData }
 
@@ -37,31 +87,26 @@ type alias FilterData =
     , exercise_name: Maybe String
     , id: Int
     , instrument_name: Maybe String
-    , part_detail_name: Maybe (List String)
+    , part_detail_name: List String
     , title: Maybe String
-    , value : Maybe Int}
+    , value : Maybe Int
+    , duration: Maybe String
+    , thembnail : Maybe String}
+
 
 type alias GetFilter = 
     { difficulty_code: List String
     , exercise_code : List String
     , instrument_code : List String
     , part_detail_code : List String
+    , title : String
     }
-type alias MakeEdit = 
-    { title : String
-    , items : List MakeEditData }
 
-type alias MakeEditData =   
-    { action_id : Maybe Int
-    , is_rest : Bool
-    , value : Int}
+type alias ScreenInfo = 
+    { scrollHeight : Int
+    , scrollTop : Int
+    , offsetHeight : Int}
 
-filterInit = 
-    { difficulty_code= []
-    , exercise_code = []
-    , instrument_code = []
-    , part_detail_code = []
-    }
 
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile
@@ -71,15 +116,40 @@ init session mobile
         , workOut = []
         , addItem = []
         , loading = True
-        , getFilter = filterInit
+        , swipeCode = ""
+        , menuOpen = False
+        , stopEvent = False
+        , menuleft = False
+        , takeList = 50
+        , resultCount = ""
+        , offsetH = 0
+        , videoId = ""
+        , page = 1
+        , per_page = 10 
+        , title = ""
+        , infiniteLoading = False
+        , swipingState = Swiper.initialSwipingState
+        , screenInfo = 
+            { scrollHeight = 0
+            , scrollTop = 0
+            , offsetHeight = 0}
+        , getFilter =
+            { difficulty_code= []
+            , exercise_code = []
+            , instrument_code = []
+            , part_detail_code = []
+            , title = ""
+            }
         , break= 
             { difficulty_name = Nothing
             , exercise_name = Nothing
             , id = 0
             , instrument_name = Nothing
-            , part_detail_name = Nothing
+            , part_detail_name = []
             , title = Nothing
-            , value = Nothing }
+            , value = Just 1
+            , duration = Nothing
+            , thembnail = Nothing }
         , next = False
         , what = ""
         , filterData = []
@@ -87,20 +157,24 @@ init session mobile
         }
         , 
         Cmd.batch[
-        Api.getId ()
-        , filterEncoder filterInit session
+        Api.sendData ()
+        , Api.getfilter ()
+        , Api.getId ()
         ]
     )
 
+
+    
 
 filterEncoder model session= 
     let
         list =  
             Encode.object
-            [("difficulty_code", (Encode.list Encode.string) model.difficulty_code)
+            [ ("difficulty_code", (Encode.list Encode.string) model.difficulty_code)
             , ("exercise_code", (Encode.list Encode.string) model.exercise_code)
             , ("instrument_code", (Encode.list Encode.string) model.instrument_code)
             , ("part_detail_code", (Encode.list Encode.string) model.part_detail_code)
+            , ("title", Encode.string  model.title)
             ]
         body = 
             list
@@ -110,7 +184,13 @@ filterEncoder model session=
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch[ Api.receiveId Success
+    Sub.batch[
+    Api.receiveFilter GetFilterValue
+    , Api.receive Success
+    , Api.receiveData ReceiveDataFromStorage
+    , Session.changes GotSession (Session.navKey model.session)
+    , Api.onSucceesSession SessionCheck
+    , Api.receiveId GetId
     ]
 
 type Msg 
@@ -125,11 +205,23 @@ type Msg
     | GetFilterValue Encode.Value
     | Success Encode.Value
     | SearchExercise String
-    | GetList (Result Http.Error MakeEdit)
+    | GotSession Session
+    | SessionCheck Encode.Value
+    | Swiped Int Swiper.SwipeEvent
+    | StartEvent 
+    | SwipedLeft Swiper.SwipeEvent
+    | ScrollEvent ScreenInfo
+    | ScrInfo 
+    | Search
+    | GetId Encode.Value
+    | KeyDown Int
+    | GetList (Result Http.Error DetailData)
 
+    -- | SearchExercise STring
 toSession : Model -> Session
 toSession model =
     model.session
+
 
 toCheck : Model -> Bool
 toCheck model =
@@ -142,13 +234,13 @@ listEncoder model =
             , ("exercise_name", (Encode.string) (justokData model.exercise_name))
             , ("id", Encode.int model.id)
             , ("instrument_name", (Encode.string) (justokData model.instrument_name))
-            , ("part_detail_name", (Encode.list Encode.string)  
-            (case model.part_detail_name of
-                Just ok ->
-                    ok
+            , ("part_detail_name", (Encode.list Encode.string) model.part_detail_name
+            -- (case model.part_detail_name of
+            --     Just ok ->
+            --         ok
 
-                Nothing ->
-                    [])
+            --     Nothing ->
+            --         [])
             )
             , ("title", (Encode.string) (justokData model.title))
             , ("value", Encode.int 
@@ -160,33 +252,184 @@ listEncoder model =
                     3
                     )
             )   
+            , ("duration", Encode.string (
+                case model.duration of
+                    Just ok ->
+                        ok
+                    Nothing ->
+                        ""
+            ))
+            , ("thembnail", Encode.string (
+                case model.thembnail of
+                    Just ok ->
+                        ok
+                    Nothing ->
+                        ""
+                        
+            ))
         ]
 
 sendDataEncoder model = 
     Encode.list listEncoder model
 
+
+onKeyDown:(Int -> msg) -> Attribute msg
+onKeyDown tagger = 
+    on "keydown" (Decode.map tagger keyCode)
+
+scrollEvent msg = 
+    on "scroll" (Decode.map msg scrollInfoDecoder)
+
+justData item = 
+    case item of
+        Just a ->
+            a
+    
+        Nothing ->
+            []
+
+justInt item = 
+    case item of
+        Just a ->
+            a
+    
+        Nothing ->
+            0
+
+scrollInfoDecoder =
+    Decode.map3 ScreenInfo
+        (Decode.at [ "target", "scrollHeight" ] Decode.int)
+        (Decode.at [ "target", "scrollTop" ] Decode.int)
+        (Decode.at [ "target", "offsetHeight" ] Decode.int)  
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GetList (Ok ok)->
-            (model, Cmd.none)
-        GetList (Err err)->
-            (model, Cmd.none)
+        GetList(Ok ok) ->  
+            let
+                old = model.break
+                
+                addData = 
+                    List.map (\x ->
+                        {old | difficulty_name = x.difficulty_name
+                        , exercise_name = x.exercise_name
+                        , id = (justInt x.action_id)
+                        , instrument_name = x.instrument_name
+                        , part_detail_name = []
+                        , title = Just x.title
+                        , value = Just x.value
+                        , duration = Just x.duration
+                        , thembnail = Just x.thembnail }
+                    ) ok.data.exercise_items
+            in
+            ({model | addItem = addData}, Cmd.none)
+            -- update GoVideo {model | getData = ok.data}
+        GetList(Err err) ->
+            let
+                serverErrors = 
+                    Api.decodeErrors err  
+            in
+             (model,(Session.changeInterCeptor (Just serverErrors) model.session))
+        GetId id ->
+            let
+                result = Decode.decodeValue Decode.string id
+            in
+            case result of
+                Ok string ->
+                    ({model | videoId = string}, Api.get GetList (Endpoint.makeDetail string) (Session.cred model.session) (Decoder.makeEdit DetailData DetailItem ExItem Pair)
+                    )
+            
+                Err _ ->
+                    (model,Cmd.none)
+        
+        KeyDown key ->
+            if key == 13 then
+                update Search model
+            else
+                (model, Cmd.none)
+        Search ->
+            (model , Cmd.batch[filterEncoder model.getFilter model.session, Api.blur () ])
+        ScrInfo ->
+             (model, Cmd.none)
+        ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
+            let
+                toInt = String.toInt(model.resultCount)
+            in
+             if (scrollHeight - scrollTop) <= offsetHeight then
+                case toInt of
+                    Just val ->
+                        if (val  < (model.takeList + 10)) then
+                            ({model | takeList = val, infiniteLoading = False},Cmd.none)
+                        else 
+                            ({model | takeList = model.takeList + 10, infiniteLoading = True}, filterEncoder model.getFilter model.session)
+                    Nothing ->
+                        (model, Cmd.none)
+                
+            else
+                (model, Cmd.none)
+        AddItem idx->
+            let
+                add = 
+                    filterItem (
+                        idx
+
+                    ) model.filterData
+            in
+           
+          ( {model | addItem = model.addItem ++ add}, Cmd.none)
+        SwipedLeft evt ->
+            let
+                ( oldState, swipedLeft ) =
+                    Swiper.hasSwipedLeft evt model.swipingState
+                
+            in
+            if swipedLeft then
+                ( { model | menuleft = swipedLeft,menuOpen = False, swipingState = oldState}, Cmd.none )
+            else
+                ({model | swipingState = oldState},Cmd.none)
+        Swiped idx evt ->
+            let
+                (newState, swipedRight ) = 
+                    Swiper.hasSwipedRight evt model.swipingState
+            in
+                if swipedRight then
+                ( { model | menuOpen = swipedRight,
+                menuleft= False, swipingState = newState}, Cmd.none )
+                else
+                ({model | swipingState = newState}, Cmd.none)
+        SessionCheck check ->
+            let
+                decodeCheck = Decode.decodeValue Decode.string check
+            in
+                case decodeCheck of
+                    Ok continue ->
+                        (model, filterEncoder model.getFilter model.session)
+                    Err _ ->
+                        (model, Cmd.none)
+        GotSession session ->
+            ({model | session = session}
+            , filterEncoder model.getFilter session
+            )
         SearchExercise str ->
-            (model, Cmd.none)
+            let
+                old = model.getFilter
+                new = {old | title = str}
+            in
+            ({model | getFilter = new}, Cmd.none)
         Success str ->
             let 
                 sucData = Decode.decodeValue Decode.string str
             in
             case sucData of
                 Ok ok ->
-                    (model, 
-                    Api.get GetList (Endpoint.makeEdit ok) (Session.cred model.session) (Decoder.makeedit MakeEdit MakeEditData) )
+                    
+                    (model,Route.pushUrl (Session.navKey model.session) Route.MakeEditLast)
+            
                 Err err ->
                     (model,Cmd.none)
             
         GetFilterValue val ->
-            let _ = Debug.log "filter" val
+            let
                 valdecode = 
                     Decode.decodeValue (Decoder.getFilterDecoder GetFilter) val
             in
@@ -200,21 +443,33 @@ update msg model =
                     (model, Cmd.none)
                     
         GetFilterData (Ok ok)->
-            ({model | filterData = ok.data, loading = False},Cmd.none)
+            let
+                before = List.take model.takeList ok.data
+                after = List.drop (model.takeList - 50) before
+                result = before ++ after
+                count = String.fromInt(List.length (ok.data))
+            in
+                if ok.data == [] then
+                ({model | filterData = ok.data , resultCount = count, loading = False, infiniteLoading = False},Cmd.none)
+                else
+                    if model.filterData /= before then
+                    ({model | filterData = before , resultCount = count, loading = False, infiniteLoading = False},Cmd.none)
+                    else 
+                    ({model | loading = False}, Cmd.none)
         GetFilterData (Err err)->
-            (model,Cmd.none)
+            let
+                serverErrors = 
+                    Api.decodeErrors err    
+            in
+            (model,(Session.changeInterCeptor (Just serverErrors) model.session))
         AddBreak ->
             ({model | addItem = model.addItem ++ [model.break]}, Cmd.none)
-        AddItem idx->
-            let
-                add = 
-                    filterItem (idx) model.filterData
-            in
-            
-            ( {model | addItem = model.addItem ++ add} , Cmd.none )
-
+        
+        StartEvent ->
+            ({model | stopEvent = False}, Cmd.none)
+                        
         BackItem idx ->
-            let _ = Debug.log "idx" idx
+            let
                 before =
                     List.take (idx) model.addItem 
 
@@ -244,10 +499,6 @@ update msg model =
             in
             case last of
                 Ok val ->
-                    let _ = Debug.log "dat" val
-                        
-                    in
-                    
                     ( {model | addItem = val, what = "페이지 로드가 완료 되었습니다."}, Cmd.none )
                 Err _ -> 
                     (model, Cmd.none)
@@ -285,50 +536,69 @@ view model =
     
     title = "맞춤운동 필터 Step 1"
     , content = 
+            if model.check then
+            app model
+            else
             web model
         }
 
 app model = 
     div [] [
         if model.loading then
-        spinner
+        div [class "spinnerBack"] [spinner]
         else
-        appHeader model
-        , appitemContainer model
+        div [] []
+        , appHeader model , 
+        if model.loading then
+        div [] []
+        else
+        appitemContainer model
     ]
 
 appHeader model = 
-    div [ class "filterstepHeader2"]
-        [ div [ class "m_backbtn" ]
-            [ i [ class "fas fa-angle-left" ]
+    div [] [
+         div [class "headerSpace"] [
+        ul [ class "commonHeaderBoth makeExerHeader"]
+        [ li [ class "m_backbtn" ]
+            [a [Route.href Route.Filter][ i [ class "fas fa-angle-left" ]
                 []
             ]
-        , div [ class "m3_topboxtitle" ]
-            [ text "운동추가" ]
+            ]
+        , li [ class "m3_topboxtitle" ]
+            [ text "운동수정" ]
         ,   if List.length (model.addItem) == 0 then
-                div [ class "m2_nextbtn"]
+                li  [ class "m2_nextbtn"]
                 [ text "다음" ]
             else
-                div [ class "m2_nextbtn", onClick SendData]
+                li  [ class "m2_nextbtn", onClick SendData]
                 [ text "다음" ]
-        , div [ class "control has-icons-left m_top_input" ]
-            [ input [ class "input m_filterinput", type_ "text", placeholder "운동을 직접 검색하세요" ]
+        ]
+         ]
+        ,
+        div [ class "control has-icons-left m_top_input  makeExerHeader" ]
+            [ 
+            p [ class "iconFixed"] [
+                input [id "keyboardBlur",onKeyDown KeyDown, class "input m_filterinput", type_ "text", onInput SearchExercise, placeholder "운동을 직접 검색하세요", value model.getFilter.title]
                 []
-            , span [ class "icon is-small is-left m_filtersearch" ]
-                [ i [ class "fas fa-search " ]
-                    []
-                ]
-            , div [ class "filterbtn m_fa-filter" ]
+                , span [ class "icon is-small is-left m_filtersearch" ]
+                    [ i [ class "fas fa-search " ]
+                        []
+                    ]
+                , div [ class "filterbtn m_fa-filter" ]
                 [ i [ class "fas fa-filter" ]
                     []
                 ]
             ]
-        ]
+            
+            ]
+    ]
+
+-- 
 web model = 
         div [ class "container" ]
             [
-                commonHeader2 "/image/icon_customworkout.png" "맞춤운동"
-                ,search,
+                commonHeader2 "/image/icon_customworkout.png" "맞춤운동 수정"
+                ,search model,
             if model.loading then
                 spinner
             else
@@ -339,17 +609,18 @@ web model =
 itemContainer model = 
      div [class"filter_box"] [
             div[class "filterStep1_listbox"] [
-                resultCount model.filterData "searchlistCount" "검색",
-                div [class "filterStep1_listsrollbox"] [
+                stringresultCount model.resultCount "searchlistCount" "검색",
+                 div [class "filterStep1_listsrollbox"]
+                 [
                     breakTime "fas fa-plus-circle" AddBreak,
                     if List.length model.filterData > 0 then
                     div [ class "loadlistbox" ]
                         (List.indexedMap (
                             \idx x ->
-                            workoutItem idx x "fas fa-plus-circle" AddItem 
+                            workoutItem idx x "fas fa-plus-circle" 
                             ) model.filterData)
                     else 
-                    div [] [text "검색 된 운동이 없습니다. 필터설정을 다시 해 주세요."]
+                    div [] [text "검색 된 운동이 없습니다. "]
                 ]
             ]
             , 
@@ -367,7 +638,7 @@ itemContainer model =
                     div [ class "loadlistbox" ]
                         (List.indexedMap (
                             \idx x ->
-                            workoutItem idx x "fas fa-minus-circle" BackItem 
+                            workoutItem idx x "fas fa-minus-circle"  
                         )model.addItem )
                 ]
             ]
@@ -375,30 +646,73 @@ itemContainer model =
         ]
 
 appitemContainer model = 
-     div [class"m_filterStep1_filter_box"] [
-            div[class "m_filterStep1_listbox"] [
-                resultCount model.workOut "m_searchlistCount" "검색",
-                div [class "m_filterStep1_listsrollbox"] [
+    div [] [
+        div ([class "m_filterStep1_filter_box"]
+    -- ++ [id "infinite"]
+    ++ [style "left"
+                 (if model.menuleft then
+                     "0"
+                    else
+                    "-15.5rem"
+                 ), 
+        style "left"
+                 (if model.menuOpen then
+                   
+                    "-15.5rem"
+                    else
+                    "0"
+                 ) 
+                 , style "transition" "left 0.5s"
+                 , style "max-height" "100%"
+                 ]
+                 ++ [scrollEvent ScrollEvent]
+            )
+            [
+            div([class "m_filterStep1_listbox"]
+            -- ++ [ style "height"  "85vh"] 
+            ++ Swiper.onSwipeEvents SwipedLeft
+            
+            ) [
+                stringresultCount model.resultCount "m_searchlistCount" "검색",
+                if List.length model.filterData > 0 then
+                div ([class "m_filterStep1_listsrollbox"]
+                ++ [scrollEvent ScrollEvent])
+                 [
                     appbreakTime "fas fa-plus-circle" AddBreak,
-                    div [ class "loadlistbox" ]
-                        (List.indexedMap (
-                            \idx x ->
-                            appworkoutItem idx x "fas fa-plus-circle" AddItem 
-                            ) model.filterData)
+                    
+                        div [ class "m_loadlistbox" ]
+                            (List.indexedMap (
+                                \idx x ->
+                                appworkoutItem idx x "fas fa-plus-circle" BackItem 
+                                ) model.filterData)
                 ]
+                 else 
+                    div [class "noResult"] [text "검색 된 운동이 없습니다."]
+                , if model.infiniteLoading then
+                    div [class "loadingPosition"] [
+                    spinner
+                    ]
+                    else
+                    span [] []
             ]
             , 
             if List.length (model.addItem) == 0 then
-            div [class "m_filterStep1_listbox2"] [
+            div ([class "m_filterStep1_listbox2"]
+             ++ Swiper.onSwipeEvents (Swiped -1)
+              ++ [ style "height" "85vh"] 
+            ) [
                 resultCount model.addItem "m_select_listresult" "선택",
                 div [class "filterStep1_listsrollbox2 m_warningText"] [
                             text "운동을 선택 해 주세요."
                 ]
             ]
             else
-            div [class "m_filterStep1_listbox2"] [
+            div ([class "m_filterStep1_listbox2"]
+             ++ Swiper.onSwipeEvents (Swiped -1)
+             ++ [ style "height" "85vh"] 
+            ) [
                 resultCount model.addItem "m_select_listresult" "선택",
-                div [class "m_filterStep1_listsrollbox"] [
+                 div [class "m_filterStep1_listsrollbox"] [
                     div [ class "loadlistbox" ]
                         (List.indexedMap (
                             \idx x ->
@@ -406,19 +720,20 @@ appitemContainer model =
                         )model.addItem )
                 ]
             ]
-            , text model.what
+            
         ]
+    ]
 
-search = 
+search model = 
         div [ class "filterstep1_yf_box" ]
             [ div [ class "filterstep1_yf_full" ]
                 [ div [ class "field is-grouped" ]
                     [ p [ class "control is-expanded" ]
-                        [ input [ class "input", type_ "text", placeholder "운동을 검색하세요", onInput SearchExercise ]
+                        [ input [ class "input", type_ "text", placeholder "운동을 검색하세요", onInput SearchExercise, value model.getFilter.title ]
                             []
                         ]
-                    , p [ class "control yf_con" ]
-                        [ a [ class "button yf_infor" ]
+                    , p [ class "control yf_con", onClick Search ]
+                        [ div [ class "button yf_infor" ]
                             [ text "검색" ]
                         ]
                     , p [ class "control yf_con" ]
@@ -429,19 +744,22 @@ search =
                 ]
             ]
 
-resultCount model style title = 
+resultCount model style title =  
     div [ class style ]
         [ text ("총 " ++ String.fromInt(List.length model) ++ "건의 " ++ title ++"결과") ]          
 
+stringresultCount model style title =  
+    div [ class style ]
+        [ text ("총 " ++ model ++ "건의 " ++ title ++"결과") ]   
 
     
-workoutItem idx item style addItem =
+workoutItem idx item style=
             if justokData item.title == "" then
-            breakTime "fas fa-minus-circle" (addItem item.id)
+            breakTime "fas fa-minus-circle" (BackItem idx)
             else
             div [ class "worklistbox" ]
                 [ div [ class "filterStep1_iconbox" ]
-                    [ img [ src "/image/m_workicon.png" ]
+                    [ img [ src (justokData item.thembnail) ]
                         []
                     ]
                 , div [ class "filtertextbox" ]
@@ -451,45 +769,46 @@ workoutItem idx item style addItem =
                         , li [ class "filter_work2" ]
                             [ text (justokData item.difficulty_name ++ "-" ++ justokData item.instrument_name ++"-" ++justokData item.exercise_name) ]
                         , li [ class "filter_work3" ]
-                            [ text " ㅡ " ]
+                            [ text (justokData item.duration) ]
                         ]
                     ]
                 , div [ class "filter_addbox" ]
                     [ i [ class style, 
                         if style ==  "fas fa-minus-circle" then
-                        onClick (addItem idx)
+                        onClick (BackItem idx)
                         else
-                        onClick (addItem item.id) 
+                        onClick (AddItem ( item.id)) 
                     ]
                         []
                     ]
                 ]
 appworkoutItem idx item style addItem =
             if justokData item.title == "" then
-            appbreakTime "fas fa-minus-circle" (addItem idx)
+            appbreakTime "fas fa-minus-circle" (BackItem idx)
             else
             div [ class "m_worklistbox" ]
-                [ div [ class "m_filterStep1_iconbox" ]
-                    [ img [ src "/image/m_workicon.png" ]
+                [ 
+                    div [ class "m_filterStep1_iconbox" ]
+                    [ img [ src (justokData item.thembnail) ]
                         []
                     ]
                 , div [ class "filtertextbox" ]
-                    [ ul [class "filtertextbox_area"]
+                    [ ul [class "appfiltertextbox_area"]
                         [ li [ class "m_filter_work1" ]
                             [ text (justokData item.title) ]
                         , li [ class "m_filter_work2" ]
                             [ text (justokData item.difficulty_name ++ "-" ++ justokData item.instrument_name ++"-" ++justokData item.exercise_name)]
                         , li [ class "m_filter_work3" ]
-                            [ text " ㅡ " ]
+                            [ text (justokData item.duration) ]
                         ]
                     ]
-                , div [ class "m_filter_addbox" ]
-                    [ i [ class style, 
-                        if style ==  "fas fa-minus-circle" then
+                , div [ class "m_filter_addbox",
+                    if style ==  "fas fa-minus-circle" then
                         onClick (addItem idx)
                         else
-                        onClick (addItem item.id) 
-                     ]
+                        onClick (AddItem ( item.id))
+                 ]
+                    [ i [ class style ]
                         []
                     ]
                 ]

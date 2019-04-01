@@ -23,9 +23,30 @@ type alias Model
         , mydata : MyData
         , currentPage : String
         , nickname : String
+        , sex : String
+        , weight : Int
+        , goal_weight : Int
+        , height : Int
+        , birthday : String
+        , is_male: Bool
+        , notmatchPwd : String
+        , oldpwd : String
+        , newpwd : String
+        , pwd : String
+        , deleteAuth : String
     }
 
+type alias BodyData = 
+    {data : BodyInfoData }
 
+type alias BodyInfoData =
+    { birthday :String
+    , body_no : Int
+    , goal_weight :Int
+    , height : Int
+    , is_male : Bool
+    , weight : Int 
+    }
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 type alias MyData =
     { exercise : Int
@@ -43,6 +64,17 @@ init session mobile
         , check = mobile
         , currentPage = ""
         , nickname = ""
+        , sex = ""
+        , deleteAuth = ""
+        , notmatchPwd = ""
+        , oldpwd = ""
+        , newpwd = ""
+        , pwd = ""
+        , weight = 0
+        , goal_weight = 0
+        , height = 0
+        , birthday = ""
+        , is_male = False
         , mydata = 
             { exercise = 0
             , share = 0
@@ -51,15 +83,18 @@ init session mobile
                 , nickname = Nothing
                 , username = ""}
              }}
-        , Api.get MyInfoData Endpoint.myInfo (Session.cred session) (Decoder.dataWRap My.DataWrap MyData UserData)
+        ,Cmd.batch [
+            Api.get MyInfoData Endpoint.myInfo (Session.cred session) (Decoder.dataWRap My.DataWrap MyData UserData)
+        ]
     )
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    Session.changes GotSession (Session.navKey model.session)
 
 type Msg 
     = BackBtn
+    | GotSession Session
     | MyInfoData (Result Http.Error My.DataWrap)
     | ChangePage String
     | ChangeNick String
@@ -68,6 +103,17 @@ type Msg
     | KeyDown Int
     | AccountDelete
     | DeleteSuccess (Result Http.Error Decoder.Success)
+    | AllDeleteText
+    | Sex String
+    | BodyInfo String String
+    | SaveBody
+    | SaveComplete (Result Http.Error Decoder.Success)
+    | BodyInfoComplete (Result Http.Error BodyData)
+    | OldPwd String
+    | Pwd String
+    | NewPwd String
+    | ChangePwd
+    | PwdComplete (Result Http.Error Decoder.Success)
 
 toSession : Model -> Session
 toSession model =
@@ -81,14 +127,134 @@ onKeyDown:(Int -> msg) -> Attribute msg
 onKeyDown tagger = 
     on "keydown" (Decode.map tagger keyCode)
 
+saveEncode model =
+    let
+        body = 
+            Encode.object   
+                [ ("weight", Encode.int model.weight)
+                , ("goal_weight", Encode.int model.goal_weight)
+                , ("height", Encode.int model.height)
+                , ("birthday", Encode.string model.birthday)
+                , ("is_male", Encode.bool model.is_male)]
+                |> Http.jsonBody    
+    in
+    Api.post Endpoint.bodyRecord (Session.cred model.session) SaveComplete body Decoder.resultD
+pwdEncode model session = 
+    let
+        list = 
+            Encode.object
+             [ ("password", Encode.string model.oldpwd)
+             , ("new_password", Encode.string model.pwd)
+             , ("new_password_confirmation", Encode.string model.newpwd)]   
+                |> Http.jsonBody
+    in
+    Api.post Endpoint.pwdChange (Session.cred session) PwdComplete list Decoder.resultD
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
+    case msg of 
+        GotSession session ->
+            if model.deleteAuth == "pwd" then
+            update ChangePwd {model | session = session}
+            else if model.deleteAuth == "bodyInfo" then
+            update SaveBody {model | session = session}
+            else if model.deleteAuth == "accountDelete" then
+            update AccountDelete {model | session =session}
+            else if model.deleteAuth == "nick" then
+            update ChangeGo {model | session =session}
+            else
+            ({model | session = session},
+            Cmd.none
+            )
+        PwdComplete (Ok ok) ->
+            let
+                textEncode = Encode.string "변경되었습니다."
+            in
+            ({model | notmatchPwd = "", currentPage = ""}, Api.showToast textEncode)
+        PwdComplete (Err err) ->
+            let
+                serverError = Api.decodeErrors err
+            in
+            if serverError == "401" then
+            ({model | deleteAuth = "pwd"}, (Session.changeInterCeptor (Just serverError) model.session))
+            else 
+            ({model | notmatchPwd = "기존에 사용하시던 비밀번호를 다시 한번 확인 해 주세요."}, Cmd.none)
+        OldPwd pwd ->
+            ({model | oldpwd = pwd}, Cmd.none)
+        Pwd pwd ->
+            ({model | pwd = pwd}, Cmd.none)
+        NewPwd pwd ->
+            ({model | newpwd = pwd}, Cmd.none)
+        ChangePwd ->
+            if model.oldpwd == "" then
+            ({model| notmatchPwd = "기존에 사용하시던 패스워드를 입력 해 주세요."}, Cmd.none)
+            else if model.pwd /= model.newpwd then
+            ({model| notmatchPwd = "비밀번호가 일치하지 않습니다."}, Cmd.none)
+            else if String.length model.pwd < 5 then
+            ({model | notmatchPwd = "비밀번호를 6자리 이상 입력 해 주세요."}, Cmd.none)
+            else
+            ({model | notmatchPwd = ""}, Cmd.batch[ pwdEncode model model.session ])
+        BodyInfoComplete (Ok ok) ->
+            ({model | currentPage = "body", birthday = ok.data.birthday, goal_weight = ok.data.goal_weight, height = ok.data.height, sex = if ok.data.is_male then "Male" else "Female", weight= ok.data.weight}, Cmd.none)
+        BodyInfoComplete (Err err) ->
+            let 
+                serverErrors =
+                    Api.decodeErrors err
+            in
+            if serverErrors == "BadBody" then
+            ({model | currentPage = "body"}, Cmd.none)
+            else if serverErrors == "401" then
+            ({model | deleteAuth = "bodyinfo"}, (Session.changeInterCeptor (Just serverErrors) model.session))
+            else
+            ({model | currentPage = "body"}, Cmd.none)
+        SaveComplete (Ok ok) ->
+            let
+                text = Encode.string "저장 되었습니다."
+            in
+            (model, Cmd.batch
+            [ Api.showToast text
+            , Route.pushUrl (Session.navKey model.session) Route.MyAccount])
+        SaveComplete (Err err) ->
+            (model, Cmd.none) 
+        SaveBody ->
+            (model, saveEncode model)
+        BodyInfo info what ->
+            let
+                toInt = String.toInt what
+            in
+            (
+            case toInt of
+                Just int ->
+                    case info of
+                        "weight" ->
+                            {model | weight = int}
+                        "goalWeight" ->
+                            {model | goal_weight = int}            
+                        "height" ->
+                            {model | height = int}
+                        "date" ->
+                            {model | birthday = what}
+                        _ ->
+                            model
+                Nothing ->
+                    {model | birthday = what}
+            , Cmd.none)
+                    
+        Sex sex ->
+            if sex == "Male" then
+            ({model | sex = sex, is_male = True} ,Cmd.none)
+            else
+            ({model | sex = sex, is_male = False}, Cmd.none)
+        AllDeleteText ->
+            ({model | nickname = ""}, Cmd.none)
         DeleteSuccess (Ok ok) ->
             (model,Route.pushUrl (Session.navKey model.session) Route.Logout)
-        DeleteSuccess (Err err) ->
-            (model,Cmd.none)
+        DeleteSuccess (Err err) -> 
+            let
+                serverErrors = Api.decodeErrors err
+            in
+            
+            ({model | deleteAuth = "accountDelete"},(Session.changeInterCeptor (Just serverErrors) model.session))
         AccountDelete ->
             let
                 body = Encode.object [("is_leave", Encode.bool True)]
@@ -104,7 +270,11 @@ update msg model =
         SuccessNickname (Ok ok) ->
             ({model | currentPage = ""}, Api.get MyInfoData Endpoint.myInfo (Session.cred model.session) (Decoder.dataWRap My.DataWrap MyData UserData))
         SuccessNickname (Err err) ->
-            (model, Cmd.none)
+            let
+                serverErrors = Api.decodeErrors err
+            in
+            
+            ({model | deleteAuth = "nick"},(Session.changeInterCeptor (Just serverErrors) model.session))
         ChangeGo ->
             let
                 list = 
@@ -117,14 +287,13 @@ update msg model =
         ChangeNick str ->
             ({model | nickname = str},Cmd.none)
         ChangePage str ->
+            if str == "body" then
+            (model, Api.get BodyInfoComplete Endpoint.getBodyInfo (Session.cred model.session) (Decoder.bodyInfo BodyData BodyInfoData))
+            else
             ({model | currentPage = str}, Cmd.none)
         MyInfoData (Ok ok) ->
             ({model | mydata = ok.data}, Cmd.none)
         MyInfoData (Err err) ->
-            let _ = Debug.log "err" err
-                
-            in
-            
             (model, Cmd.none)
         BackBtn ->
             ( model, Route.pushUrl (Session.navKey model.session) Route.MyPage )
@@ -137,17 +306,28 @@ view model =
     , content = 
         if model.currentPage == "nick" then
                 div [] [
-                    appHeaderConfirmDetailR "마이페이지" "myPageHeader" (ChangePage "")  ChangeGo  "확인"
+                    appHeaderConfirmDetailR "닉네임 변경" "myPageHeader whiteColor" (ChangePage "")  ChangeGo  "확인"
                     , nicknameContents model 
                 ]
+        else if  model.currentPage == "pwd" then
+                div [] [
+                        appHeaderConfirmDetailR "비밀번호 변경" "myPageHeader  whiteColor" (ChangePage "")  ChangePwd "변경"
+                        , pwdContents model
+                    ]
         else if model.currentPage == "account" then
                 div [] [
-                    appHeaderback "마이페이지" "myPageHeader" BackBtn
+                    appHeaderRDetailClick "계정관리" "myPageHeader  whiteColor" BackBtn "fas fa-angle-left"
                     , accountContents model
                 ]
+        else if model.currentPage == "body" then
+                div [] [
+                    appHeaderConfirmDetailR "신체정보관리" "myPageHeader whiteColor" (ChangePage "")  SaveBody  "저장"
+                    , bodyRecord model 
+                ]
+
         else
                div [] [
-                    appHeaderback "마이페이지" "myPageHeader" BackBtn
+                    appHeaderRDetailClick "마이페이지" "myPageHeader whiteColor" BackBtn "fas fa-angle-left"
                     , contents model
                 ]             
     
@@ -158,42 +338,56 @@ justData cases =
             a
     
         Nothing ->
-            " - "
+            " 닉네임을 등록 해 주세요. "
 nicknameContents model =    
-    div [] [
-        text "닉네임 변경"
-        , input [onKeyDown KeyDown, type_ "text", onInput ChangeNick ] []
+    div [class "nicknameStyle"] [
+        input [onKeyDown KeyDown, type_ "text",value model.nickname, onInput ChangeNick, placeholder "닉네임을 입력 해 주세요." ] []
+        , span [class "allDeleteBtn", onClick AllDeleteText ] [
+            i [ class "far fa-times-circle" ]
+            []
+        ]
     ]
 
 accountContents model = 
     div [] [
-        text "계정 탈퇴 시 모든 정보가 삭제 됩니다. "
-        , div [class "button", onClick AccountDelete] [text "계정 탈퇴"]
+        div [ class "container yf_container" ]
+            [ div [ class "settingbox" ]
+                [ text "계정기록"  
+                --, a [ class "button is-large is-fullwidth settingmenu" ]
+                --     [ text "기록초기화" ], text "계정연결" 
+                ,  a [ class "button is-large is-fullwidth settingmenu", Route.href Route.Logout ]
+                    [ text "로그아웃" ], text "계정관리" 
+                , div [ class "button is-large is-fullwidth settingmenu", onClick AccountDelete ]
+                    [ text "회원탈퇴" ]
+                ]
+            ]
     ]
 contents model = 
         div [ class "container yf_container" ]
             [ div [ class "m_yf_mypage_setting" ]
-                [ div [ class "m_mypage_profilebox2" ]
+                [ div [ class "m_profilebox" ]
                     [ img [ src "../image/profile.png" ]
                         []
                     , p [class"m_account_id"]
                         [ text (justData model.mydata.user.nickname) ]
                     ]
-                , div [ class "m_mypage_loginbox_info" ]
+                , div [ class "loginbox_info" ]
                     [ p [ class "m_logintext" ]
                         [ text "로그인ID" ]
                     , p [ class "login_id" ]
                         [ text model.mydata.user.username ]
                     ]
-                , p [ class "m_myPage_yf_terms" ]
+                , p [ class "yf_terms" ]
                     [ a [ ]
                         [ text "개인정보 보호 및 약관확인" ]
                     ]
-                , div [ class "m_mypage_setting_settingbox" ]
+                , div [ class "settingbox" ]
                     [ div [ class "button is-large is-fullwidth m_settingmenu", onClick (ChangePage "nick") ]
-                        [ text "닉네임을 등록해주세요" ]
-                    -- , a [ class "button is-large is-fullwidth m_settingmenu" ]
-                    --     [ text "신체기록 관리" ]
+                        [ text "닉네임 변경" ]
+                    , div [ class "button is-large is-fullwidth m_settingmenu", onClick (ChangePage "pwd") ]
+                        [ text "패스워드 변경" ]
+                    , div [ class "button is-large is-fullwidth m_settingmenu", onClick (ChangePage "body") ]
+                        [ text "신체기록 관리" ]
                     , div [ class "button is-large is-fullwidth m_settingmenu", onClick (ChangePage "account") ]
                         [ text "계정관리" ]
                     ]
@@ -201,3 +395,104 @@ contents model =
                     [ text "버전정보 v1.0" ]
                 ]
             ]
+
+bodyRecord model = 
+   div [ class "settingbox" ]
+    [ div [ class "physical_setting" ]
+        [ label [ class "label physical_title" ]
+            [ text "성별" ]
+        , p [ class "physicalbox" ]
+            [ 
+            label [ class "radio" ]
+                [ input [ type_ "radio", name "question"
+                , value model.sex
+                , onClick (Sex "Male")
+                         ]
+                    []
+                , i [ class (
+                    if model.sex == "Male" then
+                        "fas fa-mars man man_colorChange"
+                    else
+                        "fas fa-mars man"
+                ) ]
+                    [] 
+                ]
+                -- ,div [] [text "남자"]
+            , label [ class "radio" ]
+                [ input [ type_ "radio", name "question"
+                , value model.sex
+                , onClick (Sex "Female")
+                 ]
+                    []
+                , i [ class (
+                    if model.sex == "Female" then
+                        "fas fa-venus waman woman_colorChange"
+                    else
+                        "fas fa-venus waman"
+                ) ]
+                    []
+                -- ,div [] [text "여자" ]
+                ]
+            ]
+        ]
+    , div [ class "physical_setting" ]
+        [ label [ class "label physical_title" ]
+            [ text "체중" ]
+        , p [ class "physicalbox" ]
+        [   input [ class "input yf_input_box", type_ "number" ,onInput (BodyInfo "weight"), value (
+            if model.weight == 0 then
+                ""
+            else
+            String.fromInt(model.weight)
+        ) ]
+            [], text "Kg"
+            ]
+        ]
+    , div [ class "physical_setting" ]
+        [ label [ class "label physical_title" ]
+            [ text "목표체중" ]
+        , p [ class "physicalbox" ]
+            [ input [ class "input yf_input_box", type_ "number" ,onInput (BodyInfo "goalWeight") , value (
+            if model.weight == 0 then
+                ""
+            else
+            String.fromInt(model.goal_weight)
+        )]
+                [], text "Cm" 
+            ]
+        ]
+    , div [ class "physical_setting" ]
+        [ label [ class "label physical_title" ]
+            [ text "신장" ]
+        , p [ class "physicalbox" ]
+            [ input [ class "input yf_input_box", type_ "number", onInput (BodyInfo "height"), value (
+            if model.height == 0 then
+                ""
+            else
+            String.fromInt(model.height)
+        ) ]
+                [], text "Kg" 
+            ]
+        ]
+    , div [ class "physical_setting_birth" ]
+        [ label [ class "label physical_title" ]
+            [ text "생년월일" ]
+        , p [ class "physicalbox2" ]
+            [ input [ class "input yf_input_box2", type_ "date", onInput (BodyInfo "date"), value model.birthday ]
+                []
+            ]
+        ]
+    ]
+
+pwdContents  model =
+    div [class "m_pwd"] [
+        div [class "notmatchPwd"] [text model.notmatchPwd]
+        , input [ class "input myPage_yf_input", type_ "text", placeholder "기존의  패스워드를 입력 해 주세요." , onInput OldPwd]
+        []
+        , input [ class "input myPage_yf_input", type_ "text", placeholder "변경할 패스워드를 입력 해 주세요." , onInput Pwd]
+        []
+        ,input [ class "input myPage_yf_input", type_ "text", placeholder "변경할 패스워드를 한번 더 입력 해 주세요." , onInput NewPwd]
+        []
+        -- , div [ class "button mypage_nickbtn", onClick ChangePwd ]
+        --     [ text "적용" ]
+        ]

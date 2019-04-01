@@ -41,10 +41,6 @@ type alias Form =
 
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile =
-    let _ = Debug.log "session" mobile
-        
-    in
-    
     ( { session = session
     , check = mobile
     , loginState = ""
@@ -98,9 +94,6 @@ update msg model =
                     )
 
                 Err problems ->
-                    let _ = Debug.log "form"  problems
-                        
-                    in
                     
                     ( { model | problems = problems }
                     , Cmd.none
@@ -113,7 +106,7 @@ update msg model =
             updateForm (\form -> { form | password = password }) model
 
         CompletedLogin (Err error) ->
-            let _ = Debug.log "ok" 
+            let 
                 serverErrors =
                     Api.decodeErrors error
             in
@@ -127,10 +120,6 @@ update msg model =
             )
 
         CompletedLogin (Ok viewer) ->
-            let _ = Debug.log "ok" viewer
-                
-            in
-            
             ( model, Cmd.batch[Api.storeCredWith (viewer)] )
 
 
@@ -266,8 +255,8 @@ view model =
     , content = 
         if model.check then
             div [] [
-                appHeadermypage "로그인" "myPageHeader",
-                mobileLayout model
+                appHeaderRDetail  "로그인" "myPageHeader" Route.Home "fas fa-angle-left",
+                layout model
             ]
         else
             layout model
@@ -331,15 +320,15 @@ layout model =
         , div [ class "yfloginbox" ]
             [ ul [ class "yf_login_ul" ]
                 [ li [ class "yf_login_li" ]
-                    [ div [ class "button is-medium emailloginbtn", onClick SubmittedForm ]
+                    [ div [ class "button emailloginbtn", onClick SubmittedForm ]
                         [ text "로그인하기" ]
                     ]
                 , li [class "yf_login_li"]
-                    [ a [ class "button is-medium emailsignup", Route.href Route.Signup]
+                    [ a [ class "button emailsignup", Route.href Route.Signup]
                         [ text "이메일로 가입하기" ]
                     ]
                  , li [class "yf_login_li"]
-                    [ a [ class "button is-medium emailsignup", Route.href Route.Signup]
+                    [ a [ class "button emailsignup", Route.href Route.Signup]
                         [ text "비밀번호 찾기" ]
                     ]
                 ]
@@ -362,7 +351,7 @@ mobileLayout model =
             ]
                 , div [] [text model.err]
                 , p [ class "control has-icons-left m_login_yf_inputbox" ]
-                 [ input [ class "input m_sign_input", type_ "email", placeholder "이메일을 입력해주세요" , onInput EnteredEmail  ]
+                 [ input [onKeyDown KeyDown, class "input m_sign_input", type_ "email", placeholder "이메일을 입력해주세요" , onInput EnteredEmail  ]
                             []
                         , span [ class "icon is-small is-left" ]
                             [ i [ class "fas fa-envelope sign_icon" ]

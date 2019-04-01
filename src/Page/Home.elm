@@ -18,9 +18,6 @@ type alias Model
 
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile=
-    let _ = Debug.log "session" mobile
-        
-    in
     (
         { session = session
         , title = "" 
@@ -49,10 +46,6 @@ update msg model =
         NoOp ->
             (model, Cmd.none)
         GotSession session ->
-            let _ = Debug.log "session" session
-                
-            in
-            
             ({model | session = session}
             , Cmd.none
             )
@@ -68,8 +61,7 @@ view model =
 
 webOrApp model =
     if model.check then
-        div [] [
-            
+        div [class "appWrap"] [
             home,
             div [ class "m_homemenu" ]
             (List.map menuLayout menu)

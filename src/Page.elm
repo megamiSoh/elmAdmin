@@ -42,13 +42,18 @@ type Page
     | SC
     | MakeEdit
     | Empty
+    | EditFilter
+    | PostD
+    | ScrapD
+    | MSearch
+    | MakeEditLast
     
 
 
 -- view:Maybe Cred -> Api.Check  -> Page -> {check : String , title : String, content: Html msg} -> Browser.Document msg
 view maybeViewer checkB  page { title, content}  =
     if checkB then
-        {title = title , body = appContents content page maybeViewer:: [appFooter]}
+        {title = title , body = appContents content page maybeViewer:: [footerCommon page]}
                 
     else
         { title = title 
@@ -57,48 +62,99 @@ view maybeViewer checkB  page { title, content}  =
 
 
 
+footerCommon page = 
+    if page == MakeExer then
+        appFooter
+    else if page == MyPage then
+        appFooter
+    else if page == Together then
+        appFooter
+    else if page == YourfitExer then
+        appFooter
+    else
+        div [] []
+
+
+need2login = 
+    div [ class "have2login" ][ 
+        div [] [text "로그인 후 이용가능한 서비스 입니다."] 
+        , a [class "button", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
+    ]
+
+need2loginApp = 
+    div [class "have2login"] [
+                    div [  ] [text "로그인 후 이용가능한 서비스 입니다."] 
+                , a [class "button", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
+                ]
+
+
+
+
 webContents content page maybeViewer=
     case maybeViewer of
         Just _ ->
-            div [ class "" ][ content ]
+            div [ class "" ][ 
+                content, webtoastPop ]
         Nothing ->
             if page == MakeExer then
-            div [ class "" ][ 
-                 div [] [text "회원가입 후 이용가능 합니다."] 
-                , a [class "button", Route.href Route.Login  ] [text "회원가입페이지로 이동하기"]
-            ]
+            need2login
             else if page == MyPage then
-            div [ class "" ][ 
-                div [] [text "회원가입 후 이용가능 합니다."] 
-                , a [class "button", Route.href Route.Login] [text "회원가입페이지로 이동하기"]
-            ]
+            need2login
             else 
-            div [] [content]
+            div [] [content, webtoastPop]
   
 
 appContents content page maybeViewer=
   case maybeViewer of
         Just _ ->
-            div [ class "" ][ content ]
+            div [ class "appWrap" ][ content, apptoastPop ]
         Nothing ->
             if page == MakeExer  then
-            div [ class "" ][ 
-               appHeaderSearch "맞춤운동" "makeExerHeader"
-                , div [] [text "회원가입 후 이용가능 합니다."] 
-                , a [class "button", Route.href Route.Login] [text "회원가입페이지로 이동하기"]
+            div [][ 
+                appHeaderSearch "맞춤운동" "makeExerHeader"
+                , need2loginApp
             ]
             else if page == MyPage then
-            div [ class "" ][ 
+            div [][ 
                 appHeadermypage "마이페이지" "myPageHeader"
-                , div [] [text "회원가입 후 이용가능 합니다."] 
-                , a [class "button", Route.href Route.Login] [text "회원가입페이지로 이동하기"]
+                , div [ class "loginHeight"] [
+                    div [class "loginbottom"] [text "로그인 후 이용가능한 서비스 입니다."] 
+                , a [class "button", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
+                ]
+                , div [](List.map menuBottom (menu))
+
             ]
+            
             else
-            div [] [content]
+            div [] [content, apptoastPop]
   
 
-                
+menuBottom item = 
+        a [ class "m_mypage_mypagemenu" , Route.href item.route]
+        [ img [ src item.icon ]
+            [], text item.title
+        ]
 
+menu = 
+    [
+    -- {icon = "/image/icon_calendar.png", title ="캘린더", route = Route.MyC},
+    -- {icon = "/image/icon_diet.png", title ="식단기록", route = Route.MealRM},
+    -- {icon = "/image/icon_stats.png", title ="나의 통계", route = Route.MyS},
+    -- {icon = "/image/icon_list.png", title ="스크랩리스트", route = Route.MyScrap},
+    -- {icon = "/image/icon_management.png", title ="내 게시물 관리", route= MyPost},
+    {icon = "/image/icon_notice.png", title ="공지사항", route = Route.Info},
+    -- {icon = "/image/icon_qna.png", title ="1:1 문의", route = Route.Faq},
+    {icon = "/image/icon_qna.png", title ="로그인", route = Route.Login}
+    ]
+
+
+webtoastPop = 
+    div [ id "webToast" ]
+    [ text "" ]
+                
+apptoastPop = 
+    div [ id "appToast" ]
+    [ text "" ]
 
 viewHeader : Page -> Maybe Cred ->  Html msg
 viewHeader page maybeViewer =

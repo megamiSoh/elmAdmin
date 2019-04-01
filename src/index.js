@@ -4,6 +4,11 @@ import './css/all.min.css'
 import './css/app.css'
 import { Elm } from './Main.elm';
 import registerServiceWorker from './registerServiceWorker';
+
+if(!!document.createRange) {
+  document.getSelection().removeAllRanges();
+}
+
 const url ='http://13.209.49.169:4000/api/v1/'
 var filter = "win16|win32|win64|mac|macintel"; 
 var flags = 
@@ -74,13 +79,23 @@ app.ports.getKey.subscribe(function () {
 })
     
 app.ports.saveId.subscribe(function (id) {
-  localStorage.setItem ("id", id)
+  if(id.code == undefined) {
+    localStorage.setItem ("id", id)
+  } else {
+    localStorage.setItem ("id", JSON.stringify(id))
+  }
+  
   app.ports.successId.send("success")
 })
 
 app.ports.getId.subscribe(function () {
-    var get = localStorage.getItem("id")
-    app.ports.receiveId.send (get)
+  var get = localStorage.getItem("id")  
+  var parse = JSON.parse (get)
+  console.log (parse.code == undefined)
+   if (parse.code ==  undefined) {
+    app.ports.receiveId.send (get)} 
+    else{
+    app.ports.receiveId.send (parse)} 
 })
 
 
@@ -89,6 +104,7 @@ var t = JSON.stringify(token)
 if (token === null) {
   localStorage.removeItem("token")
   localStorage.removeItem ("refresh")
+  window.location.href = "/"
   location.reload()
     
 } else {
@@ -102,16 +118,17 @@ app.ports.onStoreChange.send(token);
 app.ports.secRefreshFetch.subscribe(function() {
   var retoken = localStorage.getItem ("refresh")
     var freshParse = JSON.parse(retoken)
-  var getUrl = "auth/admin/show"
+  // var getUrl = "auth/front/show"
 if (retoken == null) {
   localStorage.removeItem("token")
   localStorage.removeItem("refresh")
+  window.location.href = "/"
   location.reload()
 } else {
 
   var retoken = localStorage.getItem ("refresh")
     var freshParse = JSON.parse(retoken)
-  var getUrl = "auth/admin/show"
+  // var getUrl = "auth/front/show"
     var refreshTokenHeader =  new Headers({
     "Content-Type": "application/json",
     "authorization": ("bearer " + freshParse.token)
@@ -125,12 +142,13 @@ var tokenInit =
 
 
 
-  fetch(url + 'auth/admin/refresh',tokenInit)
+  fetch(url + 'auth/front/refresh',tokenInit)
     .then(response => {
       if(response.status == 401) {
         localStorage.removeItem("token")
         localStorage.removeItem("refresh")
         something();
+        window.location.href = "/"
         return location.reload()
       } else {
       return  response.json()
@@ -152,20 +170,20 @@ var tokenInit =
       mode: 'cors',
       cache: 'default' };    
       app.ports.onStoreChange.send(data);
-      fetch(url + getUrl, refreshInit)
-        .then(response => 
-          console.log(response))
-        .then(() => {
-            // console.log(data.status)
-              var tokenReceive = localStorage.getItem ("token")
-              app.ports.onStoreChange.send(JSON.parse(tokenReceive)); 
-              app.ports.onSucceesSession.send("complete")
-              // location.reload()
-        })
-        .catch(error => alert( "showerror" + error))
+      // fetch(url + getUrl, refreshInit)
+      //   .then(response => 
+      //     console.log(response))
+      //   .then(() => {
+      //       // console.log(data.status)
+      //         var tokenReceive = localStorage.getItem ("token")
+      //         app.ports.onStoreChange.send(JSON.parse(tokenReceive)); 
+      //         app.ports.onSucceesSession.send("complete")
+      //         // location.reload()
+      //   })
+      //   .catch(error => alert( "showerror" + error))
         
         setTimeout(() => {
-          fetch(url + 'auth/admin/refresh',refreshInit)
+          fetch(url + 'auth/front/refresh',refreshInit)
           .then(response => response.json()
           )
           .then(refreshT => {
@@ -200,7 +218,7 @@ app.ports.refreshFetchData.subscribe(function() {
     cache: 'default' };
     app.ports.onStoreChange.send(parse);
  setTimeout(function() {
-    fetch(url + 'auth/admin/refresh',myInit)
+    fetch(url + 'auth/front/refresh',myInit)
     .then(response => {
      
       return  response.json()
@@ -249,27 +267,53 @@ app.ports.getSomeFilter.subscribe(function() {
     
 })
 
+
+
 app.ports.videoData.subscribe(function(data) {
   const element = jwplayer("myElement")
-  // 
-    
     if (data.pairing == "undefined" || ! Array.isArray (data.pairing))
   	{
-      element.setup(
+      element.load(
           data
-      )
+      ).on("ready")
       app.ports.videoSuccess.send(true)
     }
   else {
     {
       jwplayer("myElement").setup(
         {"playlist" : data.pairing }
-      )
+      ).on("ready")
       app.ports.videoSuccess.send(true)
     }
   }
-  // 
-  
 });
 
+
+app.ports.togetherDataList.subscribe(function(data) {
+  console.log(data)
+  if (data == null)
+  {
+
+  }
+  else { 
+    jwplayer("myElement" + data.id ).setup(
+    { "playlist" : data.pairing
+    , autostart : true 
+    }
+  ).on("ready")
+}
+    
+ 
+})
+app.ports.showToast.subscribe(function (text) {
+    var x = document.getElementById("webToast") || document.getElementById("appToast");
+    x.className = "show";
+    x.textContent = text
+    setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+})
+
+app.ports.blur.subscribe(function() {
+  var id = document.getElementById("keyboardBlur")
+  id.blur();
+})
 registerServiceWorker();

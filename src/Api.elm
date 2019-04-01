@@ -68,6 +68,7 @@ port receiveRepeat :(Value -> msg) -> Sub msg
 port reReceiveData : (Value -> msg) -> Sub msg
 port getsaveFilter : (Value -> msg) -> Sub msg
 port videoSuccess : (Value -> msg ) -> Sub msg
+port screenInfo : (Value -> msg) -> Sub msg
 viewerChanges toMsg decoder =
     onStoreChange (\value -> toMsg (decodeFromChange decoder value))
 
@@ -79,7 +80,7 @@ decodeFromChange viewerDecoder val =
 
 -- storeCredWith : Cred -> Cmd msg
 storeCredWith (Cred token)  =
-    let _ = Debug.log "storeCredWith"
+    let
         json =
             Encode.object
             [ 
@@ -94,7 +95,7 @@ logout : Cmd msg
 logout =
     storeCache Nothing
 
-
+port callScreen : () -> Cmd msg
 port storeCache : Maybe Value -> Cmd msg
 port refreshFetchData : () -> Cmd msg
 port secRefreshFetch : () -> Cmd msg
@@ -116,6 +117,9 @@ port reSendData : Value -> Cmd msg
 port getSomeFilter : () -> Cmd msg
 port deleteData : () -> Cmd msg
 port videoData : Value -> Cmd msg
+port togetherDataList : Value -> Cmd msg
+port showToast : Value -> Cmd msg
+port blur : () -> Cmd msg
 -- port logout : () -> Cmd msg
 -- application :
     -- Decoder (Cred -> viewer)
@@ -148,10 +152,6 @@ application config =
                 checkBrowser =
                     case Decode.decodeValue (field "checkBrowser" Decode.bool) flags of
                         Ok ok ->
-                            let _ = Debug.log "flags" ok
-                                
-                            in
-                            
                             ok
                         Err err ->
                             True

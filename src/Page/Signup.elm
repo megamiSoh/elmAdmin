@@ -189,10 +189,12 @@ view model =
                 mobileLayout model
             ]
         else
-            -- pcLayout model
             div [] [
-                appHeadermypage "회원가입" "myPageHeader" ,
-                mobileLayout model
+                pcLayout model
+                , div [] [
+                    appHeadermypage "회원가입" "myPageHeader" 
+                    -- mobileLayout model
+                ]
             ]
             
     }

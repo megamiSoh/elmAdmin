@@ -5,7 +5,7 @@ import Html.Attributes exposing(..)
 import Session exposing(..)
 import Html exposing (..)
 import Api as Api
-
+import Route as Route
 type alias Model 
     = {
         session : Session
@@ -42,7 +42,12 @@ view model =
     {
     
     title = "YourFitExer"
-    , content = div [] [
-        text "회원가입이 완료 되었습니다."
-        , p [ class "buttons" ] [text "홈으로 이동하기"]
+    , content = div [class "noResult"] [
+        div [] [
+            text "회원가입이 완료 되었습니다."
+        ]
+        ,
+        div [] [
+             a [ class "buttons", Route.href Route.Home ] [text "홈으로 이동하기"]
+        ]
     ]}

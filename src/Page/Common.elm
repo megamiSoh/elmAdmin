@@ -24,12 +24,14 @@ commonHeader icon title =
             , div [ class "column is-half" ]
                 [ div [ class "field is-grouped" ]
                     [ p [ class "control is-expanded" ]
-                        [ input [ class "input", type_ "text", placeholder "운동을 검색하세요" ]
-                            []
+                        [
+                            --  input [ class "input", type_ "text", placeholder "운동을 검색하세요" ]
+                            -- []
                         ]
                     , p [ class "control yf_con" ]
-                        [ a [ class "button is-info yf_searchwindow" ]
-                            [ text "검색" ]
+                        [
+                            --  a [ class "button is-info yf_searchwindow" ]
+                            -- [ text "검색" ]
                         ]
                     ]
                 ]
@@ -76,25 +78,27 @@ myPageCommonHeader scrRight scrLeft=
             i [ class "fas fa-caret-left scrStyle", onClick scrLeft ]
             [] ,
             div [ class "haderIconWrap", id "scrollCtr" ]
-            [ a [ class "headerIcons" , Route.href Route.MyC]
-                [ img [ src "../image/icon_calendar.png" ]
-                    []
-                , p []
-                    [ text "캘린더" ]
-                ]
-            , a [ class "headerIcons", Route.href Route.MealR]
-                [ img [ src "../image/icon_diet.png" ]
-                    []
-                , p []
-                    [ text "식단기록" ]
-                ]
-            , a [ class "headerIcons", Route.href Route.MyS]
-                [ img [ src "../image/icon_stats.png" ]
-                    []
-                , p []
-                    [ text "나의통계" ]
-                ]
-            , a [ class "headerIcons", Route.href Route.MyScrap]
+            [ 
+            --     a [ class "headerIcons" , Route.href Route.MyC]
+            --     [ img [ src "../image/icon_calendar.png" ]
+            --         []
+            --     , p []
+            --         [ text "캘린더" ]
+            --     ]
+            -- , a [ class "headerIcons", Route.href Route.MealR]
+            --     [ img [ src "../image/icon_diet.png" ]
+            --         []
+            --     , p []
+            --         [ text "식단기록" ]
+            --     ]
+            -- , a [ class "headerIcons", Route.href Route.MyS]
+            --     [ img [ src "../image/icon_stats.png" ]
+            --         []
+            --     , p []
+            --         [ text "나의통계" ]
+            --     ]
+            -- ,
+             a [ class "headerIcons", Route.href Route.MyScrap]
                 [ img [ src "../image/icon_list.png" ]
                     []
                 , p []
@@ -112,39 +116,47 @@ myPageCommonHeader scrRight scrLeft=
                 , p []
                     [ text "공지사항" ]
                 ]
-            , a [ class "headerIcons", Route.href Route.Faq]
-                [ img [ src "../image/icon_qna.png" ]
-                    []
-                , p []
-                    [ text "1:1문의" ]
-                ]
+            -- , a [ class "headerIcons", Route.href Route.Faq]
+            --     [ img [ src "../image/icon_qna.png" ]
+            --         []
+            --     , p []
+            --         [ text "1:1문의" ]
+            --     ]
             ],
             i [ class "fas fa-caret-right scrStyle", onClick scrRight ]
             [] 
         ]
 
 appHeaderSearch title style= 
-    div [ class ("commonHeader " ++ style) ]
-        [ div [ class "m_backbtn" ]
-            []
-        , div [ class "m_yf_topboxtitle" ]
+    div [class "headerSpace"] [
+    ul [ class ("commonHeader " ++ style) ]
+        [ 
+        --     div [ class "m_backbtn" ]
+        --     []
+        -- , 
+        li [ class "m_yf_topboxtitle" ]
             [ text title ]
-        , div [ class "m_nextbtn" ]
+        , li [ class "m_nextbtn" ]
             [ i [ class "fas fa-search" ]
                 []
             ]
         ]
+    ]
 
 appHeadermypage title style= 
-    div [ class ("commonHeader " ++ style) ]
-        [ div [ class "m_backbtn" ]
-            []
-        , div [ class "m_yf_topboxtitle" ]
-            [ text title ]
-        , div [ class "m_nextbtn" ]
-              [ ]
-            ]
-        
+    div [class "headerSpace"] [
+    ul [ class ("commonHeader " ++ style) ]
+            [ li [ class "m_backbtn" ]
+                []
+            , li [ class "m_yf_topboxtitle" ]
+                [ text title ]
+            , li [ class "m_nextbtn" ]
+                [ ]
+                ]
+    ]
+justappHeader title style = 
+    div [ class ("justHeader " ++ style) ]
+        [  text title ]
 
 appHeaderDetail title style back=
     div [ class ("commonHeader " ++ style) ]
@@ -205,50 +217,91 @@ appHeaderBothfnq title style back icon btnText go=
 
 
 appHeaderRDetail title style back icon=
-    div [ class ("commonHeader " ++ style) ]
-        [ a [ class "m_backbtn", Route.href back]
+    div [class "headerSpace"] [
+    ul [ class ("commonHeaderBack " ++ style) ]
+        [ li [] [
+            a [ class "", Route.href back]
             [ i [ class icon ]
                 []
             ]
-        , div [ class "m_topboxtitle" ]
+        ]
+        , li [ class "toptitle" ]
             [ text title ]
  
         ]
+    ]
+
+appHeaderRDetailClick title style back icon=
+    div [class "headerSpace"] [
+    ul [ class ("commonHeaderBack " ++ style) ]
+        [ li [] [
+            div [ class "", onClick back]
+            [ i [ class icon ]
+                []
+            ]
+        ]
+        , li [ class "toptitle" ]
+            [ text title ]
+ 
+        ]
+    ]
 
 appHeaderinforDetail title style back icon=
     div [ class ("commonHeader " ++ style) ]
-        [ a [ class "m_backbtn", Route.href back]
+        [ a [ class "", Route.href back]
             [ i [ class icon ]
                 []
             ]
-        , div [ class "m3_topboxtitle" ]
+        , div [ class "" ]
             [ text title ]
  
         ]
 
-appHeaderConfirmDetail title style back confirm btnText =
-    div [ class ("commonHeader " ++ style) ]
-        [ div [ class "m_backbtn", onClick back ]
-            [ i [ class "fas fa-times" ]
-                []
+appHeaderConfirmDetail title style back btnStyle confirm btnText =
+    div [class "headerSpace"] [
+    ul [ class ("commonHeaderBoth " ++ style) ]
+            [ li [  ]
+                [   a [Route.href back] [
+                    i [ class btnStyle ]
+                    []
+                ]
+                ]
+            , li [ class "" ]
+                [ text title ]
+            , li [ class "" ]
+                [ 
+                    a [Route.href confirm] [text btnText]
+                     ]
             ]
-        , div [ class "m3_topboxtitle" ]
-            [ text title ]
-        , a [ class "m2_nextbtn", Route.href confirm ]
-            [ text btnText ]
-        ]
+    ]
 
+appHeaderConfirmDetailleft title style back confirm btnText =
+    div [class "headerSpace"] [
+    ul [ class ("commonHeaderBoth " ++ style) ]
+            [ li [ class "", onClick back ]
+                [ i [ class "fas fa-angle-left" ]
+                    []
+                ]
+            , li [ class "" ]
+                [ text title ]
+            , li [ class "", onClick confirm ]
+                [ text btnText ]
+            ]
+    ]
+    
 appHeaderConfirmDetailR title style back confirm btnText =
-    div [ class ("commonHeader " ++ style) ]
-        [ div [ class "m_backbtn", onClick back ]
+    div [class "headerSpace"] [
+        ul [ class ("commonHeaderBoth " ++ style) ]
+        [ li [ class "", onClick back ]
             [ i [ class "fas fa-times" ]
                 []
             ]
-        , div [ class "m3_topboxtitle" ]
+        , li [ class "" ]
             [ text title ]
-        , div [ class "m2_nextbtn", onClick confirm ]
+        , li [ class "", onClick confirm ]
             [ text btnText ]
         ]
+    ]
 
 appHeaderConfirmDetail2 title style back confirm btnText =
     div [ class ("commonHeader " ++ style) ]
@@ -278,7 +331,10 @@ appHeaderBackComplete title style back complete =
 
 
 spinner = 
-    div [ class "sk-fading-circle" ]
+    div [ class "loading-spinner" ]
+                        []
+infiniteSpinner = 
+   div [ class "sk-fading-circle" ]
         [ div [ class "sk-circle1 sk-circle" ]
             []
         , div [ class "sk-circle2 sk-circle" ]
@@ -305,3 +361,58 @@ spinner =
             []
         ]
 
+pagination btn page= 
+    let
+        index = (page.total_count // page.per_page) + 1
+    in
+    
+    nav [ class "pagination" ]
+        [ div [ class "pagination-previous", title "This is the first page",  onClick (
+            if (page.page - 1) == 0 then
+                btn (1 , "prev")
+            else
+                btn ((page.page - 1), "prev")
+        ) ]
+            [ text "Previous" ]
+        
+        , ul [ class "pagination-list" ]
+            (
+                List.indexedMap (\idx x ->
+                    
+                    item idx x page.page btn
+                ) (List.range 1 index)
+            )
+        , div [ class "pagination-next" , onClick (
+            if (page.page + 1) > index then
+                btn (index, "next")
+            else
+                btn ((page.page + 1), "next")
+        )]
+            [ text "Next page" ]
+        ]
+
+
+item  idx num current btn=
+    li [class (
+        if (idx + 1) == current then
+        "pagination-link is-current"
+        else
+        "pagination-link"
+        ), onClick (btn ((idx + 1), "go"))] [
+        div [] [ text (String.fromInt (idx + 1)) ]
+    ]
+
+need2loginAppDetail route = 
+    div [class "have2login"] [
+                    div [  ] [text "로그인 후 이용가능한 서비스 입니다."] 
+                , a [class "button", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
+                , div [class "button", onClick route] [text "이전 페이지로 이동"]
+                ]
+
+
+need2loginAppDetailRoute route = 
+    div [class "have2login"] [
+                    div [  ] [text "로그인 후 이용가능한 서비스 입니다."] 
+                , a [class "button", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
+                , a [class "button", Route.href route] [text "이전 페이지로 이동"]
+                ]

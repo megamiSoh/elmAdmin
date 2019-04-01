@@ -1,4 +1,4 @@
-module Page.Detail.YourFitDetail exposing (..)
+module Page.Detail.MyScrapDetail exposing (..)
 
 import Browser exposing (..)
 import Html.Events exposing(..)
@@ -25,11 +25,15 @@ type alias Model =
     , check : Bool
     , loading : Bool
     , need2login : Bool
-    , videoId : String
+    , videoId : CodeId
     }
 -- Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
 type alias GetData = 
     { data : DetailData }
+
+type alias CodeId = 
+    { code : String
+    , id : String }
 
 type alias DetailData =    
     { difficulty_name : Maybe String
@@ -62,7 +66,9 @@ init session mobile
         , scrap = False
         , loading = True
         , need2login = False
-        , videoId = ""
+        , videoId = 
+            { code = ""
+            , id = ""}
         , listData = 
             { difficulty_name = Nothing
             , duration = ""
@@ -79,10 +85,9 @@ subscriptions :Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ 
-        --     P.check CheckDevice
-        -- , 
         Api.receiveId ReceiveId
         , Api.videoSuccess Loading
+        , Session.changes GotSession (Session.navKey model.session)
         ]
 type Msg 
     = BackPage
@@ -91,8 +96,9 @@ type Msg
     | GetListData (Result Http.Error GetData)
     | Loading Encode.Value
     | GoVideo
-    | Scrap
-    | ScrapComplete (Result Http.Error Decoder.Success)
+    | GotSession Session
+    -- | Scrap Int
+    -- | ScrapComplete (Result Http.Error Decoder.Success)
     | BackDetail
     
 
@@ -108,25 +114,13 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GotSession session ->
+            ({model | session = session},
+            Api.get GetListData (Endpoint.scrapDetail model.videoId.code model.videoId.id ) (Session.cred session) (Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing)
+            )
         BackDetail ->
-            ({model | need2login = False}, Api.get GetListData (Endpoint.yfDetailDetail model.videoId ) (Session.cred model.session) (Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing))
-        ScrapComplete (Ok ok) ->
-            let
-                text = Encode.string "스크랩 되었습니다."
-            in
-            
-            ({model | scrap = not model.scrap}, Api.showToast text )
-        ScrapComplete (Err err) ->
-            let
-                error = Api.decodeErrors err
-                cannotScrap = Encode.string "이미 스크랩 되었습니다."
-            in
-            if error == "401" then
-                ({model | need2login = True}, Cmd.none )
-            else
-                (model, Api.showToast cannotScrap)
-        Scrap ->
-            (model, Api.get ScrapComplete (Endpoint.scrap model.videoId)(Session.cred model.session) Decoder.resultD)
+            ({model | need2login = False}, Api.get GetListData (Endpoint.scrapDetail model.videoId.code model.videoId.id ) (Session.cred model.session) (Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing))
+
         GoVideo ->
             let
                 videoList = 
@@ -144,7 +138,10 @@ update msg model =
         GetListData (Ok ok) -> 
             update GoVideo {model | listData = ok.data, scrap = False}
         GetListData (Err err) -> 
-            (model, Cmd.none)
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            (model, (Session.changeInterCeptor (Just serverErrors)model.session))
         Loading success ->
             let
                 d = Decode.decodeValue Decode.string success
@@ -157,30 +154,20 @@ update msg model =
                     Err _->
                          ({model | loading = False},Cmd.none)
         ReceiveId id ->
-            let 
-                d = Decode.decodeValue Decode.string id
+            let
+                d = 
+                    Decode.decodeValue (Decoder.codeId CodeId) id
             in
             case d of
                 Ok item ->
-                    ({model | videoId = item}, Api.get GetListData (Endpoint.yfDetailDetail item ) (Session.cred model.session) (Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing))
+                    ({model | videoId = item}, Api.get GetListData (Endpoint.scrapDetail item.code item.id ) (Session.cred model.session) (Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing))
             
                 Err _ ->
                     (model, Cmd.none)
             
         BackPage ->
             ( model, 
-            Route.backUrl (Session.navKey model.session) 1)
-        -- CheckDevice str ->
-        --    let 
-        --         result =
-        --             Decode.decodeValue Decode.string str
-        --     in
-        --         case result of
-        --             Ok string ->
-        --                 ({model| checkDevice = string}, Cmd.none)
-        --             Err _ -> 
-        --                 ({model | checkDevice = "pc"}, Cmd.none)
-
+            Route.pushUrl (Session.navKey model.session) Route.MyScrap)
 
 view : Model -> {title : String , content : Html Msg}
 view model =
@@ -189,6 +176,7 @@ view model =
     title = "YourFitExer"
     , content = 
             if model.check then
+                
                 app model
             else
                 web BackPage model
@@ -197,7 +185,7 @@ view model =
 app model= 
         div [ class "container" ]
                 [
-                   appHeaderRDetailClick model.listData.title  "yourfitHeader" BackPage "fas fa-times"
+                   appHeaderRDetailClick model.listData.title  "myPageHeader whiteColor" BackPage "fas fa-times"
                    ,
                     if model.loading then
                     div [class "spinnerBack"] [
@@ -208,32 +196,31 @@ app model=
                      , if model.need2login then
                         need2loginAppDetail BackDetail
                     else
-                    appcontentsItem model.listData model.loading Scrap model
+                    appcontentsItem model.listData model.loading
                 ]
 
 web msg model= 
     div [ class "container" ]
                 [
-                    commonHeader "image/icon_workout.png" "유어핏운동"
-                    , if model.need2login then
-                        need2loginAppDetail BackDetail
-                    else
-                    contentsBody model.listData model.loading Scrap model.scrap
+                    -- appHeaderRDetailClick  model.listData.title  "yourfitHeader" BackPage "fas fa-times"  
+                    -- ,
+                    contentsBody model.listData model.loading
                     ,goBtnBox msg
                 ]
-contentsBody item model scrap modelscrap=
+contentsBody item loading =
     
     div [ class "yf_yfworkout_search_wrap" ]
         [ div [ class "tapbox" ]
             [ div [ class "yf_large" ]
                 [ text item.title ],
-                contentsItem item model scrap modelscrap
+                 div [ id "myElement" ] []
+                , contentsItem item loading
                
             ]
         
         ]
 
-contentsItem item loading scrap modelscrap=
+contentsItem item loading=
             div [ class "tile is-parent is-vertical" ]
             [lazy2 div [ class "yf_notification" ]
                 [ p [ class "title" ]
@@ -250,18 +237,7 @@ contentsItem item loading scrap modelscrap=
                         ], text item.duration
                     ]
                 , div [ class "yf_part" ]
-                    [ text ((justok item.exercise_part_name) ++ "  " ++  (justok item.difficulty_name)) ]
-                , div [ class "yf_scrapt", onClick scrap ]
-                    [ span []
-                        [ i [ class (
-                            if modelscrap then
-                            "fas fa-bookmark"
-                            else
-                            "far fa-bookmark"
-                        ) ]
-                            []
-                        ], text "스크랩" 
-                    ]
+                    [ text ((justok item.exercise_part_name) ++ " - " ++  (justok item.difficulty_name)) ]
                 ]
             , 
             if loading then 
@@ -278,9 +254,9 @@ justok casees =
             a
     
         Nothing ->
-            "  "
+            "-"
 
-appcontentsItem item loading scrap modelscrap= 
+appcontentsItem item loading = 
             div [ ]
             [ div []
                 [ p [ class "m_yf_container" ]
@@ -301,18 +277,7 @@ appcontentsItem item loading scrap modelscrap=
                         ], text item.duration
                     ]
                 , div [ class "m_yf_work_text" ]
-                    [ text ((justok item.exercise_part_name) ++ "  " ++  (justok item.difficulty_name)) ]
-                , div [ class "m_yf_scrapt", onClick scrap ]
-                    [ span []
-                        [ i [ class  (
-                            if modelscrap.scrap then
-                            "fas fa-bookmark"
-                            else
-                            "far fa-bookmark"
-                        ) ]
-                            []
-                        ]
-                    ]
+                    [ text ((justok item.exercise_part_name) ++ " - " ++  (justok item.difficulty_name)) ]
                 ]
             , 
             if loading then 
@@ -324,11 +289,7 @@ appcontentsItem item loading scrap modelscrap=
 
 description idx item = 
     ul [] [
-            if item.title =="휴식" then
-                li [] [text ((String.fromInt(idx + 1)) ++ " . " ++  item.title ++ " " ++ String.fromInt(item.value) ++ "분")]
-            else         
-                li [] [text ((String.fromInt(idx + 1)) ++ " . " ++  item.title ++ " " ++ String.fromInt(item.value) ++ "세트")]
-                    
+        li [] [text ((String.fromInt(idx + 1)) ++ " . " ++  item.title)]
         -- li [] [text]
     ]
     

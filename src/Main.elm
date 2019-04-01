@@ -44,6 +44,11 @@ import Api exposing(..)
 import Page.SignupComplete as SC
 import Page.Edit.MakeExerEdit as MakeEdit
 import Page.EmptyPage as Empty
+import Page.Edit.EditFilter as EditFilter
+import Page.Detail.MyScrapDetail as ScrapD
+import Page.Detail.MyPostDetail as PostD
+import Page.Detail.MakeExerSearch as MSearch
+import Page.Edit.MakeExerEditStepLast as MakeEditLast
 
 -- type alias Check = 
 --     String
@@ -79,6 +84,11 @@ type Model
      | SCModel SC.Model
      | MakeEditModel MakeEdit.Model
      | EmptyModel Empty.Model
+     | ScrapDModel ScrapD.Model
+     | PostDModel PostD.Model
+     | EditFilterModel EditFilter.Model
+     | MSearchModel MSearch.Model
+     | MakeEditLastModel MakeEditLast.Model
     --  | PageModel Page.Model
     --  | CheckDevice Check
     
@@ -128,7 +138,11 @@ type Msg
     | SCMsg SC.Msg
     | MakeEditMsg MakeEdit.Msg
     | EmptyMsg Empty.Msg
-
+    | EditFilterMsg EditFilter.Msg
+    | ScrapDMsg ScrapD.Msg
+    | PostDMsg PostD.Msg
+    | MSearchMsg MSearch.Msg
+    | MakeEditLastMsg MakeEditLast.Msg
 
 subscriptions model = 
     case model of
@@ -169,7 +183,7 @@ subscriptions model =
         MyPostModel item ->
             Sub.map MyPostMsg (MyPost.subscriptions item)
         MyScrapModel item ->
-            Sub.none
+            Sub.map MyScrapMsg (MyScrap.subscriptions item)
         MySModel item ->
             Sub.map MySMsg (MyS.subscriptions item)
         MakeDetailModel item ->
@@ -194,6 +208,16 @@ subscriptions model =
             Sub.map MakeEditMsg (MakeEdit.subscriptions item)
         EmptyModel item ->
             Sub.none
+        EditFilterModel item ->
+            Sub.map EditFilterMsg (EditFilter.subscriptions item)
+        ScrapDModel item ->
+            Sub.map ScrapDMsg (ScrapD.subscriptions item)
+        PostDModel item ->
+            Sub.map PostDMsg (PostD.subscriptions item)
+        MSearchModel item ->
+            Sub.map MSearchMsg (MSearch.subscriptions item)
+        MakeEditLastModel item ->
+            Sub.map MakeEditLastMsg (MakeEditLast.subscriptions item)
 
 init : Maybe Cred -> Bool -> Url -> Key -> ( Model, Cmd Msg )
 init maybeViewer check url navKey =
@@ -301,6 +325,22 @@ changeRouteTo maybeRoute model  =
                 |> updateWith EmptyModel EmptyMsg model
         Just Route.Logout ->
             (model, Cmd.batch[Api.logout, Route.pushUrl (Session.navKey session) Route.Home])
+        Just Route.EditFilter ->
+            EditFilter.init session check
+                |> updateWith EditFilterModel EditFilterMsg model
+        Just Route.ScrapD ->
+            ScrapD.init session check
+                |> updateWith ScrapDModel ScrapDMsg model
+        Just Route.PostD ->
+            PostD.init session check
+                |> updateWith PostDModel PostDMsg model
+
+        Just Route.MSearch ->
+            MSearch.init session check
+                |> updateWith MSearchModel MSearchMsg model
+        Just Route.MakeEditLast ->
+            MakeEditLast.init session check
+                |> updateWith MakeEditLastModel MakeEditLastMsg model
 
 
 toCheck page =  
@@ -365,7 +405,18 @@ toCheck page =
             MakeEdit.toCheck item
         EmptyModel item ->
             Empty.toCheck item
-        
+        EditFilterModel item ->
+            EditFilter.toCheck item
+        ScrapDModel item ->
+            ScrapD.toCheck item
+        PostDModel item ->  
+            PostD.toCheck item
+        MSearchModel item ->
+            MSearch.toCheck item
+        MakeEditLastModel item ->
+            MakeEditLast.toCheck item
+
+
 toSession : Model -> Session
 toSession page =
     case page of
@@ -429,6 +480,16 @@ toSession page =
             MakeEdit.toSession item
         EmptyModel item ->
             Empty.toSession item
+        EditFilterModel item ->
+            EditFilter.toSession item
+        ScrapDModel item ->
+            ScrapD.toSession item
+        PostDModel item ->
+            PostD.toSession item
+        MSearchModel item ->
+            MSearch.toSession item
+        MakeEditLastModel item ->
+            MakeEditLast.toSession item
         
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -550,6 +611,21 @@ update msg model =
         (EmptyMsg subMsg, EmptyModel emodel) ->
             Empty.update subMsg emodel
                 |> updateWith EmptyModel EmptyMsg emodel
+        (EditFilterMsg subMsg, EditFilterModel emodel) ->
+            EditFilter.update subMsg emodel
+                |> updateWith EditFilterModel EditFilterMsg emodel
+        (PostDMsg subMsg, PostDModel pmodel) ->
+            PostD.update subMsg pmodel
+                |> updateWith PostDModel PostDMsg pmodel
+        (ScrapDMsg subMsg, ScrapDModel smodel) ->
+            ScrapD.update subMsg smodel
+                |> updateWith ScrapDModel ScrapDMsg smodel
+        (MSearchMsg subMsg, MSearchModel mmodel) ->
+            MSearch.update subMsg mmodel
+                |> updateWith MSearchModel MSearchMsg mmodel
+        (MakeEditLastMsg subMsg, MakeEditLastModel mmodel) ->
+            MakeEditLast.update subMsg mmodel
+                |> updateWith MakeEditLastModel MakeEditLastMsg mmodel
         ( _, _ ) ->
             ( model, Cmd.none )  
         
@@ -647,3 +723,13 @@ view model =
             viewPage Page.MakeEdit MakeEditMsg(MakeEdit.view item)
         EmptyModel item ->
             viewPage Page.Empty EmptyMsg (Empty.view item)
+        EditFilterModel item ->
+            viewPage Page.EditFilter EditFilterMsg(EditFilter.view item)
+        ScrapDModel item ->
+            viewPage Page.ScrapD ScrapDMsg (ScrapD.view item)
+        PostDModel item ->
+            viewPage Page.PostD PostDMsg (PostD.view item)
+        MSearchModel item ->
+            viewPage Page.MSearch MSearchMsg (MSearch.view item)
+        MakeEditLastModel item ->
+            viewPage Page.MakeEditLast MakeEditLastMsg (MakeEditLast.view item)

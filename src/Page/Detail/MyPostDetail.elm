@@ -1,4 +1,4 @@
-module Page.Detail.MakeExerDetail exposing(..)
+module Page.Detail.MyPostDetail exposing(..)
 
 import Browser exposing (..)
 import Html.Events exposing(..)
@@ -21,22 +21,47 @@ type alias Model
         session : Session
         , check : Bool
         , checkDevice: String
-        , getData : DetailData
+        , getData : TogetherData
         , loading : Bool
         , scrap : Bool
-        , videoId : String
-        , deleteAuth: String
+        , postId : String
     }
 
-type alias DetailData =    
+type alias TogetherDataWrap = 
+    { data : TogetherData 
+    }
+
+type alias TogetherData = 
+    { content : Maybe String
+    , detail : List DetailTogether
+    , id : Int
+    , inserted_at : String
+    , is_delete : Bool
+    , link_code : String
+    , recommend_cnt : Int
+    }
+type alias DetailTogether = 
     { difficulty_name : Maybe String
     , duration : String
-    , exercise_items : List YfD.DetailDataItem
+    , exercise_items : List TogetherItems
     , exercise_part_name : Maybe String
     , id : Int
     , inserted_at : String
-    , pairing : List YfD.Pairing
-    , title : String}
+    , pairing : List Pairing 
+    , title : String
+    }
+
+type alias TogetherItems = 
+    { exercise_id : Int
+    , is_rest : Bool
+    , sort : Int
+    , title : String
+    , value : Int }
+type alias Pairing = 
+    { file : String
+    , image : String
+    , title : String 
+    }
 
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile
@@ -46,17 +71,16 @@ init session mobile
         , check = mobile
         , loading = True
         , scrap = False
-        , videoId = ""
-        , deleteAuth = ""
+        , postId = ""
         , getData = 
-            { difficulty_name = Nothing
-            , duration = ""
-            , exercise_items = []
-            , exercise_part_name = Nothing
+            { content = Nothing
+            , detail = []
             , id = 0
             , inserted_at = ""
-            , pairing = []
-            , title = ""}
+            , is_delete = False
+            , link_code = ""
+            , recommend_cnt = 0
+            }
         }
         , Cmd.batch 
         [ P.checkMobile ()
@@ -67,15 +91,12 @@ init session mobile
     
 -- 
 type Msg 
-    = CheckDevice E.Value
+    = GotSession Session
     | BackPage
     | GetId E.Value
-    | GetList (Result Http.Error YfD.GetData)
+    | GetList (Result Http.Error TogetherDataWrap)
     | GoVideo
     | Loading E.Value
-    | Scrap
-    | ScrapComplete (Result Http.Error Decoder.Success)
-    | GotSession Session
 
 toSession : Model -> Session
 toSession model =
@@ -96,29 +117,19 @@ subscriptions model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GotSession session ->
-            if model.deleteAuth == "scrap" then
-                update Scrap {model | session = session }
-            else
-           ({model | session = session}, Api.get GetList (Endpoint.makeDetail model.videoId) (Session.cred session)  (Decoder.yfDetailDetail YfD.GetData YfD.DetailData YfD.DetailDataItem YfD.Pairing)
-           )
-        ScrapComplete (Ok ok) ->
-            let
-                text = E.string "스크랩 되었습니다."
-            in
-            
-            ({model | scrap = not model.scrap}, Cmd.none)
-        ScrapComplete (Err err) ->
-            let
-                serverErrors = 
-                    Api.decodeErrors err  
-            in
-             ({model | deleteAuth = "scrap"},(Session.changeInterCeptor (Just serverErrors) model.session))
         GoVideo ->
             let
+                head = List.head (model.getData.detail)
+                result = 
+                    case head of
+                        Just a ->
+                            a.pairing
+                    
+                        Nothing ->
+                            []
                 videoList = 
                     E.object 
-                        [("pairing", (E.list videoEncode) model.getData.pairing) ]
+                        [ ("pairing", E.list videoEncode result)]
 
                 videoEncode p=
                     E.object
@@ -131,11 +142,11 @@ update msg model =
         GetList(Ok ok) ->
             update GoVideo {model | getData = ok.data}
         GetList(Err err) ->
-            let
-                serverErrors = 
-                    Api.decodeErrors err  
+            let 
+                serverErrors =
+                    Api.decodeErrors err
             in
-             (model,(Session.changeInterCeptor (Just serverErrors) model.session))
+            (model,(Session.changeInterCeptor (Just serverErrors) model.session))
         Loading success ->
             let
                 d = Decode.decodeValue Decode.string success
@@ -153,25 +164,16 @@ update msg model =
             in
             case result of
                 Ok string ->
-                    ({model | videoId = string} , Api.get GetList (Endpoint.makeDetail string) (Session.cred model.session)  (Decoder.yfDetailDetail YfD.GetData YfD.DetailData YfD.DetailDataItem YfD.Pairing)
+                    ({model | postId = string} , Api.get GetList (Endpoint.postList string) (Session.cred model.session)  (Decoder.mypostDataWrap TogetherDataWrap TogetherData DetailTogether TogetherItems Pairing)
                     )
             
                 Err _ ->
                     (model,Cmd.none)
         
-        CheckDevice str ->
-            let
-                result = Decode.decodeValue Decode.string str
-            in
-                case result of
-                    Ok string ->
-                        ({model | checkDevice = string}, Cmd.none)
-                    Err _ ->
-                        ({model | checkDevice = "pc"}, Cmd.none)
+        GotSession session ->
+            ({model | session = session} , Api.get GetList (Endpoint.postList model.postId) (Session.cred session)  (Decoder.mypostDataWrap TogetherDataWrap TogetherData DetailTogether TogetherItems Pairing))
         BackPage ->
             (model, Route.pushUrl (Session.navKey model.session) Route.MakeExer)
-        Scrap ->
-            (model, Api.get ScrapComplete (Endpoint.scrap model.videoId)(Session.cred model.session) Decoder.resultD)
           
 
 view : Model -> {title : String , content : Html Msg}
@@ -188,21 +190,38 @@ view model =
 
 web msg model= 
     div [class "container"] [
-        commonHeader "/image/icon_customworkout.png" "맞춤운동" ,
-        YfD.contentsBody model.getData model.loading Scrap model.scrap,
-        goBtn BackPage 
+        div [ class "yf_yfworkout_search_wrap" ]
+        [ div [ class "tapbox" ]
+            [ div [ class "yf_large" ]
+                [ text "나의 스크랩" ]
+            ]
+        ]
+        , div [id "myElement"] []
+        , div []
+        ( List.map( \x-> 
+            contentsItem x model
+        ) model.getData.detail) 
+        -- ( List.map( \x-> 
+        --     appcontentsItem x model
+        -- ) model.getData.detail) 
+        -- contentsBody model.getData model.loading
+        -- goBtn BackPage 
 
     ]
 app msg model= 
     div [class "container"] [
-        appHeaderConfirmDetail model.getData.title "makeExerHeader" Route.MakeExer "fas fa-times"  Route.EditFilter "수정"
+        appHeaderRDetail "내 게시물 상세" "myPageHeader" Route.MyPost "fas fa-times" 
         ,if model.loading then
         div [class "spinnerBack"] [
             spinner
             ]
         else 
         div [] []
-        , appcontentsItem model.getData model
+        , div [id "myElement"] []
+        , div []
+        ( List.map( \x-> 
+            appcontentsItem x model
+        ) model.getData.detail) 
     ]
 goBtn back  = 
     div [ class "make_yf_butbox" ]
@@ -211,23 +230,54 @@ goBtn back  =
                 [ text "뒤로" ]
             ]
         , div [ class "yf_nextbtm" ]
-            [ a [ class "button is-dark yf_editbut", Route.href Route.EditFilter]
+            [ a [ class "button is-dark yf_editbut", Route.href Route.FilterS1 ]
                 [ text "수정" ]
             ]
         ]
+
+contentsBody item model=
+    
+    div [ class "yf_yfworkout_search_wrap" ]
+        [ div [ class "tapbox" ]
+            [ div [ class "yf_large" ]
+                [ text item.title ],
+                contentsItem item model
+               
+            ]
+        
+        ]
+
+contentsItem item model=
+            div [ class "tile is-parent is-vertical" ]
+            [div [ class "yf_notification" ]
+                [ p [ class "title" ]
+                    [ 
+                        
+                    ]
+                ], 
+            div [ class "yf_subnav" ]
+                [ div [ class "yf_time" ]
+                    [ span []
+                        [ i [ class "fas fa-clock" ]
+                            []
+                        ], text item.duration
+                    ]
+                , div [ class "yf_part" ]
+                    [ text ((justokData item.exercise_part_name) ++ " - " ++  (justokData item.difficulty_name)) ]
+                ]
+            , 
+            if model.loading then 
+            div [] []
+            else
+            div [ class "yf_text" ]
+               (List.indexedMap YfD.description item.exercise_items)
+            ]
 
 
 
 appcontentsItem item model= 
             div [ ]
-            [ div []
-                [ p [ class "m_yf_container" ]
-                    [ 
-                         div [ id "myElement" ] [
-                            ]
-                    ]
-                ]
-            , div [ class "m_yf_work_textbox" ]
+            [div [ class "m_yf_work_textbox" ]
                 [ div [ class "m_yf_work_time" ]
                     [ span []
                         [ i [ class "fas fa-clock m_yf_timeicon" ]
@@ -238,11 +288,11 @@ appcontentsItem item model=
                     [ text (justokData item.exercise_part_name)
                     ,  text " "
                     ,  text (justokData item.difficulty_name) ]
-                , div [ class "m_yf_scrapt", onClick Scrap ]
-                    [ span []
-                        [ i [ class "far fa-bookmark" ]
-                            []
-                        ]
+                ]
+            ,  div []
+                [ p []
+                    [ 
+                    text (justokData model.getData.content)
                     ]
                 ]
             , div [ class "m_work_script" ]

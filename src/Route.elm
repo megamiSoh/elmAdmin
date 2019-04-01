@@ -48,6 +48,11 @@ type Route
     | MakeEdit
     | Empty
     | Logout
+    | EditFilter
+    | ScrapD
+    | PostD
+    | MSearch
+    | MakeEditLast
 
 parser : Parser (Route -> a) a
 parser =
@@ -84,6 +89,11 @@ parser =
         , Parser.map MakeEdit (s "makeExerciseEdit")
         , Parser.map Empty (s "have2Login")
         , Parser.map Logout (s "logout")
+        , Parser.map EditFilter (s "editFilter")
+        , Parser.map PostD (s "myPostDetail")
+        , Parser.map ScrapD (s "myScrapDetail")
+        , Parser.map MSearch (s "makeExerciseSearch")
+        , Parser.map MakeEditLast (s "makeEditStepLast")
         ]
 
 
@@ -182,5 +192,15 @@ routeToString page =
                     ["have2Login"]
                 Logout ->
                     ["logout"]
+                EditFilter ->
+                    ["editFilter"]
+                PostD ->
+                    ["myPostDetail"]
+                ScrapD ->
+                    ["myScrapDetail"]
+                MSearch->
+                    ["makeExerciseSearch"]
+                MakeEditLast ->
+                    ["makeEditStepLast"]
     in
     "#/" ++ String.join "/" pages

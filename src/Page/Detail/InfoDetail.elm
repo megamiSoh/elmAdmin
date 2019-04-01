@@ -11,28 +11,74 @@ import Port as P
 import Json.Decode as Decode
 import Json.Encode as E
 import Api as Api
+import Api.Endpoint as Endpoint
+import Api.Decoder as Decoder
+import Http as Http
+import Markdown.Block as Block exposing (Block)
+import Markdown.Config exposing (HtmlOption(..),  defaultSanitizeOptions)
+import Markdown.Inline as Inline
+import Page.InfoEditor exposing (..)
+
+
+defaultOptions =
+    { softAsHardLineBreak = False
+    , rawHtml = ParseUnsafe
+    }
 
 type alias Model 
     = {
-        session : Session,
-        checkDevice: String
+        session : Session
+        , textarea : String
+        , checkDevice: String
         , check : Bool
+        , showToC : Bool
+        , data : DetailData
+        , onDemandText : String
+        , options : Markdown.Config.Options
+        , selectedPreviewTab : PreviewTab
+
     }
+
+type alias Data =
+    { data : DetailData }
+type alias DetailData = 
+    { content : String
+    , id : Int
+    , title : String }
+
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile
     = (
         {session = session
         ,checkDevice = ""
-        , check = mobile}
-        , P.checkMobile ()
+        , check = mobile
+        , textarea = ""
+        , showToC = False
+        , onDemandText = ""
+        , options = defaultOptions
+        , selectedPreviewTab = RealTime
+        , data = 
+            { content = ""
+            , id = 0
+            , title = "" }
+    }
+        , Api.getId ()
     )
+
+type EditorTab
+    = Editor
+
+
+type PreviewTab
+    = RealTime
 
 type Msg 
     = CheckDevice E.Value
+    | GetDetail (Result Http.Error Data)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    P.check CheckDevice
+    Api.receiveId CheckDevice
 
 toSession : Model -> Session
 toSession model =
@@ -46,13 +92,17 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GetDetail (Ok ok)->
+            ({model | data = ok.data, textarea = ok.data.content}, Cmd.none)
+        GetDetail (Err err)->
+            (model, Cmd.none)
         CheckDevice str ->
             let
                 result = Decode.decodeValue Decode.string str
             in
                 case result of
                     Ok string ->
-                        ({model | checkDevice = string}, Cmd.none)
+                        ({model | checkDevice = string}, Api.get GetDetail (Endpoint.detailInfo string) (Session.cred model.session) (Decoder.detailInfo Data DetailData))
                 
                     Err _ ->
                         ({model | checkDevice = ""}, Cmd.none)
@@ -64,47 +114,52 @@ view model =
     
     title = "YourFitExer"
     , content = 
-    if model.checkDevice =="pc" then
-    web
+    if model.check then
+    app model.data model
     else
-    app
-    
+    web model.data model
     }
 
-web = 
+web data model= 
     div [class "container"] [
         commonJustHeader "/image/icon_notice.png" "공지사항" ,
-        contentsBox article,
+        contentsBox data model,
         backBox
     ]
-app =
+app data model =
     div [class "container"] [
-        appHeaderinforDetail  article.title "myPageHeader" Route.Info "fas fa-times",
-        appContentsBox article
+        appHeaderRDetail (
+            if String.length( data.title ) > 10 then
+                (String.dropRight (String.length data.title - 9) data.title) ++ "..."
+            else 
+            data.title
+        ) "myPageHeader colorWhite" Route.Info "fas fa-times",
+        appContentsBox data model
     ]
-contentsBox item= 
+contentsBox item model = 
     div [ class "info_mediabox" ]
         [ div [ class "infoDetail_titlebox" ]
             [ div [ class "infoDetail_title" ]
                 [ text item.title  ]
-            , div [ class "infoDetail_yf_date" ]
-                [ text item.createDate ]
+            -- , div [ class "infoDetail_yf_date" ]
+            --     [ text item.createDate ]
             ]
         , div [ class "infoDetail_textbox" ]
             [ 
-                text item.article
+                markdownView model
             ]
         ]
 
-appContentsBox item= 
+appContentsBox item model= 
     div [ class "mediabox" ]
         [ div [ class "titlebox" ]
-            [  div [ class "m_infoDetail_yf_date" ]
-                [ text item.createDate ]
+            [ 
+                --  div [ class "m_infoDetail_yf_date" ]
+                -- [ text item.createDate ]
             ]
         , div [ class "m_infoDetail_textbox" ]
             [ 
-                text item.article
+                markdownView model
             ]
         ]
 
@@ -114,8 +169,3 @@ backBox =
             [ text "뒤로" ]
         ]
 
-article =   {
-    title = "유어핏어플 그랜드 오픈!",
-    createDate = "2019-01-01",
-    article = "안녕하세요. 유어핏입니다.금일 유어핏에서 비정상적인 종료 현상이 발생되어 관련 내용 안내드립니다.현재 불법적인 방법과 비정상적인 방법으로 어플을 실행하는 사례가 발견되고 있으며, 현재 전체적인 조사를 통해 어플 사용자의 비정상 활동에 대해 조치중입니다.부당한 방법으로 어플을 활용할시 운영정책에 의거하여 어플 사용이 제한될 수 있습니다. 이 점을 양지하시며 어플 이용에 불편함이 없으시길 바랍니다.감사합니다."
-    }

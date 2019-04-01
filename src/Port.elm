@@ -9,9 +9,6 @@ port check : (E.Value -> msg) -> Sub msg
 
 -- subscriptions : Model -> Sub Msg
 subscriptions =
-    let _ = Debug.log "whatthe" "mymy"
-        
-    in
         check
 
             

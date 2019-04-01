@@ -1,4 +1,4 @@
-module Page.Filter.Filter exposing (..)
+module Page.Edit.EditFilter exposing (..)
 import Browser exposing (..)
 import Html.Events exposing(..)
 import Html.Attributes exposing(..)
@@ -50,7 +50,8 @@ filterEncoder model =
 
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile
-    = (
+    =
+    (
         { session = session
         , isActivePart = []
         , isActiveLevel = []
@@ -86,7 +87,7 @@ type Msg
     | GoNextPage
     | FilterSaveSuccess Encode.Value
     | GotSession Session
-    | SessionCheck Encode.Value
+    -- | SessionCheck Encode.Value
 
 toSession : Model -> Session
 toSession model =
@@ -101,43 +102,47 @@ subscriptions :Model -> Sub Msg
 subscriptions model=
     Sub.batch [ Api.saveFilter FilterSaveSuccess
     , Session.changes GotSession (Session.navKey model.session)
-    , Api.onSucceesSession SessionCheck
+    -- , Api.onSucceesSession SessionCheck
     ]
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        SessionCheck check ->
-            let
-                decodeCheck = Decode.decodeValue Decode.string check
-            in
-                case decodeCheck of
-                    Ok continue ->
-                        (model,
-                        Cmd.batch [
-                            Api.get GetPart Endpoint.partFilter (Session.cred model.session) (Decoder.levelDecoder FilterCode CodeData)
-                            , Api.get GetLevel Endpoint.levelFilter (Session.cred model.session) (Decoder.levelDecoder FilterCode CodeData)
-                            , Api.get GetTool Endpoint.toolFilter (Session.cred model.session) (Decoder.levelDecoder FilterCode CodeData)
-                            , Api.get GetExer Endpoint.exerFilter (Session.cred model.session) (Decoder.levelDecoder FilterCode CodeData)
-                        ])
-                    Err _ ->
-                        (model, Cmd.none)
+        -- SessionCheck check ->
+        --     let
+        --         decodeCheck = Decode.decodeValue Decode.string check
+        --     in
+        --         case decodeCheck of
+        --             Ok continue ->
+        --                 (model,
+        --                 Cmd.batch [
+        --                     Api.get GetPart Endpoint.partFilter (Session.cred model.session) (Decoder.levelDecoder FilterCode CodeData)
+        --                     , Api.get GetLevel Endpoint.levelFilter (Session.cred model.session) (Decoder.levelDecoder FilterCode CodeData)
+        --                     , Api.get GetTool Endpoint.toolFilter (Session.cred model.session) (Decoder.levelDecoder FilterCode CodeData)
+        --                     , Api.get GetExer Endpoint.exerFilter (Session.cred model.session) (Decoder.levelDecoder FilterCode CodeData)
+        --                 ])
+        --             Err _ ->
+        --                 (model, Cmd.none)
         GotSession session ->
             ({model | session = session}
-            , Cmd.none
+            ,Cmd.batch [
+                            Api.get GetPart Endpoint.partFilter (Session.cred session) (Decoder.levelDecoder FilterCode CodeData)
+                            , Api.get GetLevel Endpoint.levelFilter (Session.cred session) (Decoder.levelDecoder FilterCode CodeData)
+                            , Api.get GetTool Endpoint.toolFilter (Session.cred session) (Decoder.levelDecoder FilterCode CodeData)
+                            , Api.get GetExer Endpoint.exerFilter (Session.cred session) (Decoder.levelDecoder FilterCode CodeData)
+                        ]
             )
         FilterSaveSuccess str ->
-            (model, Route.pushUrl (Session.navKey model.session) Route.FilterS1)
+            (model, Route.pushUrl (Session.navKey model.session) Route.MakeEdit)
         GoNextPage ->
             (model, Api.filter (filterEncoder model))
         GetPart(Ok ok) ->
             ({model | part = ok.data } , Api.get GetExer Endpoint.exerFilter (Session.cred model.session) (Decoder.levelDecoder FilterCode CodeData))
         GetPart(Err err) ->
             let
-                serverErrors = Api.decodeErrors err
+                serverError = Api.decodeErrors err
             in
-            
-            (model,(Session.changeInterCeptor (Just serverErrors) model.session))
+            (model ,(Session.changeInterCeptor (Just serverError) model.session))
         GetLevel(Ok ok) ->
             ({model | level = ok.data, loading = False }, Cmd.none)
         GetLevel(Err err) ->
@@ -199,7 +204,7 @@ web model =
                 if model.loading then
                 spinner
                 else
-                lazy5 filterbox model.part model.level model.exer model.tool model,
+                filterbox model.part model.level model.exer model.tool model,
                 btnBox
             ]
 app model =
