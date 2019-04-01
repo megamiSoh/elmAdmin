@@ -9,7 +9,7 @@ if(!!document.createRange) {
   document.getSelection().removeAllRanges();
 }
 
-const url ='http://13.209.49.169:4000/api/v1/'
+const url ='http://api.yfit.co.kr:4000/api/v1/'
 var filter = "win16|win32|win64|mac|macintel"; 
 var flags = 
   { token : 
