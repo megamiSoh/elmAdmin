@@ -47,6 +47,7 @@ type Page
     | ScrapD
     | MSearch
     | MakeEditLast
+    | Private
     
 
 
@@ -64,13 +65,13 @@ view maybeViewer checkB  page { title, content}  =
 
 footerCommon page = 
     if page == MakeExer then
-        appFooter
+        appFooter page
     else if page == MyPage then
-        appFooter
+        appFooter page
     else if page == Together then
-        appFooter
+        appFooter page
     else if page == YourfitExer then
-        appFooter
+        appFooter page
     else
         div [] []
 
@@ -116,7 +117,7 @@ appContents content page maybeViewer=
             ]
             else if page == MyPage then
             div [][ 
-                appHeadermypage "마이페이지" "myPageHeader"
+                justappHeader "마이페이지" "myPageHeader"
                 , div [ class "loginHeight"] [
                     div [class "loginbottom"] [text "로그인 후 이용가능한 서비스 입니다."] 
                 , a [class "button", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
@@ -218,31 +219,31 @@ viewHeader page maybeViewer =
                     ]
                 ]
 
-appFooter : Html msg
-appFooter = 
+appFooter : Page -> Html msg
+appFooter page= 
     footer [ class "m_yf_navfooter" ]
-        [ a [ class "m_appmanu" , Route.href Route.Home ]
+        [ a [ class "m_appmanu" , Route.href Route.Home,classList [("bgFooter", page == Home) ]]
             [ img [ src "/image/m.icon.home.png"]
                 []
             ]
-        , a [ class "m_appmanu", Route.href Route.YourFitExer ]
+        , a [ class "m_appmanu", Route.href Route.YourFitExer ,classList [("bgFooter", page == YourfitExer) ]]
             [ img [ src "/image/m.icon.workout.png" ]
                 []
             ]
-        , a [ class "m_appmanu", Route.href Route.MakeExer ]
+        , a [ class "m_appmanu", Route.href Route.MakeExer ,classList [("bgFooter", page == MakeExer) ]]
             [ img [ src "/image/m.icon.customworkout.png" ]
                 []
             ]
-        , a [ class "m_appmanu", Route.href Route.Together ]
+        , a [ class "m_appmanu", Route.href Route.Together ,classList [("bgFooter", page == Together) ]]
             [ img [ src "/image/m.icon.together.png"]
                 []
             ]
-        , a [ class "m_appmanu", Route.href Route.MyPage ]
+        , a [ class "m_appmanu", Route.href Route.MyPage ,classList [("bgFooter", page == MyPage) ]]
             [ img [ src "/image/m.icon.mypage.png" ]
                 []
             ]
         ]
-viewFooter : Html msg
+-- viewFooter : Html msg
 viewFooter =
         footer [ class "footer yf_footer" ]
             [ div [ class "yf_address" ]

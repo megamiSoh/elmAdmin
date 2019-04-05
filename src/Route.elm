@@ -53,6 +53,7 @@ type Route
     | PostD
     | MSearch
     | MakeEditLast
+    | Private
 
 parser : Parser (Route -> a) a
 parser =
@@ -94,6 +95,7 @@ parser =
         , Parser.map ScrapD (s "myScrapDetail")
         , Parser.map MSearch (s "makeExerciseSearch")
         , Parser.map MakeEditLast (s "makeEditStepLast")
+        , Parser.map Private (s "privateTerms")
         ]
 
 
@@ -123,7 +125,8 @@ pushUrl : Nav.Key -> Route ->Cmd msg
 pushUrl key route =
     Nav.pushUrl key (routeToString route)
 -- INTERNAL
-
+load url = 
+    Nav.load url
 
 routeToString : Route -> String
 routeToString page =
@@ -202,5 +205,7 @@ routeToString page =
                     ["makeExerciseSearch"]
                 MakeEditLast ->
                     ["makeEditStepLast"]
+                Private ->
+                    ["privateTerms"]
     in
     "#/" ++ String.join "/" pages

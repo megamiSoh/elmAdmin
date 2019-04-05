@@ -65,6 +65,8 @@ yfDetailData yfdetail detailitem pairItem=
         |> required "inserted_at" string
         |> required "pairing" (Decode.list (pairingItem pairItem))
         |> required "title" string
+        |> optional "nickname" (Decode.map Just string) Nothing
+        |> required "thumbnail" string
 
 
 yfDetailDataItem detailitem= 
@@ -217,6 +219,10 @@ togetherdatawrap datawrap ogetherdata detail page item pair=
         |> required "data" (Decode.list (tdata ogetherdata detail item pair))
         |> required "paginate" (paginate page)
 
+togetherdatalikewrap datawrap ogetherdata detail item pair= 
+    Decode.succeed datawrap
+        |> required "data" (tdata ogetherdata detail item pair)
+
 mypostDataWrap datawrap ogetherdata detail item pair= 
     Decode.succeed datawrap
         |> required "data" (sddata ogetherdata detail item pair)
@@ -224,16 +230,18 @@ mypostDataWrap datawrap ogetherdata detail item pair=
 sddata togetherdata detail item pair= 
     Decode.succeed togetherdata
         |> optional "content" (Decode.map Just string)Nothing
-        |> required "detail" (Decode.list (sdetailTogether detail item pair))
+        |> optional "detail" (Decode.map Just (Decode.list (sdetailTogether detail item pair))) Nothing
         |> required "id" int
         |> required "inserted_at" string 
         |> required "is_delete" bool
         |> required "link_code" string
         |> required "recommend_cnt" int
+        |> optional "nickname" (Decode.map Just string) Nothing
         
 
 sdetailTogether detail item pair= 
     Decode.succeed detail 
+        |> required "thembnail" string
         |> optional "difficulty_name" (Decode.map Just string) Nothing
         |> required "duration" string
         |> required "exercise_items" (Decode.list (togetherItem item))
@@ -246,13 +254,14 @@ sdetailTogether detail item pair=
 
 tdata togetherdata detail item pair= 
     Decode.succeed togetherdata
-        |> optional "content" (Decode.map Just string)Nothing
-        |> required "detail" (Decode.list (detailTogether detail item pair))
+        |> optional "content" (Decode.map Just string) Nothing
+        |> optional "detail" (Decode.map Just (Decode.list (sdetailTogether detail item pair))) Nothing
         |> required "id" int
         |> required "inserted_at" string 
         |> required "is_delete" bool
         |> required "link_code" string
         |> required "recommend_cnt" int
+        |> optional "nickname" (Decode.map Just string) Nothing
         
 
 detailTogether detail item pair= 

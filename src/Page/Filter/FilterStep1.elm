@@ -326,7 +326,7 @@ update msg model =
             case sucData of
                 Ok ok ->
                     
-                    (model,Route.pushUrl (Session.navKey model.session) Route.FilterS2)
+                    (model,Route.load "#/filterStep2")
             
                 Err err ->
                     (model,Cmd.none)

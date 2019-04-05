@@ -96,6 +96,7 @@ type Msg
     | GetCodeId (String, Int)
     | SaveComplete Encode.Value
     | GotSession Session
+    | PageBtn (Int, String)
 
 toSession : Model -> Session
 toSession model =
@@ -136,6 +137,16 @@ subscriptions model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        PageBtn (idx, str) ->
+            case str of
+                "prev" ->
+                    (model, scrapDataEncoder idx model.per_page model.session)
+                "next" ->
+                    (model, scrapDataEncoder idx model.per_page model.session)
+                "go" -> 
+                    (model, scrapDataEncoder idx model.per_page model.session)
+                _ ->
+                    (model, Cmd.none)
         GotSession session ->
             ({model | session = session},
             scrapDataEncoder model.page model.per_page session
@@ -185,10 +196,13 @@ update msg model =
         NoOp ->
             ( model, Cmd.none )
         GetList (Ok ok) -> 
-            if ok.data == [] then
-                ({model | infiniteLoading = False, checkList = ["empty"]}, Cmd.none)
+            if model.check then
+                if ok.data == [] then
+                    ({model | infiniteLoading = False, checkList = ["empty"], loading = False}, Cmd.none)
+                else
+                    ({model | data = ok, dataList = model.dataList ++ ok.data, page = model.page + 1, infiniteLoading = False}, Cmd.none)
             else
-                ({model | data = ok, dataList = model.dataList ++ ok.data, page = model.page + 1, infiniteLoading = False}, Cmd.none)
+                ({model | data = ok}, Cmd.none)
         GetList (Err err) -> 
             let
                 serverErrors = 
@@ -236,11 +250,13 @@ view model =
             [
                 -- contentsCount,
                 div [class "myScrap_mediabox"] (
-                    List.map listwebDetail model.dataList
+                    List.map listwebDetail model.data.data
                     -- scrapItem,
                     
                 )
-                , pagenation
+                , pagination 
+                PageBtn
+                model.data.paginate
             ]
         ]
     }
@@ -301,26 +317,26 @@ scrapItem item=
             ]
         ]
 
-pagenation=
-    div [ class "yf_Pagination" ]
-        [ nav [ class "pagination is-centered" ]
-            [ ul [ class "pagination-list" ]
-                [ li [ class "" ]
-                    [ a [ class "pagination-link"]
-                        [ text "<" , text "<" ]
-                    ]
-                , a [ class "pagination-link"]
-                    [ text "<" ]
-                , li []
-                    [ a [ class "pagination-link is-current yf_cut" ]
-                        [ text "5" ]
-                    ]
-                , li []
-                    [ a [ class "pagination-link"]
-                        [ text ">" ]
-                    ]
-                , a [ class "pagination-link" ]
-                    [ text ">>" ]
-                ]
-            ]
-        ]
+-- pagenation=
+--     div [ class "yf_Pagination" ]
+--         [ nav [ class "pagination is-centered" ]
+--             [ ul [ class "pagination-list" ]
+--                 [ li [ class "" ]
+--                     [ a [ class "pagination-link"]
+--                         [ text "<" , text "<" ]
+--                     ]
+--                 , a [ class "pagination-link"]
+--                     [ text "<" ]
+--                 , li []
+--                     [ a [ class "pagination-link is-current yf_cut" ]
+--                         [ text "5" ]
+--                     ]
+--                 , li []
+--                     [ a [ class "pagination-link"]
+--                         [ text ">" ]
+--                     ]
+--                 , a [ class "pagination-link" ]
+--                     [ text ">>" ]
+--                 ]
+--             ]
+--         ]

@@ -133,7 +133,7 @@ app data model =
                 (String.dropRight (String.length data.title - 9) data.title) ++ "..."
             else 
             data.title
-        ) "myPageHeader colorWhite" Route.Info "fas fa-times",
+        ) "myPageHeader whiteColor" Route.Info "fas fa-times",
         appContentsBox data model
     ]
 contentsBox item model = 

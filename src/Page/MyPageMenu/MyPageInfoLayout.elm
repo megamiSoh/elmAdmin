@@ -72,7 +72,7 @@ myInfo item changeNick changeBtn wantChangeNickname changeGo pwdInput changePwd 
             --     [ text "이미 사용중인 닉네임입니다" ]
             , li []
                 [ p [ class "myPage_yf_terms" ]
-                    [ a [  ]
+                    [ a [Route.href Route.Private ]
                         [ text "개인정보 보호 및 약관확인" ]
                     ]
                 ]

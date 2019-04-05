@@ -39,7 +39,9 @@ type alias DetailData =
     , id : Int
     , inserted_at : String
     , pairing : List Pairing
-    , title : String}
+    , title : String
+    , nickname : Maybe String
+    , thumbnail : String}
 
 type alias DetailDataItem = 
     { exercise_id : Int
@@ -71,7 +73,9 @@ init session mobile
             , id = 0
             , inserted_at = ""
             , pairing = []
-            , title = ""}
+            , title = ""
+            , nickname = Nothing
+            , thumbnail = ""}
         }
         , Api.getId ()
     )
@@ -90,7 +94,7 @@ type Msg
     | ReceiveId Encode.Value
     | GetListData (Result Http.Error GetData)
     | Loading Encode.Value
-    | GoVideo
+    | GoVideo (List Pairing)
     | Scrap
     | ScrapComplete (Result Http.Error Decoder.Success)
     | BackDetail
@@ -127,11 +131,11 @@ update msg model =
                 (model, Api.showToast cannotScrap)
         Scrap ->
             (model, Api.get ScrapComplete (Endpoint.scrap model.videoId)(Session.cred model.session) Decoder.resultD)
-        GoVideo ->
+        GoVideo pairing->
             let
                 videoList = 
                     Encode.object 
-                        [("pairing", (Encode.list videoEncode) model.listData.pairing) ]
+                        [("pairing", (Encode.list videoEncode) pairing) ]
 
                 videoEncode p=
                     Encode.object
@@ -142,7 +146,7 @@ update msg model =
             in
             (model, Api.videoData videoList)
         GetListData (Ok ok) -> 
-            update GoVideo {model | listData = ok.data, scrap = False}
+             ({model | listData = ok.data, scrap = False, loading = False}, Cmd.none)
         GetListData (Err err) -> 
             (model, Cmd.none)
         Loading success ->
@@ -218,28 +222,31 @@ web msg model=
                     , if model.need2login then
                         need2loginAppDetail BackDetail
                     else
-                    contentsBody model.listData model.loading Scrap model.scrap
+                    contentsBody model.listData model.loading Scrap model.scrap GoVideo
                     ,goBtnBox msg
                 ]
-contentsBody item model scrap modelscrap=
+contentsBody item model scrap modelscrap goVideo=
     
     div [ class "yf_yfworkout_search_wrap" ]
         [ div [ class "tapbox" ]
             [ div [ class "yf_large" ]
                 [ text item.title ],
-                contentsItem item model scrap modelscrap
+                contentsItem item model scrap modelscrap goVideo
                
             ]
         
         ]
 
-contentsItem item loading scrap modelscrap=
+contentsItem item loading scrap modelscrap govideo=
             div [ class "tile is-parent is-vertical" ]
             [lazy2 div [ class "yf_notification" ]
                 [ p [ class "title" ]
                     [ 
-                         div [ id "myElement" ] [
+                         div [] [
+                             img [ src item.thumbnail , onClick (govideo item.pairing)] []
+                            , div [ id "myElement" ] [
                             ]
+                         ]
                     ]
                 ], 
             div [ class "yf_subnav" ]
@@ -264,9 +271,9 @@ contentsItem item loading scrap modelscrap=
                     ]
                 ]
             , 
-            if loading then 
-            div [] []
-            else
+            -- if loading then 
+            -- div [] []
+            -- else
             div [ class "yf_text" ]
                (List.indexedMap description item.exercise_items)
             ]
@@ -285,7 +292,8 @@ appcontentsItem item loading scrap modelscrap=
             [ div []
                 [ p [ class "m_yf_container" ]
                     [ 
-                        div [ id "myElement" ] [
+                        img [src item.thumbnail, onClick (GoVideo item.pairing)] []
+                        ,div [ id "myElement" ] [
                             ]
                     ]
                 ]
@@ -324,10 +332,10 @@ appcontentsItem item loading scrap modelscrap=
 
 description idx item = 
     ul [] [
-            if item.title =="휴식" then
-                li [] [text ((String.fromInt(idx + 1)) ++ " . " ++  item.title ++ " " ++ String.fromInt(item.value) ++ "분")]
-            else         
-                li [] [text ((String.fromInt(idx + 1)) ++ " . " ++  item.title ++ " " ++ String.fromInt(item.value) ++ "세트")]
+            if item.is_rest then    
+                li [] [text ((String.fromInt(item.sort)) ++ " . " ++  item.title ++ " " ++ String.fromInt(item.value) ++ "세트")]
+            else 
+                li [] [text ((String.fromInt(item.sort)) ++ " . " ++  item.title ++ " " ++ String.fromInt(item.value) ++ "분")] 
                     
         -- li [] [text]
     ]

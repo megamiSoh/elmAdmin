@@ -220,7 +220,7 @@ update msg model =
         GetData (Ok ok) -> 
             if model.check then
                 if ok.data == [] then
-                ({model | getlistData = ok, newList = model.newList, infiniteLoading = False}, Cmd.none)
+                ({model | getlistData = ok, newList = model.newList, infiniteLoading = False, loading =False}, Cmd.none)
                 else
                 ({model | getlistData = ok, page = model.page + 1, newList = model.newList ++ ok.data, infiniteLoading = False}, Cmd.none)
             else 
@@ -273,11 +273,11 @@ web model =
                             if model.loading then
                                 spinner
                             else
-                                    if List.length model.getlistData.data > 0 then
+                                if List.length model.getlistData.data > 0 then
                                     div [ class "make_boxwrap" ]
                                     (List.map bodyItem model.getlistData.data)
                                 else
-                                    div [] [text "맞춤영상이 없습니다."]
+                                    div [class "noResult"] [text "맞춤영상이 없습니다."]
 
                         ]
                     ]
@@ -290,13 +290,18 @@ app model =
     div [ class "container", class "scroll", scrollEvent ScrollEvent, style "height" "85vh" ][
          appStartBox
         ,listTitle
-        ,div[](List.map appItemContent model.newList)
-        , if model.infiniteLoading then
-            div [class "loadingPosition"] [
-            infiniteSpinner
+        ,if List.length model.newList > 0 then
+            div [] [
+                div[](List.map appItemContent model.newList) ,
+                if model.infiniteLoading then
+                    div [class "loadingPosition"] [
+                    infiniteSpinner
+                    ]
+                else
+                    span [] []
             ]
         else
-            span [] []
+        div [class "noResult"] [text "맞춤영상이 없습니다."]
     ]
 
 appStartBox = 

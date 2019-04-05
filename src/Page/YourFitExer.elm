@@ -153,7 +153,7 @@ update msg model =
                 result = List.sum new
             in
             if model.check then
-            ({model | data = ok.data, sumCount = result}, Cmd.none)
+            ({model | data = ok.data, sumCount = result, loading = False}, Cmd.none)
             else 
             ({model | data = ok.data, sumCount = result, loading = False}, Cmd.none)
         GetList (Err err) ->
@@ -189,8 +189,8 @@ view model =
 
 webOrApp model =
         if model.check then
-        div [class "appWrap" ] [
-                    appHeaderSearch "유어핏운동" "yourfitHeader",
+        div [class "appWrap container" ] [
+                    justappHeader "유어핏운동" "yourfitHeader",
                     if model.loading then
                     div [class "spinnerBack"] [
                         spinner
@@ -202,7 +202,7 @@ webOrApp model =
         else
             div [] [
             if model.loading then
-                div [class "spinnerBack"] [
+                div [class "spinnerBackWeb"] [
                 spinner
                 ]
             else 
@@ -247,13 +247,13 @@ bodyContents item =
         [ div [ class "yf_workoutvideopic" ]
             [ 
                 if item.code == "10" then
-                img [ class "bigpic1", src "/image/workout_menu1.png", alt item.name ]
+                img [src "/image/workout_menu1.png", alt item.name ]
                 []
                 else if item.code == "20" then
-                img [ class "bigpic1", src "/image/workout_menu2.png", alt item.name ]
+                img [src "/image/workout_menu2.png", alt item.name ]
                 []
                 else
-                img [ class "bigpic1", src "/image/workout_menu3.png", alt item.name ]
+                img [src "/image/workout_menu3.png", alt item.name ]
                 []
             ,
              div [ class "yf_workouttext1" ]
@@ -275,7 +275,7 @@ bodyContentsApp item model=
     div [ class "m_menubox_wrap" ]
     [
          div ([class "originSwipeStyle"]
-         ++ [style "width" ( String.fromInt (50 * (List.length(item.exercises))+ 34 ) ++ "vw")]
+         ++ [style "width" ( String.fromInt ((15 * (List.length(item.exercises)))+ 7 ) ++ "rem")]
                         ++ Swiper.onSwipeEvents (Swiped item.code )++ [onClick (GetIndex item.code)]) 
                     [    
          div [ class "m_yf_workoutmenubox" ]

@@ -35,9 +35,15 @@ type alias DetailData =
     , exercise_part_name : Maybe String
     , id : Int
     , inserted_at : String
-    , pairing : List YfD.Pairing
-    , title : String}
+    , pairing : List Pairing
+    , title : String
+    , nickname : Maybe String
+    , thumbnail : String}
 
+type alias Pairing = 
+    { file : String
+    , image : String
+    , title : String}
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile
     = (
@@ -56,7 +62,9 @@ init session mobile
             , id = 0
             , inserted_at = ""
             , pairing = []
-            , title = ""}
+            , title = ""
+            , nickname = Nothing
+            , thumbnail = ""}
         }
         , Cmd.batch 
         [ P.checkMobile ()
@@ -71,7 +79,7 @@ type Msg
     | BackPage
     | GetId E.Value
     | GetList (Result Http.Error YfD.GetData)
-    | GoVideo
+    | GoVideo (List Pairing)
     | Loading E.Value
     | Scrap
     | ScrapComplete (Result Http.Error Decoder.Success)
@@ -114,11 +122,11 @@ update msg model =
                     Api.decodeErrors err  
             in
              ({model | deleteAuth = "scrap"},(Session.changeInterCeptor (Just serverErrors) model.session))
-        GoVideo ->
+        GoVideo pairing->
             let
                 videoList = 
                     E.object 
-                        [("pairing", (E.list videoEncode) model.getData.pairing) ]
+                        [("pairing", (E.list videoEncode) pairing) ]
 
                 videoEncode p=
                     E.object
@@ -129,7 +137,7 @@ update msg model =
             in
             (model, Api.videoData videoList)
         GetList(Ok ok) ->
-            update GoVideo {model | getData = ok.data}
+            ({model | getData = ok.data, loading = False}, Cmd.none)
         GetList(Err err) ->
             let
                 serverErrors = 
@@ -169,7 +177,8 @@ update msg model =
                     Err _ ->
                         ({model | checkDevice = "pc"}, Cmd.none)
         BackPage ->
-            (model, Route.pushUrl (Session.navKey model.session) Route.MakeExer)
+            (model, 
+            Route.pushUrl (Session.navKey model.session) Route.MakeExer)
         Scrap ->
             (model, Api.get ScrapComplete (Endpoint.scrap model.videoId)(Session.cred model.session) Decoder.resultD)
           
@@ -189,7 +198,7 @@ view model =
 web msg model= 
     div [class "container"] [
         commonHeader "/image/icon_customworkout.png" "맞춤운동" ,
-        YfD.contentsBody model.getData model.loading Scrap model.scrap,
+        YfD.contentsBody model.getData model.loading Scrap model.scrap GoVideo,
         goBtn BackPage 
 
     ]
@@ -202,7 +211,7 @@ app msg model=
             ]
         else 
         div [] []
-        , appcontentsItem model.getData model
+        , appcontentsItem model.getData model GoVideo
     ]
 goBtn back  = 
     div [ class "make_yf_butbox" ]
@@ -218,12 +227,13 @@ goBtn back  =
 
 
 
-appcontentsItem item model= 
+appcontentsItem item model goVideo= 
             div [ ]
             [ div []
                 [ p [ class "m_yf_container" ]
                     [ 
-                         div [ id "myElement" ] [
+                        img [src item.thumbnail , onClick (goVideo item.pairing)][]                        
+                        , div [ id "myElement" ] [
                             ]
                     ]
                 ]

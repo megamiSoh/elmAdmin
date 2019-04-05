@@ -49,6 +49,7 @@ import Page.Detail.MyScrapDetail as ScrapD
 import Page.Detail.MyPostDetail as PostD
 import Page.Detail.MakeExerSearch as MSearch
 import Page.Edit.MakeExerEditStepLast as MakeEditLast
+import Page.Private as Private
 
 -- type alias Check = 
 --     String
@@ -89,6 +90,7 @@ type Model
      | EditFilterModel EditFilter.Model
      | MSearchModel MSearch.Model
      | MakeEditLastModel MakeEditLast.Model
+     | PrivateModel Private.Model
     --  | PageModel Page.Model
     --  | CheckDevice Check
     
@@ -143,6 +145,7 @@ type Msg
     | PostDMsg PostD.Msg
     | MSearchMsg MSearch.Msg
     | MakeEditLastMsg MakeEditLast.Msg
+    | PrivateMsg Private.Msg
 
 subscriptions model = 
     case model of
@@ -218,6 +221,8 @@ subscriptions model =
             Sub.map MSearchMsg (MSearch.subscriptions item)
         MakeEditLastModel item ->
             Sub.map MakeEditLastMsg (MakeEditLast.subscriptions item)
+        PrivateModel item ->
+            Sub.none
 
 init : Maybe Cred -> Bool -> Url -> Key -> ( Model, Cmd Msg )
 init maybeViewer check url navKey =
@@ -324,7 +329,7 @@ changeRouteTo maybeRoute model  =
             Empty.init session check
                 |> updateWith EmptyModel EmptyMsg model
         Just Route.Logout ->
-            (model, Cmd.batch[Api.logout, Route.pushUrl (Session.navKey session) Route.Home])
+            (model, Cmd.batch[Api.logout, Route.load "#/home"])
         Just Route.EditFilter ->
             EditFilter.init session check
                 |> updateWith EditFilterModel EditFilterMsg model
@@ -341,6 +346,9 @@ changeRouteTo maybeRoute model  =
         Just Route.MakeEditLast ->
             MakeEditLast.init session check
                 |> updateWith MakeEditLastModel MakeEditLastMsg model
+        Just Route.Private ->
+            Private.init session check
+                |> updateWith PrivateModel PrivateMsg model
 
 
 toCheck page =  
@@ -415,6 +423,8 @@ toCheck page =
             MSearch.toCheck item
         MakeEditLastModel item ->
             MakeEditLast.toCheck item
+        PrivateModel item ->
+            Private.toCheck item
 
 
 toSession : Model -> Session
@@ -490,6 +500,8 @@ toSession page =
             MSearch.toSession item
         MakeEditLastModel item ->
             MakeEditLast.toSession item
+        PrivateModel item ->
+            Private.toSession item
         
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -626,6 +638,9 @@ update msg model =
         (MakeEditLastMsg subMsg, MakeEditLastModel mmodel) ->
             MakeEditLast.update subMsg mmodel
                 |> updateWith MakeEditLastModel MakeEditLastMsg mmodel
+        (PrivateMsg subMsg, PrivateModel pmodel) ->
+            Private.update subMsg pmodel
+                |> updateWith PrivateModel PrivateMsg pmodel
         ( _, _ ) ->
             ( model, Cmd.none )  
         
@@ -733,3 +748,5 @@ view model =
             viewPage Page.MSearch MSearchMsg (MSearch.view item)
         MakeEditLastModel item ->
             viewPage Page.MakeEditLast MakeEditLastMsg (MakeEditLast.view item)
+        PrivateModel item ->
+            viewPage Page.Private PrivateMsg (Private.view item)

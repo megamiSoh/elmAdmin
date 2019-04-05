@@ -25,7 +25,8 @@ init session mobile=
        , Ports.checkMobile ()
     )
 type Msg = 
-    NoOp | GotSession Session
+    NoOp 
+    -- | GotSession Session
 
 toSession : Model -> Session
 toSession model =
@@ -38,17 +39,18 @@ toCheck model =
 
 subscriptions :Model -> Sub Msg
 subscriptions model=
-    Session.changes GotSession (Session.navKey model.session)
+    Sub.none
+    -- Session.changes GotSession (Session.navKey model.session)
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         NoOp ->
             (model, Cmd.none)
-        GotSession session ->
-            ({model | session = session}
-            , Cmd.none
-            )
+        -- GotSession session ->
+        --     ({model | session = session}
+        --     , Cmd.none
+        --     )
     
 view : Model -> {title : String , content : Html Msg}
 view model =

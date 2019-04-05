@@ -242,7 +242,7 @@ view model =
 app model = 
      div [class "container"] [
          appTopMenu model,
-         div [](List.map menuBottom (menu))
+         div [class "myMenuStyle"](List.map menuBottom (menu))
      ]
 appTopMenu model = 
     div [ class "m_mypage_loginbox" ]

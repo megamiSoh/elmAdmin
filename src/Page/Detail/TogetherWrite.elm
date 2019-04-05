@@ -15,16 +15,32 @@ import Http as Http
 import Api.Endpoint as Endpoint
 import Api.Decoder as Decoder
 import Page.Detail.YourFitDetail as YfD
+import Page.Detail.Editorwirte exposing (..)
+import Markdown.Block as Block exposing (Block)
+import Markdown.Config exposing (HtmlOption(..),  defaultSanitizeOptions)
+import Markdown.Inline as Inline
+
+defaultOptions =
+    { softAsHardLineBreak = False
+    , rawHtml = ParseUnsafe
+    }
 
 type alias Model 
     = {
         session : Session
         , fileName : String
+        , onDemandText : String
+        , options : Markdown.Config.Options
+        , showToC : Bool
         , checkDevice : String
+        , selectedTab : EditorTab
+        , selectedPreviewTab : PreviewTab
         , check : Bool
         , videoId : String
         , content : String
         , getData : DetailData
+        , inputValue : String
+        , listShow : Bool
 
     }
 
@@ -36,7 +52,9 @@ type alias DetailData =
     , id : Int
     , inserted_at : String
     , pairing : List YfD.Pairing
-    , title : String}
+    , title : String
+    , nickname : Maybe String
+    , thumbnail: String}
 
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile
@@ -44,8 +62,15 @@ init session mobile
         {session = session
         , fileName = ""
         , checkDevice = ""
+        , onDemandText = ""
+        , options = defaultOptions
+        , selectedTab = Editor
+        , selectedPreviewTab = RealTime
+        , showToC = False
         , videoId = ""
         , content = ""
+        , listShow = False
+        , inputValue = ""
         , getData = 
             { difficulty_name = Nothing
             , duration = ""
@@ -54,10 +79,19 @@ init session mobile
             , id = 0
             , inserted_at = ""
             , pairing = []
-          , title = ""}
+            , title = ""
+            , nickname = Nothing
+            , thumbnail = ""}
         , check = mobile}
         , Api.getId ()
     )
+type EditorTab
+    = Editor
+
+
+type PreviewTab
+    = RealTime
+
 
 type Msg 
     = GetFile String
@@ -69,14 +103,18 @@ type Msg
     | Content String
     | ShareComplete (Result Http.Error Decoder.Success)
     | GetList (Result Http.Error YfD.GetData)
+    | ListShow 
     -- | KeyDown Int
 
 shareTogether id session content= 
     let
         body = 
-            "content="
-            ++ content
-                |> Http.stringBody "application/x-www-form-urlencoded"
+            Encode.object   
+                [ ("content" , Encode.string content)]
+                |> Http.jsonBody     
+            -- "content="
+            -- ++ content 
+            --     |> Http.stringBody "application/x-www-form-urlencoded"
     in
     Api.post (Endpoint.togetherShare id) (Session.cred session) ShareComplete body (Decoder.resultD)
 
@@ -101,6 +139,8 @@ subscriptions model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ListShow -> 
+            ({model | listShow = not model.listShow}, Cmd.none)
         -- KeyDown key ->
         --     if key == 13 then
         --         update GoShare model
@@ -111,7 +151,10 @@ update msg model =
         GetList(Err err) ->
             (model,Cmd.none)
         ShareComplete (Ok ok) -> 
-            (model, Route.pushUrl (Session.navKey model.session) Route.Together)
+            let
+                text = Encode.string "공유되었습니다."
+            in
+            (model, Cmd.batch[Route.pushUrl (Session.navKey model.session) Route.Together,  Api.showToast text])
         ShareComplete (Err err) -> 
             (model, Cmd.none)
         Content str ->
@@ -120,12 +163,16 @@ update msg model =
             (model, Cmd.none)
         GoShare ->
             let
-                text = Encode.string "공유되었습니다."
+                st = Encode.encode 0 (Encode.string model.content)
             in
-            (model, Cmd.batch[shareTogether model.videoId model.session model.content,  Api.showToast text])
+                    (model, Cmd.batch[shareTogether model.videoId model.session model.content])
+            
+            
         GetShare id -> 
             let
                 idDecoder = Decode.decodeValue Decode.string id
+                -- let _ = Debug.log "str" String.filter Char.isDigit str 
+                
             in
             case idDecoder of
                 Ok ok ->
@@ -177,12 +224,14 @@ bodyContents model =
                 if model.checkDevice == "" then
                 div [] []
                 else
-                div [] [
-                    img [ src "/image/dummy_video_image3.png" ]
-                    []
-                , text model.checkDevice]
-                , textarea [ class "textarea", placeholder "운동, 다이어트, 식단, 일상에 대한 대화를 나눠요", rows 10 , onInput Content ]
-                []
+                -- div [] [
+                --     img [ src "/image/dummy_video_image3.png" ]
+                --     []
+                -- , text model.checkDevice]
+                videoContent model
+               , div [class "togethertextarea"] [
+                   editorView model.content Content False "운동, 다이어트, 식단, 일상에 대한 대화를 나눠요"
+               ]
             ]
         , div [ class "file has-name is-fullwidth togetherWrite_yf_upload" ]
             [ 
@@ -223,27 +272,66 @@ bodyContents_app model =
                 , videoContent model
                 ]
                 ]
-                , textarea [ class "textarea m_togetherWrite_textarea", placeholder "운동, 다이어트, 식단, 일상에 대한 대화를 나눠요", rows 10 , onInput Content ]
-                []
-            ]
+                -- , textarea [ class "textarea m_togetherWrite_textarea", placeholder "운동, 다이어트, 식단, 일상에 대한 대화를 나눠요", rows 10 , onInput Content ]
+                -- []
+                , div [class "apptogethertextarea"] [editorView model.content Content False "운동, 다이어트, 식단, 일상에 대한 대화e를 나눠요"
+            ]]
     
         -- ]
                 
 videoContent model = 
     div [ class "yf_box" ]
-        [ img [ src "../image/dummy_video_image.png" ]
+        [ 
+            div [class "m_yf_img"] [
+                img [ src model.getData.thumbnail ]
             []
+            ]
         , div [ class "text_wrap" ]
             [ div [ class "yf_box_title" ]
                 [ text model.getData.title ]
-            , div [ class "yf_ul" ]
+            , div [ class "togetherUl" ]
                 [ ul []
-                    [ li []
+                    [ li [] [
+                        i [ class "fas fa-stopwatch" ]
+                        [] ,
+                        text " ",
+                        text model.getData.duration]
+                    , li [class "itemlist"] [
+                        ul [] (
+                            List.indexedMap ( \idx x ->
+                            exerciseItems idx x model
+                                -- exerciseItems idx (List.sortBy x.sort)
+                            ) (List.sortBy .sort model.getData.exercise_items)
+                            
+                        )
+                        ,
+                        if List.length model.getData.exercise_items > 3 then
+                            if model.listShow then
+                                 div [onClick ListShow, class "button is-small"] [text "닫기"]
+                            else
+                                 div [onClick ListShow, class "button is-small"] [text "자세히.."]
+                        else
+                        div [] []
+                    ]
+                    , li []
                         [ text (String.dropRight 10(model.getData.inserted_at)) ]
                     ]
                 ]
             ]
-        ]                   
+        ]       
+
+exerciseItems idx item model= 
+        li [
+            classList
+                [ ("hideList", idx >= 3)
+                , ("allShow", model.listShow)]
+        ] [text (((String.fromInt item.sort) ++ ". ") ++ item.title ++ " x " ++(
+            if item.is_rest == True then
+                String.fromInt item.value  ++ "분"
+            else
+                String.fromInt item.value ++ "세트"
+        ))]
+
 goBtn model = 
     div [] [
         div [ class " togetherWrite_yf_dark" ]

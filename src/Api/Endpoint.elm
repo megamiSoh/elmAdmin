@@ -36,7 +36,8 @@ module Api.Endpoint exposing
     , scrapDetail
     , postList
     , pwdChange
-    , editComplete)
+    , editComplete
+    , togetherlike)
 
 import Http
 import Url.Builder exposing (QueryParameter)
@@ -62,7 +63,7 @@ unwrap (Endpoint str) =
 
 url : List String -> List QueryParameter -> Endpoint
 url paths queryParams =
-    Url.Builder.crossOrigin "http://api.yfit.co.kr:4000/api"
+    Url.Builder.crossOrigin "http://13.209.49.169:4000/api"
         ("v1" :: paths)
         queryParams
         |> Endpoint
@@ -202,3 +203,7 @@ pwdChange =
 editComplete id = 
     url ["front", "fit", id, "edit"] []
 
+
+togetherlike id = 
+    url ["front", "together", id] []
+    

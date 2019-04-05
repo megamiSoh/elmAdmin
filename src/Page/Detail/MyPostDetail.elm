@@ -33,15 +33,17 @@ type alias TogetherDataWrap =
 
 type alias TogetherData = 
     { content : Maybe String
-    , detail : List DetailTogether
+    , detail : Maybe (List DetailTogether)
     , id : Int
     , inserted_at : String
     , is_delete : Bool
     , link_code : String
     , recommend_cnt : Int
+    , nickname: Maybe String
     }
 type alias DetailTogether = 
-    { difficulty_name : Maybe String
+    { thembnail : String
+    , difficulty_name : Maybe String
     , duration : String
     , exercise_items : List TogetherItems
     , exercise_part_name : Maybe String
@@ -57,6 +59,7 @@ type alias TogetherItems =
     , sort : Int
     , title : String
     , value : Int }
+
 type alias Pairing = 
     { file : String
     , image : String
@@ -74,12 +77,13 @@ init session mobile
         , postId = ""
         , getData = 
             { content = Nothing
-            , detail = []
+            , detail = Nothing
             , id = 0
             , inserted_at = ""
             , is_delete = False
             , link_code = ""
             , recommend_cnt = 0
+            , nickname = Nothing
             }
         }
         , Cmd.batch 
@@ -88,7 +92,7 @@ init session mobile
         ]
         
     )
-    
+    -- 
 -- 
 type Msg 
     = GotSession Session
@@ -97,6 +101,7 @@ type Msg
     | GetList (Result Http.Error TogetherDataWrap)
     | GoVideo
     | Loading E.Value
+    | VideoCall (List Pairing)
 
 toSession : Model -> Session
 toSession model =
@@ -114,12 +119,32 @@ subscriptions model =
     , Api.videoSuccess Loading
     , Session.changes GotSession (Session.navKey model.session) ]
 
+justList item = 
+    case item of
+        Just a ->
+            a
+    
+        Nothing ->
+            []
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        VideoCall pairing ->
+            let
+                encodePairing pair= 
+                    E.object 
+                        [ ("file", E.string pair.file)
+                        , ("image", E.string pair.image)
+                        , ("title", E.string pair.title)]
+                listPair = 
+                    E.list encodePairing pairing
+            in
+            
+            (model, Api.videoData listPair)
         GoVideo ->
             let
-                head = List.head (model.getData.detail)
+                head = List.head (justList model.getData.detail)
                 result = 
                     case head of
                         Just a ->
@@ -138,11 +163,11 @@ update msg model =
                         , ("title", E.string p.title)
                         ]
             in
-            (model, Api.videoData videoList)
+            (model, Cmd.none)
         GetList(Ok ok) ->
-            update GoVideo {model | getData = ok.data}
+            update GoVideo {model | getData = ok.data, loading = False}
         GetList(Err err) ->
-            let 
+            let
                 serverErrors =
                     Api.decodeErrors err
             in
@@ -173,7 +198,7 @@ update msg model =
         GotSession session ->
             ({model | session = session} , Api.get GetList (Endpoint.postList model.postId) (Session.cred session)  (Decoder.mypostDataWrap TogetherDataWrap TogetherData DetailTogether TogetherItems Pairing))
         BackPage ->
-            (model, Route.pushUrl (Session.navKey model.session) Route.MakeExer)
+            (model, Route.pushUrl (Session.navKey model.session) Route.MyPost)
           
 
 view : Model -> {title : String , content : Html Msg}
@@ -191,42 +216,34 @@ view model =
 web msg model= 
     div [class "container"] [
         div [ class "yf_yfworkout_search_wrap" ]
-        [ div [ class "tapbox" ]
-            [ div [ class "yf_large" ]
-                [ text "나의 스크랩" ]
-            ]
-        ]
-        , div [id "myElement"] []
-        , div []
+        [ div []
         ( List.map( \x-> 
             contentsItem x model
-        ) model.getData.detail) 
+        ) (justList model.getData.detail)) 
         -- ( List.map( \x-> 
         --     appcontentsItem x model
         -- ) model.getData.detail) 
         -- contentsBody model.getData model.loading
-        -- goBtn BackPage 
-
+        , goBtn
+        ]
     ]
 app msg model= 
     div [class "container"] [
-        appHeaderRDetail "내 게시물 상세" "myPageHeader" Route.MyPost "fas fa-times" 
-        ,if model.loading then
+        if model.loading then
         div [class "spinnerBack"] [
             spinner
             ]
         else 
         div [] []
-        , div [id "myElement"] []
         , div []
         ( List.map( \x-> 
             appcontentsItem x model
-        ) model.getData.detail) 
+        ) (justList model.getData.detail)) 
     ]
-goBtn back  = 
+goBtn  = 
     div [ class "make_yf_butbox" ]
         [ div [ class "yf_backbtm" ]
-            [ div [ class "button yf_largebut", onClick back ]
+            [ a [ class "button yf_largebut", Route.href Route.MyPost ]
                 [ text "뒤로" ]
             ]
         , div [ class "yf_nextbtm" ]
@@ -250,10 +267,16 @@ contentsBody item model=
 contentsItem item model=
             div [ class "tile is-parent is-vertical" ]
             [div [ class "yf_notification" ]
-                [ p [ class "title" ]
-                    [ 
-                        
+                [
+                    div [ class "tapbox" ]
+                    [ div [ class "yf_large" ]
+                        [ text item.title ]
                     ]
+                , div [class "postVideoWrap"] [
+                    img [class "postImg" ,src item.thembnail, onClick (VideoCall item.pairing) ] []
+                , div [id "myElement"] []
+
+                ]
                 ], 
             div [ class "yf_subnav" ]
                 [ div [ class "yf_time" ]
@@ -266,18 +289,20 @@ contentsItem item model=
                     [ text ((justokData item.exercise_part_name) ++ " - " ++  (justokData item.difficulty_name)) ]
                 ]
             , 
-            if model.loading then 
-            div [] []
-            else
             div [ class "yf_text" ]
-               (List.indexedMap YfD.description item.exercise_items)
+               (List.indexedMap YfD.description (List.sortBy .sort item.exercise_items))
             ]
 
 
 
 appcontentsItem item model= 
             div [ ]
-            [div [ class "m_yf_work_textbox" ]
+            [   appHeaderRDetail item.title "myPageHeader" Route.MyPost "fas fa-times" 
+                , div [class "appPostVideo"] [
+                    img [src item.thembnail, onClick (VideoCall item.pairing)] []
+                    , div [id "myElement"][]
+                ], 
+                div [ class "m_yf_work_textbox" ]
                 [ div [ class "m_yf_work_time" ]
                     [ span []
                         [ i [ class "fas fa-clock m_yf_timeicon" ]
@@ -290,13 +315,13 @@ appcontentsItem item model=
                     ,  text (justokData item.difficulty_name) ]
                 ]
             ,  div []
-                [ p []
+                [ p [class "wordBreak"]
                     [ 
                     text (justokData model.getData.content)
                     ]
                 ]
             , div [ class "m_work_script" ]
-                  (List.indexedMap YfD.description item.exercise_items)
+                  (List.indexedMap YfD.description (List.sortBy .sort item.exercise_items))
                 
             ]
 justokData result = 
@@ -305,8 +330,15 @@ justokData result =
             ok
         Nothing ->
             ""
--- description item = 
---     ul [] [
---         li [] [text item]
---     ]
-    
+
+-- goBtn back  = 
+--     div [ class "make_yf_butbox" ]
+--         [ div [ class "yf_backbtm" ]
+--             [ div [ class "button yf_largebut", Route.href Route.MyPost ]
+--                 [ text "뒤로" ]
+--             ]
+--         , div [ class "yf_nextbtm" ]
+--             [ a [ class "button is-dark yf_editbut", Route.href Route.EditFilter]
+--                 [ text "수정" ]
+--             ]
+--         ]

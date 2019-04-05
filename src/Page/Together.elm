@@ -31,22 +31,29 @@ type alias Model
         , loading : Bool
         , infiniteLoading : Bool
         , appData : List TogetherData
+        , ofheight : Int
         , need2login : Bool
         , videoStart : String
+        , showAllText : Bool
+        , likeList : List Int
+        , idx : Int
     }
 type alias TogetherDataWrap = 
     { data : List TogetherData 
     , paginate : Paginate
     }
 
+type alias TogetherLikeWrap = 
+    {data : TogetherData}
 type alias TogetherData = 
     { content : Maybe String
-    , detail : List DetailTogether
+    , detail : Maybe (List DetailTogether)
     , id : Int
     , inserted_at : String
     , is_delete : Bool
     , link_code : String
     , recommend_cnt : Int
+    , nickname : Maybe String
     }
 type alias DetailTogether = 
     { thembnail : String
@@ -92,7 +99,10 @@ init session mobile
         , need2login = False
         , infiniteLoading = False
         , appData = []
+        , ofheight = 0
         , count = 1
+        , likeList = []
+        , idx = 0
         , screenInfo = 
             { scrollHeight = 0
             , scrollTop = 0
@@ -104,6 +114,7 @@ init session mobile
         , videoStart = ""
         , per_page = 10
         , loading = True
+        , showAllText = False
         , like = 0
         , scrap = False
         , togetherData = 
@@ -151,13 +162,14 @@ scrollInfoDecoder =
         (Decode.at [ "target", "offsetHeight" ] Decode.int)    
 onLoad msg =
     on "load" (Decode.succeed msg)
-
+likeApi session id = 
+    Api.get LikeUpdate (Endpoint.togetherlike id) (Session.cred session) (Decoder.togetherdatalikewrap  TogetherLikeWrap TogetherData DetailTogether  TogetherItems Pairing)
 type Msg 
     = IsActive String
     | CheckDevice Encode.Value
     | GetData (Result Http.Error TogetherDataWrap)
     -- | Loading Encode.Value
-    | IsLike String
+    | IsLike (Int, Int)
     | LikeComplete (Result Http.Error Like)
     | PageBtn (Int, String)
     | ScrollEvent ScreenInfo
@@ -166,6 +178,8 @@ type Msg
     | Scrap Int
     | VideoCall ((List Pairing) ,Int)
     | OnLoad
+    | ShowAllText
+    | LikeUpdate (Result Http.Error TogetherLikeWrap)
     
 
 toSession : Model -> Session
@@ -185,6 +199,21 @@ subscriptions model=
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        LikeUpdate (Ok ok) ->
+            let
+                udtLike = 
+                    List.map (\x ->
+                        if x.id == model.like then
+                            {x | recommend_cnt = ok.data.recommend_cnt}
+                        else
+                            x
+                    )model.appData 
+            in
+            ({model | appData = udtLike}, Cmd.none)
+        LikeUpdate (Err err) ->
+            (model, Cmd.none)
+        ShowAllText ->
+            ({model | showAllText = not model.showAllText}, Cmd.none)
         OnLoad ->
             if model.count <= List.length (model.togetherData.data) then
             ({model | loading = False}, Cmd.none)
@@ -241,7 +270,7 @@ update msg model =
                 ({model | infiniteLoading = True}, loadingEncoder (model.page + 1)  model.per_page model.session)
                 
             else
-                (model, Cmd.none)
+                ({model | ofheight = offsetHeight}, Cmd.none)
         PageBtn (idx, str) ->
             case str of
                 "prev" ->
@@ -253,8 +282,37 @@ update msg model =
                 _ ->
                     ({model | page = idx}, Cmd.none)
         LikeComplete (Ok ok) ->
-            ({model | like = ok.data.count}
-            , dataEncoder model.page model.per_page model.session)
+            if model.check then
+                if ok.data.count == 0 then
+                    let
+                        listF = 
+                            List.filter(\x->
+                                model.like /= x
+                            )model.likeList
+                    in
+                    ({model | likeList= listF}
+                    , likeApi model.session (String.fromInt model.like))
+                else
+                    ({model | likeList= model.likeList ++ [model.like]}
+                    , likeApi model.session (String.fromInt model.like))
+            else
+                if ok.data.count == 0 then
+                    let
+                        listF = 
+                            List.filter(\x->
+                                model.like /= x
+                            )model.likeList
+                    in
+                    ({model | likeList= listF}
+                    , dataEncoder model.page model.per_page model.session)
+                else
+                    ({model | likeList= model.likeList ++ [model.like]}
+                    , dataEncoder model.page model.per_page model.session)
+            -- (model
+            -- , dataEncoder model.page model.per_page model.session)
+            -- else
+            -- ({model | like = 0}
+            -- , dataEncoder model.page model.per_page model.session)
         LikeComplete (Err err) ->
             let
                 serverErrors = Api.decodeErrors err
@@ -263,8 +321,8 @@ update msg model =
                 ({model | need2login = True}, Cmd.none )
             else
                 (model, Cmd.none)
-        IsLike id->
-            (model, Api.get LikeComplete (Endpoint.togetherLike id) (Session.cred model.session) (Decoder.togetherLike Like LikeData))
+        IsLike (id, idx )->
+            ({model | like = id}, Api.get LikeComplete (Endpoint.togetherLike (String.fromInt id)) (Session.cred model.session) (Decoder.togetherLike Like LikeData))
         -- Loading success ->
         --     let
         --         d = Decode.decodeValue Decode.string success
@@ -309,7 +367,8 @@ view model =
                 ]
             else 
             div [] []
-            , app model
+            , 
+            app model
        ]
        else 
             web model   
@@ -321,7 +380,7 @@ justData item =
             val
     
         Nothing ->
-            ""
+            "-"
 
 web model = 
     div [class "containerwrap"] [
@@ -336,9 +395,7 @@ web model =
                             -- tabbox model,
                             lazy contentsBody model
                         ]
-                         ,pagination 
-                                PageBtn
-                                model.togetherData.paginate
+                        
                             ]
                         ]
                     ]
@@ -347,12 +404,12 @@ web model =
 app model =
      
     div [class "container "] [
-        div [] [
-            appHeaderSearch "함께해요" "together",
+        justappHeader "함께해요" "togetherHeader",
+        div [scrollEvent ScrollEvent] [
             if model.need2login then
             need2loginAppDetailRoute Route.Together
             else
-            div [ class "scroll" , scrollEvent ScrollEvent, style "height" "80vh"] [
+            div [ class "scroll", id "scrollE" , scrollEvent ScrollEvent] [
                 -- appTab model,
                 appStartBtn,
                 div [] (List.indexedMap (
@@ -418,76 +475,120 @@ appStartBtn =
             ]
         ]
 
+justListData item = 
+    case item of
+        Just a ->
+            a
+    
+        Nothing ->
+            []
 appContentsItem idx item model=
+    if item.is_delete then
+     span [] []
+    else
     let
         pairing = 
             List.head
                 (
                     List.map(\x ->
                         x.pairing    
-                    )item.detail
+                    )(justListData item.detail)
                 )  
         thumbnail = 
             List.head
                 (
                     List.map(\x ->
                         x.thembnail   
-                    )item.detail
+                    )(justListData item.detail)
                 ) 
 
     in
-    
+    -- <i class="fas fa-dumbbell"></i>
     div [ class "m_to_mediabox2" ]
         [   
             div [ class "m_to_yf_boxtop" ]
             [
             div [ class "m_to_yf_id" ]
-                [ strong []
-                    [  text "닉네임" ]
-                ]
-            ], 
-            div [class"m_to_video"][
-             div ([class "thumbTest"]
-             )[
-                 div [class "clickThis",onClick (VideoCall ((
-                 case pairing of
-                    Just a ->
-                        a
-                    Nothing ->
-                        []
-             ), idx))] [
-                 img [src (justData thumbnail), onLoad OnLoad] []
-             ],
-                 div [id ("myElement" ++ String.fromInt(idx)) ]  [] ] 
-            , div [ class "m_to_yf_more" ]
-                [ div [ ]
-                    [ strong []
-                        [ text "자세히보기" ]
+                [i [ class "fas fa-user profile" ]
+                    []
+                , div [class "profileText"] [
+                    strong []
+                    [  text (justData item.nickname) ]
+                    , div [class"togetherData"] [
+                        text (String.dropRight 10 item.inserted_at)
                     ]
                 ]
-            ]
-        , div [ class "m_to_yf_text" ]
-            [ text (justData item.content )]
-        , div [ class "level-left m_to_yf_like", onClick (IsLike (String.fromInt(item.id))) ]
+                ]
+            ], 
+            case thumbnail of
+            Just thumb ->
+                div [class"m_to_video"][
+                    div ([class "thumbTest_m"]
+                    )[
+                        div [class "clickThis",onClick (VideoCall ((
+                        case pairing of
+                            Just a ->
+                                a
+                            Nothing ->
+                                []
+                    ), idx))] [        
+                        img [src thumb, onLoad OnLoad] []
+                ],
+                 div [id ("myElement" ++ String.fromInt(idx)) ]  [] ] 
+            -- , div [ class "m_to_yf_more" ]
+            --     [ div [ ]
+            --         [ strong []
+            --             [ text "자세히보기" ]
+            --         ]
+            --     ]
+                ]
+            Nothing ->
+                div [][]
+            , if String.length (justData item.content) > 100 then
+                   div [class "togetherArticle"][
+                        if model.showAllText then
+                            text (justData item.content)
+                        else
+                            text (String.dropRight ((String.length(justData item.content) - 100)) (justData item.content) )
+                            
+                   , div [] [
+                    ul [] [
+                        li [] (List.map (\x-> detailData x model) (justListData item.detail))
+                    ]
+                ]
+                ]
+                else
+                   div [class "togetherArticle"]
+                   [ text (justData item.content)
+                   , div [] 
+                    (List.map (\x-> detailData x model) (justListData item.detail))
+                ]
+                -- ]
+        -- , div [ class "m_to_yf_text" ]
+        --     [ text (justData item.content )]
+        --  , text (String.fromInt(String.length (justData item.content)))
+        , div [ class "level-left m_to_yf_like", onClick (IsLike (item.id, idx)) ]
             [ text( "좋아요" ++ String.fromInt (item.recommend_cnt) ++"개" ) 
             , 
-            if model.like == 1 then
-            i [ class "far fa-heart together_heart"]
-                []
-            else 
+            if List.member item.id model.likeList  then
                 i [ class "fas fa-heart together_heart" ]
                 []
+            else 
+                 i [ class "far fa-heart together_heart"]
+                []
+                
             ]
 
         , div [ class "level-left m_to_yf_scrap", onClick (Scrap item.id) ]
             [
             --      text( "스크랩" ++ String.fromInt(item.isLike) ++"개" ) 
             -- , 
-            i [ class "far fa-bookmark together_bookmark" ]
+            i [ class "fas fa-bookmark together_bookmark" ]
                 []
             ]
         
         ]
+   
 tabbox model=
     div [ class "tapbox" ]
         [ div [ class "tabs is-toggle is-fullwidth is-large" ]
@@ -556,26 +657,37 @@ contentsBody model=
                         ]
                     ]
                                  ]
-            , div [](List.indexedMap (
-                \idx x -> userItem idx x model
-            ) model.togetherData.data)
+            ,if List.length model.togetherData.data > 0 then
+             div [] [
+                 div [](List.indexedMap (
+                    \idx x -> userItem idx x model
+                ) model.togetherData.data)
+                ,pagination 
+                    PageBtn
+                    model.togetherData.paginate
+             ]
+            else
+            div [class "noResult"] [text "게시물이 없습니다."]
             ]
         ]
 userItem idx item model =
+    if item.is_delete then
+    span [] []
+    else
     let
         pairing = 
             List.head
                 (
                     List.map(\x ->
                         x.pairing    
-                    )item.detail
+                    )(justListData item.detail)
                 )  
         thumbnail = 
             List.head
                 (
                     List.map(\x ->
                         x.thembnail   
-                    )item.detail
+                    )(justListData item.detail)
                 ) 
     in
     div [ class "together_mediabox2" ]
@@ -586,37 +698,68 @@ userItem idx item model =
                 ]
             , div [ class "together_yf_id" ]
                 [ strong []
-                    [ text "닉네임" ]
+                    [ text (justData item.nickname) ]
+                , div [] [text (String.dropRight 10 item.inserted_at)]
                 ]
             ]
         , div [ class "together_yf_text togetherVideo" ]
-            [ div ([class "thumbTest", style "width" "54%", style "height" "200px"]
-             )[
-                 div [class "clickThis",onClick (VideoCall ((
-                 case pairing of
-                    Just a ->
-                        a
-                    Nothing ->
-                        []
-             ), idx))] [
-                 img [class "toImg", src (justData thumbnail), onLoad OnLoad] []
-             ],
-                 div [id ("myElement" ++ String.fromInt(idx)) ]  [] ] 
-                , div [id ("together" ++ (String.fromInt(idx)))] [] ,
-                div [][text (justData item.content)]
-                , div [] [text "더보기"]
-                 ]
-        , div [ class "level-left together_yf_like", onClick (IsLike (String.fromInt(item.id))) ]
-            [ text( "좋아요"++ String.fromInt (item.recommend_cnt) ++"개")  , br []
+            [ 
+            case thumbnail of
+                Just thumb ->
+                    div ([class "thumbTest"]
+                    )[
+                        div [class "clickThis",onClick (VideoCall ((
+                        case pairing of
+                            Just a ->
+                                a
+                            Nothing ->
+                                []
+                    ), idx))] [
+                        img [class "toImg", src (justData thumbnail), onLoad OnLoad] []
+                    ],
+                        div [id ("myElement" ++ String.fromInt(idx)) ]  [] ]
+                Nothing ->
+                    div [] [] 
+                , div [id ("together" ++ (String.fromInt(idx)))] [] 
+                , if String.length (justData item.content) > 100 then
+                   div [][
+                        if model.showAllText then
+                            text (justData item.content)
+                        else
+                            text (String.dropRight ((String.length(justData item.content) - 100)) (justData item.content) )
+                            
+                   , div [] [
+                    ul [] [
+                        li [] (List.map (\x-> detailData x model) (justListData item.detail))
+                    ]
+                ]
+                ]
+                else
+                   div []
+                   [ text (justData item.content)
+                   , div [] 
+                    (List.map (\x-> detailData x model) (justListData item.detail))
+                ]
+                ]
+                  
+              
+                -- , text (String.fromInt(String.length (justData item.content)))
+                
+                -- , div [] [text "더보기"]
+                --  ]
+        , div [  ]
+            [
+                div [class "level-left together_yf_like", onClick (IsLike (item.id, idx))] [
+                     text( "좋아요"++ String.fromInt (item.recommend_cnt) ++"개")  
+            , if List.member item.id model.likeList  then
+               i [ class "fas fa-heart together_heart" ]
                 []
-            , if model.like == 1 then
+            else  
                 i [ class "far fa-heart together_heart"]
                 []
-            else 
-                i [ class "fas fa-heart together_heart" ]
-                []
-            ]
-        , div [ class "level-left together_yf_scrap", onClick (Scrap item.id) ]
+                
+                ]
+            ,div [ class "level-left together_yf_scrap", onClick (Scrap item.id) ]
             [ 
                 -- text( "스크랩"++ String.fromInt (item.isLike) ++"개")  , br []
                 -- []
@@ -624,4 +767,39 @@ userItem idx item model =
              i [ class "far fa-bookmark together_bookmark" ]
                 []
             ]
+            ]
         ]
+
+detailData item model= 
+    div[] [
+   
+        if List.length item.exercise_items > 3 then
+         ul[] [
+            li [] (List.indexedMap (\idx x->  exerciseItems idx x model) (List.sortBy .sort item.exercise_items))
+            , li [] [
+                if model.showAllText then
+                    div [onClick ShowAllText, class "moreText cursor" ][text "닫기"] 
+                else
+                    div [onClick ShowAllText, class "moreText cursor" ][text " ...자세히보기"] 
+                ]
+            ]
+        else 
+        ul [] [
+         li [] 
+         (List.indexedMap (\idx x->  exerciseItems idx x model) (List.sortBy .sort item.exercise_items))]
+     ]
+   
+exerciseItems idx item model=
+    li [
+        classList 
+        [ ("hideList", (idx >= 3))
+        , ("allShow", model.showAllText)
+        ]
+    ] [
+        text ((String.fromInt (item.sort)) ++ ". " ++ item.title ++ " x " ++ (
+            if item.is_rest == False then
+            String.fromInt (item.value) ++ "세트"
+            else 
+            String.fromInt (item.value) ++ "분"
+        ))
+    ]

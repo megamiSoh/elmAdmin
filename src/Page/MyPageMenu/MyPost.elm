@@ -29,6 +29,7 @@ type alias Model
         , deleteComplete : Bool
         , errAuth : String
         , deleteId : Int
+        , loading : Bool
     }
 
 type alias ScreenInfo = 
@@ -64,6 +65,7 @@ init session mobile
         , dataList = []
         , checkList = []
         , errAuth = ""
+        , loading = True
         , infiniteLoading = False
         , per_page = 10
         , screenInfo = 
@@ -195,12 +197,12 @@ update msg model =
             ({model | deleteId = id}, Api.get DeleteComplete (Endpoint.myPostDelete (String.fromInt(id))) (Session.cred model.session ) (Decoder.resultD))
         GetList (Ok ok) ->
             if model.deleteComplete then
-            ({model | data = ok, dataList = ok.data, page = model.page, deleteComplete = False}, Cmd.none)
+            ({model | data = ok, dataList = ok.data, page = model.page, deleteComplete = False, loading = False}, Cmd.none)
             else
-            if ok.data == [] then
-            ({model | infiniteLoading = False, checkList = ["empty"]}, Cmd.none)
-            else
-            ({model | data = ok, dataList = model.dataList ++ ok.data, page = model.page + 1, infiniteLoading = False}, Cmd.none)
+                if ok.data == [] then
+                ({model | infiniteLoading = False, checkList = ["empty"], loading = False}, Cmd.none)
+                else
+                ({model | data = ok, dataList = model.dataList ++ ok.data, page = model.page + 1, infiniteLoading = False, loading = False}, Cmd.none)
         GetList (Err err) ->
             let
                 serverErrors = Api.decodeErrors err
@@ -218,7 +220,15 @@ view model =
     title = "YourFitExer"
     , content = 
         if model.check then
-        app model
+            div [] [
+                if model.loading then
+                div [class "spinnerBack"] [
+                    spinner
+                    ]
+                else 
+                div [] []
+            , app model
+            ]
         else
         web model
     }
@@ -243,7 +253,7 @@ web model=
 app model =
     div[class "container"] [
         appHeaderRDetail "나의 게시물관리" "myPageHeader whiteColor" Route.MyPage "fas fa-angle-left"
-        , appcontentsBody model.dataList model.infiniteLoading
+        , appcontentsBody model.dataList model.infiniteLoading model.loading
     ]
 contentsBody model =
     div [ class "myPost_searchbox" ]
@@ -259,7 +269,7 @@ contentsBody model =
                 ]
         ]
         ]
-appcontentsBody model loading=
+appcontentsBody model infiniteloading loading=
     div [ class "myPost_searchbox" ]
         [  div [ class "m_myPost_mediabox", scrollEvent ScrollEvent ]
             [ 
@@ -271,9 +281,9 @@ appcontentsBody model loading=
                 [
                     li [class "noResult"] [text "나의 게시물이 없습니다."]
                 ]
-                ,if loading then
+                ,if infiniteloading then
                     div [class "loadingPosition"] [
-                    spinner
+                    infiniteSpinner
                     ]
                 else
                 span [] []
@@ -284,7 +294,7 @@ contentsLayout item=
     li []
         [ time [ class "cbp_tmtime" ]
             [ span []
-                [ text item.inserted_at ]
+                [ text (String.dropRight 10 item.inserted_at) ]
             , span []
                 []
             ]
@@ -307,7 +317,7 @@ appcontentsLayout item=
     li []
         [ time [ class "m_cbp_tmtime" ]
             [ span []
-                [ text item.inserted_at ]
+                [ text (String.dropRight 10 item.inserted_at) ]
             , span []
                 []
             ]
@@ -327,57 +337,3 @@ appcontentsLayout item=
             ]
         ]
     
-    
--- contentsData =
---     [
---         {
---             title = "운동 팁좀 공유해주세요!!",
---             createDate = "19/01/01",
---             category = "together"
---         },
---         {
---             title = "여름맞이 뱃살빼기 운동영상",
---             createDate = "19/01/01",
---             category = "video"
---         },
---         {
---             title = "운동 팁좀 공유해주세요!!",
---             createDate = "19/01/01",
---             category = "together"
---         },
---         {
---             title = "여름맞이 뱃살빼기 운동영상",
---             createDate = "19/01/01",
---             category = "video"
---         },
---         {
---             title = "여름맞이 뱃살빼기 운동영상",
---             createDate = "19/01/01",
---             category = "video"
---         },
---         {
---             title = "운동 팁좀 공유해주세요!!",
---             createDate = "19/01/01",
---             category = "together"
---         },
---         {
---             title = "여름맞이 뱃살빼기 운동영상",
---             createDate = "19/01/01",
---             category = "video"
---         },
---         {
---             title = "운동 팁좀 공유해주세요!!",
---             createDate = "19/01/01",
---             category = "together"
---         },
---         {
---             title = "여름맞이 뱃살빼기 운동영상",
---             createDate = "19/01/01",
---             category = "video"
---         },
---         {
---             title = "운동 팁좀 공유해주세요!!",
---             createDate = "19/01/01",
---             category = "together"
---         }
---     ]

@@ -16,6 +16,10 @@ import Api as Api
 import Api.Decoder as Decoder
 import Http as Http
 import Api.Endpoint as Endpoint
+import Markdown.Block as Block exposing (Block)
+import Markdown.Config exposing (HtmlOption(..),  defaultSanitizeOptions)
+import Markdown.Inline as Inline
+import Page.Detail.Editorwirte exposing(..)
 
 type alias Model 
     = {
@@ -27,12 +31,24 @@ type alias Model
         checkDevice : String
         , check : Bool
         , title : String
+        , onDemandText : String
+        , options : Markdown.Config.Options
+        , selectedTab : EditorTab
+        , selectedPreviewTab : PreviewTab
+        , showToC : Bool
         , validation : String
         , errTitle : String
         , loading : Bool
         , cannotSave : String
         , saveItem : List Item
     }
+type EditorTab
+    = Editor
+
+
+type PreviewTab
+    = RealTime
+
 
 type alias FilterData =
     { difficulty_name: Maybe String
@@ -115,6 +131,11 @@ registVideo model edit session=
     in
     Api.post (Endpoint.registFilter)(Session.cred session) GoRegistResult body ((Decoder.resultDecoder ResultData))
 
+defaultOptions =
+    { softAsHardLineBreak = False
+    , rawHtml = ParseUnsafe
+    }
+
 init session mobile
     = 
     (
@@ -124,6 +145,11 @@ init session mobile
         , style = ""
         , check= mobile
         , saveItem = []
+        , onDemandText = ""
+        , options = defaultOptions
+        , selectedTab = Editor
+        , selectedPreviewTab = RealTime
+        , showToC = False
         , setData = 3
         , checkDevice = ""
         , title = ""
@@ -251,7 +277,13 @@ update msg model =
             else
             ({model | loading = True, saveItem = item}, registVideo model item model.session)
         UpdateTitle title ->
-            ({model | title = title}, Cmd.none)
+            let 
+                newTitle = 
+                    title
+                        |> String.replace "&" "%26"
+                        |> String.replace "%" "%25"
+            in
+            ({model | title = newTitle}, Cmd.none)
         ReceiveDataFromStorage data ->
             let 
                 last = Decode.decodeValue (Decode.list(Decoder.filterStep2 FilterData)) data
@@ -333,14 +365,23 @@ view model =
     title = "YourFitExer"
     , content = 
         div [] [
-        if model.loading then
-        div [class "spinnerBack"] [spinner]
-        else
-        div [] [],
         if model.check then
-            app model
-        else 
-            web model
+            div [] [
+                if model.loading then
+                div [class "spinnerBack"] [spinner]
+                else
+                div [] [],
+                    app model
+            ]
+        else
+        div [] [
+            if model.loading then
+            div [class "spinnerBackWeb"] [spinner]
+            else
+            div [] [],
+                web model
+            ] 
+            
        ]
     }
 
@@ -404,8 +445,9 @@ thumbSetting model=
         , div [ class "yf_titleinput" ]
             [ 
             div [class model.validation] [
-                input [ class ( "input " ++ model.validation ), type_ "text", placeholder "운동제목을 입력하세요", onInput UpdateTitle ]
-                []
+                editorViewInput model.title UpdateTitle False "운동제목을 입력하세요." model.validation
+                -- input [ class ( "input " ++ model.validation ), type_ "text", placeholder "운동제목을 입력하세요", onInput UpdateTitle ]
+                -- []
             ]
             , div [] [text model.errTitle]
             ]

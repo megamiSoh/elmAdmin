@@ -6,10 +6,11 @@ a {
 
 .m_home_topbox
 {
-  height: 50px;
+  height: 55px;
   background-color: #3D3D3D;
   text-align: center;
   padding: .5rem;
+  box-shadow: 0px 3px 3px rgba(24,23,23,0.36);
 }
 
 .m_home_topbox img
@@ -77,15 +78,20 @@ a {
 .m_yf_navfooter {
   width: 100%;
   /* height: 150px; */
-  padding:10px 0 0 0;
-  height: 65px;
+  /* padding:10px 0 0 0; */
+  display: flex;
+  flex-direction: row;
+  height: 9vh;
   background-color: #373F51;
   color:white;
   font-weight:bold;
+  overflow: hidden;
   /* font-size:18px; */
   text-align:center;
   position:fixed;   
-  bottom:0;        
+  bottom:0;    
+  align-items: center;
+  justify-content: center;    
   left:0;      
   z-index: 9999999999999;      
  }
@@ -93,17 +99,23 @@ a {
  .m_appmanu
 {
   background-color: #373F51;
-  width: 18%;
+  /* width: 18%; */
+  flex: 1;
   text-align: center;
   border: 0;
   margin: 0;
+  display: flex;
+  align-items: center;
+  flex-basis: 0;
   padding: 1rem;
+  /* padding: 1rem; */
   /* margin: 0 0 0 4rem; */
 }
 
 .m_appmanu img
 {
-  width: 10%;
+  width: 100%;
+  height: auto;
 }
 
 /* signup */
@@ -217,7 +229,7 @@ width: 80%;
 .commonHeader
 {
   /* width: 100%; */
-  height: 50px;
+  height: 55px;
   padding: 0;
   z-index: 99999;
   position: fixed;
@@ -255,14 +267,19 @@ ul.commonHeader {
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  height: 50px;
+  height: 55px;
+  font-weight: bold;
+  font-size: 1.3rem;
   color: #fff;
+  box-shadow: 0px 3px 3px rgba(24,23,23,0.36);
 }
 ul.commonHeader li {
   display: flex;
   margin: 1px;
   padding: 5px;
-  font-size: 1rem;
+  font-size: 1.3rem;
+  font-weight: bold;
+  margin-bottom: 3px;
 }
 .justHeader {
   padding: 0;
@@ -271,8 +288,14 @@ ul.commonHeader li {
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  height: 50px;
+  height: 55px;
+  z-index: 99999;
+  width: 100%;
+  position: fixed;
   color: #fff;
+  font-weight: bold;
+  font-size: 1.3rem;
+  box-shadow: 0px 3px 3px rgba(24,23,23,0.36);
 }
 /* ul.commonHeaderBackBoth::after {
   content:"D";
@@ -291,7 +314,10 @@ ul.commonHeaderBoth {
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  height: 50px;
+  height: 55px;
+  font-weight: bold;
+  font-size: 1.3rem;
+  box-shadow: 0px 3px 3px rgba(24,23,23,0.36);
   position: fixed;
   width: 100%;
   z-index: 999999999999999;
@@ -329,7 +355,10 @@ ul.commonHeaderBack {
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  height: 50px;
+  height: 55px;
+  font-weight: bold;
+  font-size: 1.3rem;
+  box-shadow: 0px 3px 3px rgba(24,23,23,0.36);
   position: fixed;
   width: 100%;
   z-index: 999999999999999;
@@ -422,7 +451,7 @@ ul.commonHeaderBack li {
 }
 .m_workoutvideoboxwrap
 {
-width: 50vw;
+width: 15rem;
 /* height: 25vh; */
 min-height: 160px;
 border-width: .1rem;
@@ -432,7 +461,10 @@ margin-left: 0.1vw;
 float: left;
 position: relative;
 }
-
+.bigpic1 {
+  height: 12rem;
+  width: 3rem;
+}
 .m_workoutvpic
 {
   width: 100%;
@@ -448,9 +480,9 @@ position: relative;
 .m_yf_workoutadd
 {
   /* width: 30vw; */
-  /* height: 328px; */
+  height: 12rem;
   background-color: #27A590;
-  margin-left: 10px;
+  margin-left: 3px;
   float: left;
   position: relative;
   padding: 1rem;
@@ -472,7 +504,7 @@ position: relative;
     height: 100%;
     width: 100%;
     writing-mode: tb-rl;
-    right: 16%;
+    right: 20%;
     text-align: center;
     font-size: 1.3rem;
 }
@@ -1194,9 +1226,11 @@ border: solid gray .1px;
 }
 .m_to_mediabox2
 {
-  border:solid;
+  /* border:solid;
   border-width: .1rem;
-  border-color: #E4E4E4; 
+  border-color: #E4E4E4;  */
+  word-break: break-all;
+  border: 5px solid #e4e4e4;
   /* margin-top:4rem; */
 }
 
@@ -1217,16 +1251,34 @@ margin-top: 2rem;
 .m_to_yf_boxtop
 {
   display: flex;
-  padding: 1rem;
+  padding: .2rem 0;
 }
-
+.togetherData {
+  font-size: 11px;
+    color: #717171;
+}
 .m_to_yf_id
 {
   float: left;
+  display: flex;
+  flex-direction: row;
+  align-items: center;;
   /* padding: 1.5rem 0 3rem 1rem; */
 }
-
-
+.profileText {
+  display: flex;
+  align-items: start;
+  flex-direction: column;
+  text-align: left;
+}
+.m_to_yf_id .fas.fa-user.profile {
+  font-size: 1.5rem;
+    /* border: 1px solid #b9b9b9; */
+    padding: .5rem;
+    /* border-radius: 50%; */
+    margin: 0 .3rem 0 .2rem;
+    /* background-color: #f3f3f3; */
+}
 .m_to_video img
 {width: 100%;}
 
@@ -1280,13 +1332,19 @@ height: 30rem;
   /* float: left; */
   border-bottom:solid #9A9A9A .1px;
   padding-bottom: 1rem;
+  overflow: hidden;
   /* padding: 2rem; */
   /* display: block; */
   /* height: 20rem; */
   /* display: flex; */
   /* flex-direction: row; */
 }
-
+.myMenuStyle {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
 .m_mypage_loginbox img
 {
   height: 100%;
@@ -1324,14 +1382,16 @@ height: 30rem;
 
 .m_mypage_mypagemenu
 {
-  /* height: 120px; */
+  height: 10vh;
   width: 100%;
   border-bottom:solid #9A9A9A .1px;
-  display: block;
-  float: left;
+  /* display: block;
+  float: left; */
   padding: 0.5rem;
   text-align: left;
   color: #3d3d3d;
+  display: flex;
+  align-items: center;
   /* font-size: 3rem; */
 }
 
@@ -1635,7 +1695,7 @@ margin-top: 2rem;}
 
 .m_cbp_tmtimeline > li {
   position: relative;
-  height: 10rem;
+  /* height: 10rem; */
 }
 
 /* The date/time */
@@ -2027,6 +2087,8 @@ margin: 3rem 0 3rem 0;
 		/* padding: 1em; */
     font-weight: 400;
     margin: 0.5rem;
+    word-break: break-all;
+    overflow: hidden;
 		/* font-size: 95%; */
 	}
 
@@ -2140,8 +2202,8 @@ margin-right: 1rem;
 }
 
 .thumbTest {
-  height: 200px;
   width: 100%;
+  height: 370px;
   background: url(/image/05iu6bgl-320.jpg) no-repeat 100% 100% center center;
   position: relative;
 
@@ -2162,11 +2224,18 @@ margin-right: 1rem;
 }
 
 .clickThis {
-  height: 200px;
+  height: 100%;
   width: 100%;
   position: absolute;
 }
 .m_timebox {
   width: 100%;
   text-align: left;
+}
+.need2Login {
+  margin-bottom: 1rem;
+}
+
+.bgFooter {
+  background-color: #404756 !important;
 }

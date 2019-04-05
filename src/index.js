@@ -9,7 +9,7 @@ if(!!document.createRange) {
   document.getSelection().removeAllRanges();
 }
 
-const url ='http://api.yfit.co.kr:4000/api/v1/'
+const url ='http://13.209.49.169:4000/api/v1/'
 var filter = "win16|win32|win64|mac|macintel"; 
 var flags = 
   { token : 
@@ -271,17 +271,21 @@ app.ports.getSomeFilter.subscribe(function() {
 
 app.ports.videoData.subscribe(function(data) {
   const element = jwplayer("myElement")
+
     if (data.pairing == "undefined" || ! Array.isArray (data.pairing))
   	{
-      element.load(
-          data
+      jwplayer("myElement").setup(
+        {"playlist" : data 
+        , autostart : true }
       ).on("ready")
       app.ports.videoSuccess.send(true)
     }
   else {
     {
+      
       jwplayer("myElement").setup(
-        {"playlist" : data.pairing }
+        {"playlist" : data.pairing
+        , autostart : true }
       ).on("ready")
       app.ports.videoSuccess.send(true)
     }

@@ -43,7 +43,9 @@ type alias DetailData =
     , id : Int
     , inserted_at : String
     , pairing : List Pairing
-    , title : String}
+    , title : String
+    , nickname : Maybe String
+    , thumbnail : String}
 
 type alias DetailDataItem = 
     { exercise_id : Int
@@ -77,7 +79,9 @@ init session mobile
             , id = 0
             , inserted_at = ""
             , pairing = []
-            , title = ""}
+            , title = ""
+            , nickname = Nothing
+            , thumbnail = ""}
         }
         , Api.getId ()
     )
@@ -100,6 +104,7 @@ type Msg
     -- | Scrap Int
     -- | ScrapComplete (Result Http.Error Decoder.Success)
     | BackDetail
+    | VideoCall (List Pairing)
     
 
 toSession : Model -> Session
@@ -110,10 +115,22 @@ toCheck : Model -> Bool
 toCheck model =
     model.check
 
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        VideoCall pairing ->
+            let
+                pEncode p = 
+                    Encode.object
+                        [ ("file", Encode.string p.file)
+                        , ("image", Encode.string p.image)
+                        , ("title", Encode.string p.title)]
+                pList = 
+                    Encode.list pEncode pairing
+
+            in
+            
+            (model, Api.videoData pList)
         GotSession session ->
             ({model | session = session},
             Api.get GetListData (Endpoint.scrapDetail model.videoId.code model.videoId.id ) (Session.cred session) (Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing)
@@ -134,9 +151,9 @@ update msg model =
                         , ("title", Encode.string p.title)
                         ]
             in
-            (model, Api.videoData videoList)
+            (model, Cmd.none)
         GetListData (Ok ok) -> 
-            update GoVideo {model | listData = ok.data, scrap = False}
+            update GoVideo {model | listData = ok.data, scrap = False, loading = False}
         GetListData (Err err) -> 
             let 
                 serverErrors = Api.decodeErrors err
@@ -176,7 +193,9 @@ view model =
     title = "YourFitExer"
     , content = 
             if model.check then
-                
+                if model.loading then 
+                div [class "spinnerBack"] [spinner]
+                else
                 app model
             else
                 web BackPage model
@@ -195,8 +214,8 @@ app model=
                     div [] []
                      , if model.need2login then
                         need2loginAppDetail BackDetail
-                    else
-                    appcontentsItem model.listData model.loading
+                        else
+                        appcontentsItem model.listData model.loading
                 ]
 
 web msg model= 
@@ -213,8 +232,7 @@ contentsBody item loading =
         [ div [ class "tapbox" ]
             [ div [ class "yf_large" ]
                 [ text item.title ],
-                 div [ id "myElement" ] []
-                , contentsItem item loading
+                contentsItem item loading
                
             ]
         
@@ -225,7 +243,8 @@ contentsItem item loading=
             [lazy2 div [ class "yf_notification" ]
                 [ p [ class "title" ]
                     [ 
-                         div [ id "myElement" ] [
+                        img [src item.thumbnail, onClick (VideoCall item.pairing)] []
+                        , div [ id "myElement" ] [
                             ]
                     ]
                 ], 
@@ -240,9 +259,6 @@ contentsItem item loading=
                     [ text ((justok item.exercise_part_name) ++ " - " ++  (justok item.difficulty_name)) ]
                 ]
             , 
-            if loading then 
-            div [] []
-            else
             div [ class "yf_text" ]
                (List.indexedMap description item.exercise_items)
             ]
@@ -257,18 +273,19 @@ justok casees =
             "-"
 
 appcontentsItem item loading = 
-            div [ ]
+            div []
             [ div []
                 [ p [ class "m_yf_container" ]
                     [ 
-                        div [ id "myElement" ] [
+                        img [src item.thumbnail, onClick (VideoCall item.pairing)] []
+                        , div [ id "myElement" ] [
                             ]
                     ]
                 ]
             , 
-            if loading then 
-            spinner
-            else
+            -- if loading then 
+            -- spinner
+            -- else
             div [ class "m_yf_work_textbox" ]
                 [ div [ class "m_yf_work_time" ]
                     [ span []
@@ -280,9 +297,6 @@ appcontentsItem item loading =
                     [ text ((justok item.exercise_part_name) ++ " - " ++  (justok item.difficulty_name)) ]
                 ]
             , 
-            if loading then 
-            div [][]
-            else
             div [ class "m_work_script" ]
                 (List.indexedMap description item.exercise_items)
             ]

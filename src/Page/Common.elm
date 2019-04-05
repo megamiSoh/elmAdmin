@@ -155,8 +155,10 @@ appHeadermypage title style=
                 ]
     ]
 justappHeader title style = 
-    div [ class ("justHeader " ++ style) ]
+    div [class "headerSpace"] [
+        div [ class ("justHeader " ++ style) ]
         [  text title ]
+    ]
 
 appHeaderDetail title style back=
     div [ class ("commonHeader " ++ style) ]
@@ -405,7 +407,7 @@ item  idx num current btn=
 need2loginAppDetail route = 
     div [class "have2login"] [
                     div [  ] [text "로그인 후 이용가능한 서비스 입니다."] 
-                , a [class "button", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
+                , a [class "button need2Login", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
                 , div [class "button", onClick route] [text "이전 페이지로 이동"]
                 ]
 
@@ -413,6 +415,6 @@ need2loginAppDetail route =
 need2loginAppDetailRoute route = 
     div [class "have2login"] [
                     div [  ] [text "로그인 후 이용가능한 서비스 입니다."] 
-                , a [class "button", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
+                , a [class "button need2Login", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
                 , a [class "button", Route.href route] [text "이전 페이지로 이동"]
                 ]

@@ -378,7 +378,7 @@ contents model =
                         [ text model.mydata.user.username ]
                     ]
                 , p [ class "yf_terms" ]
-                    [ a [ ]
+                    [ a [Route.href Route.Private]
                         [ text "개인정보 보호 및 약관확인" ]
                     ]
                 , div [ class "settingbox" ]
