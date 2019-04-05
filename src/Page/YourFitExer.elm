@@ -153,9 +153,15 @@ update msg model =
                 result = List.sum new
             in
             if model.check then
-            ({model | data = ok.data, sumCount = result, loading = False}, Cmd.none)
+                if ok.data == [] then
+                ({model | data = ok.data, sumCount = result, loading = False}, Cmd.none)
+                else
+                ({model | data = ok.data, sumCount = result}, Cmd.none)
             else 
-            ({model | data = ok.data, sumCount = result, loading = False}, Cmd.none)
+                if ok.data == [] then
+                    ({model | data = ok.data, sumCount = result, loading = False}, Cmd.none)
+                else
+                    ({model | data = ok.data, sumCount = result, loading = False}, Cmd.none)
         GetList (Err err) ->
             (model, Cmd.none)
 
@@ -259,7 +265,7 @@ bodyContents item =
              div [ class "yf_workouttext1" ]
                 [ text item.name ]
             ]
-        , div [] (List.map videoItem item.exercises)
+        , div [] (List.indexedMap videoItem item.exercises)
         , div [ class "yf_workoutaddwarp" ]
                 [ div [ class "yf_workoutadd" , onClick (GoDetail item.code)]
                     [ div [ class "yf_workouttext3" ]
@@ -307,10 +313,10 @@ bodyContentsApp item model=
 
 
 
-videoItem item = 
+videoItem idx item = 
     div [ class "yf_workoutvideoboxwrap" , onClick (GoContentsDetail item.id)]
             [ div [ class "yf_workoutvideo_image" ]
-                [ img [ class "yf_workoutvpic1", src item.thembnail ]
+                [ img [ class "yf_workoutvpic1", src item.thembnail, onLoad (OnLoad idx) ]
                     []
                 ]
             , div [ class "yf_workoutvideo_lavel_bg" ]
