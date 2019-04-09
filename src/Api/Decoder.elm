@@ -432,3 +432,7 @@ makeeditpair pair =
         |> required "file" string
         |> required "image" string
         |> required "title" string 
+
+authMail data = 
+    Decode.succeed data
+        |> required "data" string

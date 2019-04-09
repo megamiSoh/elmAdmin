@@ -349,6 +349,7 @@ changeRouteTo maybeRoute model  =
         Just Route.Private ->
             Private.init session check
                 |> updateWith PrivateModel PrivateMsg model
+      
 
 
 toCheck page =  

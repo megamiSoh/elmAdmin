@@ -120,6 +120,12 @@ port videoData : Value -> Cmd msg
 port togetherDataList : Value -> Cmd msg
 port showToast : Value -> Cmd msg
 port blur : () -> Cmd msg
+port scrollRight : () -> Cmd msg
+port scrollLeft : () -> Cmd msg
+port scrollR : Value -> Cmd msg
+port scrollL : Value -> Cmd msg
+port expand : () -> Cmd msg
+port removeId : () -> Cmd msg
 -- port logout : () -> Cmd msg
 -- application :
     -- Decoder (Cred -> viewer)

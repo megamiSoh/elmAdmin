@@ -4,7 +4,6 @@ import Html.Events exposing(..)
 import Html.Attributes exposing(..)
 import Session exposing(..)
 import Html exposing (..)
-import Port as P
 import Json.Decode as Decode
 import Json.Encode as E
 import Route exposing (..)
@@ -23,7 +22,7 @@ init session mobile
         {session = session
         ,checkDevice = ""
         , check = mobile}
-        , P.checkMobile ()
+        , Cmd.none
     )
 
 type Msg 
@@ -31,7 +30,7 @@ type Msg
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    P.check CheckDevice
+    Sub.none
 
 toSession : Model -> Session
 toSession model =

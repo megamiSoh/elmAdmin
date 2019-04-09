@@ -37,7 +37,8 @@ module Api.Endpoint exposing
     , postList
     , pwdChange
     , editComplete
-    , togetherlike)
+    , togetherlike
+    , emailAuth)
 
 import Http
 import Url.Builder exposing (QueryParameter)
@@ -207,3 +208,7 @@ editComplete id =
 togetherlike id = 
     url ["front", "together", id] []
     
+-- emailAuth
+emailAuth = 
+    url ["auth","send"] []
+

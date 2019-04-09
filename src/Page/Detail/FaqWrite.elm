@@ -7,7 +7,6 @@ import Html exposing (..)
 import Port exposing(..)
 import Page.Common exposing(..)
 import Route exposing (..)
-import Port as P
 import Json.Decode as Decode
 import Json.Encode as E
 import Api as Api
@@ -24,7 +23,7 @@ init session mobile
         {session = session
         , check = mobile
         , checkDevice = ""}
-        , P.checkMobile ()
+        , Cmd.none
     )
 
 
@@ -33,7 +32,7 @@ type Msg
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    P.check CheckDevice
+    Sub.none
     
 toSession : Model -> Session
 toSession model =

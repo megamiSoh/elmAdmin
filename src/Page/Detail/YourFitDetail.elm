@@ -222,30 +222,31 @@ web msg model=
                     , if model.need2login then
                         need2loginAppDetail BackDetail
                     else
-                    contentsBody model.listData model.loading Scrap model.scrap GoVideo
+                    contentsBody model.listData model.loading Scrap model.scrap GoVideo "스크랩"
                     ,goBtnBox msg
                 ]
-contentsBody item model scrap modelscrap goVideo=
+contentsBody item model scrap modelscrap goVideo scrapText=
     
     div [ class "yf_yfworkout_search_wrap" ]
         [ div [ class "tapbox" ]
             [ div [ class "yf_large" ]
                 [ text item.title ],
-                contentsItem item model scrap modelscrap goVideo
+                contentsItem item model scrap modelscrap goVideo scrapText
                
             ]
         
         ]
 
-contentsItem item loading scrap modelscrap govideo=
+
+
+contentsItem item loading scrap modelscrap govideo scrapText=
             div [ class "tile is-parent is-vertical" ]
             [lazy2 div [ class "yf_notification" ]
                 [ p [ class "title" ]
                     [ 
                          div [] [
                              img [ src item.thumbnail , onClick (govideo item.pairing)] []
-                            , div [ id "myElement" ] [
-                            ]
+                            , videoCall
                          ]
                     ]
                 ], 
@@ -267,7 +268,7 @@ contentsItem item loading scrap modelscrap govideo=
                             "far fa-bookmark"
                         ) ]
                             []
-                        ], text "스크랩" 
+                        ], text scrapText
                     ]
                 ]
             , 
@@ -293,8 +294,7 @@ appcontentsItem item loading scrap modelscrap=
                 [ p [ class "m_yf_container" ]
                     [ 
                         img [src item.thumbnail, onClick (GoVideo item.pairing)] []
-                        ,div [ id "myElement" ] [
-                            ]
+                        , videoCall
                     ]
                 ]
             , 
@@ -348,3 +348,7 @@ goBtnBox backPage =
             ]
         ]
 
+
+videoCall =
+    div [] []
+    -- div [id "myElement"] []

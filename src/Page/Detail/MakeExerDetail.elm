@@ -67,8 +67,7 @@ init session mobile
             , thumbnail = ""}
         }
         , Cmd.batch 
-        [ P.checkMobile ()
-        , Api.getId ()
+        [  Api.getId ()
         ]
         
     )
@@ -81,9 +80,10 @@ type Msg
     | GetList (Result Http.Error YfD.GetData)
     | GoVideo (List Pairing)
     | Loading E.Value
-    | Scrap
+    | Scrap Int
     | ScrapComplete (Result Http.Error Decoder.Success)
     | GotSession Session
+    | SaveIdComplete E.Value
 
 toSession : Model -> Session
 toSession model =
@@ -99,15 +99,26 @@ subscriptions model =
     Sub.batch
     [ Api.receiveId GetId
     , Api.videoSuccess Loading
-    , Session.changes GotSession (Session.navKey model.session) ]
+    , Session.changes GotSession (Session.navKey model.session)
+    , Api.successId SaveIdComplete ]
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        SaveIdComplete str ->
+            let
+                decodestr = Decode.decodeValue Decode.string str
+            in
+            case decodestr of
+                Ok ok ->
+                   (model,Route.pushUrl(Session.navKey model.session) Route.TogetherW) 
+            
+                Err _ ->
+                    (model, Cmd.none)
         GotSession session ->
-            if model.deleteAuth == "scrap" then
-                update Scrap {model | session = session }
-            else
+            -- if model.deleteAuth == "scrap" then
+            --     update Scrap {model | session = session }
+            -- else
            ({model | session = session}, Api.get GetList (Endpoint.makeDetail model.videoId) (Session.cred session)  (Decoder.yfDetailDetail YfD.GetData YfD.DetailData YfD.DetailDataItem YfD.Pairing)
            )
         ScrapComplete (Ok ok) ->
@@ -179,8 +190,8 @@ update msg model =
         BackPage ->
             (model, 
             Route.pushUrl (Session.navKey model.session) Route.MakeExer)
-        Scrap ->
-            (model, Api.get ScrapComplete (Endpoint.scrap model.videoId)(Session.cred model.session) Decoder.resultD)
+        Scrap id ->
+            (model, Cmd.batch[Api.saveId (E.string (String.fromInt id))])
           
 
 view : Model -> {title : String , content : Html Msg}
@@ -198,7 +209,7 @@ view model =
 web msg model= 
     div [class "container"] [
         commonHeader "/image/icon_customworkout.png" "맞춤운동" ,
-        YfD.contentsBody model.getData model.loading Scrap model.scrap GoVideo,
+        contentsBody model.getData model.loading Scrap model.scrap GoVideo "공유하기",
         goBtn BackPage 
 
     ]
@@ -233,8 +244,7 @@ appcontentsItem item model goVideo=
                 [ p [ class "m_yf_container" ]
                     [ 
                         img [src item.thumbnail , onClick (goVideo item.pairing)][]                        
-                        , div [ id "myElement" ] [
-                            ]
+                        , videoCall
                     ]
                 ]
             , div [ class "m_yf_work_textbox" ]
@@ -248,7 +258,7 @@ appcontentsItem item model goVideo=
                     [ text (justokData item.exercise_part_name)
                     ,  text " "
                     ,  text (justokData item.difficulty_name) ]
-                , div [ class "m_yf_scrapt", onClick Scrap ]
+                , div [ class "m_yf_scrapt", onClick (Scrap item.id) ]
                     [ span []
                         [ i [ class "far fa-bookmark" ]
                             []
@@ -259,14 +269,66 @@ appcontentsItem item model goVideo=
                   (List.indexedMap YfD.description item.exercise_items)
                 
             ]
+
+contentsBody item model scrap modelscrap goVideo scrapText=
+    
+    div [ class "yf_yfworkout_search_wrap" ]
+        [ div [ class "tapbox" ]
+            [ div [ class "yf_large" ]
+                [ text item.title ],
+                contentsItem item model scrap modelscrap goVideo scrapText
+               
+            ]
+        
+        ]
+
+
+
+contentsItem item loading scrap modelscrap govideo scrapText=
+            div [ class "tile is-parent is-vertical" ]
+            [ div [ class "yf_notification" ]
+                [ p [ class "title" ]
+                    [ 
+                         div [] [
+                             img [ src item.thumbnail , onClick (govideo item.pairing)] []
+                            , videoCall
+                         ]
+                    ]
+                ], 
+            div [ class "yf_subnav" ]
+                [ div [ class "yf_time" ]
+                    [ span []
+                        [ i [ class "fas fa-clock" ]
+                            []
+                        ], text item.duration
+                    ]
+                , div [ class "yf_part" ]
+                    [ text ((justokData item.exercise_part_name) ++ "  " ++  (justokData item.difficulty_name)) ]
+                , div [ class "yf_scrapt", onClick (scrap item.id) ]
+                    [ span []
+                        [ i [ class (
+                            if modelscrap then
+                            "fas fa-bookmark"
+                            else
+                            "far fa-bookmark"
+                        ) ]
+                            []
+                        ], text scrapText
+                    ]
+                ]
+            , 
+            -- if loading then 
+            -- div [] []
+            -- else
+            div [ class "yf_text" ]
+               (List.indexedMap YfD.description item.exercise_items)
+            ]
+
 justokData result = 
     case result of
         Just ok ->
             ok
         Nothing ->
             ""
--- description item = 
---     ul [] [
---         li [] [text item]
---     ]
-    
+videoCall = 
+    div [id "myElement"] []

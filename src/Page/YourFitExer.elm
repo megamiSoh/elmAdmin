@@ -9,7 +9,6 @@ import Html exposing (..)
 import Json.Decode as Decode
 import Route exposing(..)
 import Page.Common exposing (..)
-import Port as Ports
 import Api.Endpoint as Endpoint
 import Api as Api
 import Http as Http
@@ -71,8 +70,7 @@ init session mobile =
         , swipingState = Swiper.initialSwipingState
         }
         , Cmd.batch
-        [ Ports.checkMobile ()
-        , Api.get GetList Endpoint.yourfitVideoList (Session.cred session) (Decoder.yourfitList YourFitList ListData ExerciseList )
+        [  Api.get GetList Endpoint.yourfitVideoList (Session.cred session) (Decoder.yourfitList YourFitList ListData ExerciseList )
         
         ]
     )
@@ -89,6 +87,8 @@ type Msg
     | Swiped String Swiper.SwipeEvent 
     | GetIndex String
     | OnLoad Int
+    | MoveMore Int
+    | MoveLeft Int
 
 toSession : Model -> Session
 toSession model =
@@ -104,14 +104,17 @@ onLoad msg =
 subscriptions :Model -> Sub Msg
 subscriptions model=
     Sub.batch
-    [ Ports.check CheckDevice
-    , Api.successSave Success
+    [ Api.successSave Success
     , Session.changes GotSession (Session.navKey model.session)
     , Api.successId SuccessId]
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        MoveLeft idx ->
+            (model, Api.scrollL (Encode.string (String.fromInt idx)) )
+        MoveMore idx ->
+            (model, Api.scrollR (Encode.string (String.fromInt idx)))
         OnLoad idx->
             if model.count >= model.sumCount then
             ({model | loading = False}, Cmd.none)
@@ -156,7 +159,7 @@ update msg model =
                 if ok.data == [] then
                 ({model | data = ok.data, sumCount = result, loading = False}, Cmd.none)
                 else
-                ({model | data = ok.data, sumCount = result}, Cmd.none)
+                ({model | data = ok.data, sumCount = result, loading = False}, Cmd.none)
             else 
                 if ok.data == [] then
                     ({model | data = ok.data, sumCount = result, loading = False}, Cmd.none)
@@ -225,8 +228,8 @@ web model =
                         if model.loading then
                             spinner
                         else
-                        div [] (List.map (\x -> 
-                            lazy bodyContents x
+                        div [] (List.indexedMap (\idx x -> 
+                            bodyContents idx x
                             ) model.data)
                     ]
                 ]
@@ -246,10 +249,15 @@ app model =
             ]
             
 
-bodyContents item = 
-    div [ class "menubox_wrap"]
-    [ 
-        div [ class "yf_workoutmenubox1" ]
+bodyContents idx item = 
+    div [class "webFxWrap"]
+    [  
+        div [class "webMoveKeyR", onClick (MoveLeft idx)] [
+            i[class "fas fa-caret-left "] []
+        ]
+       ,
+       div [ class "menubox_wrap", id ("scrollCtr" ++ (String.fromInt idx))] [
+            div [ class "yf_workoutmenubox1", style "width" (String.fromInt(200 * 6 + 130) ++ "px") ]
         [ div [ class "yf_workoutvideopic" ]
             [ 
                 if item.code == "10" then
@@ -272,7 +280,12 @@ bodyContents item =
                         [ text "더보기" ]
                     ]
                 ]
+         
         ]
+       ]
+       ,div [class "webMoveKey", onClick (MoveMore idx)] [
+           i[class "fas fa-caret-right "] []
+       ]
     ]
 
 

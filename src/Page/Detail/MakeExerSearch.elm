@@ -117,9 +117,7 @@ init session mobile =
                 }
             }
         }, 
-        Cmd.batch 
-        [ P.checkMobile ()
-        ]
+        Cmd.none
     )
 
 type Msg 

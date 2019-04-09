@@ -6,7 +6,6 @@ import Session exposing(..)
 import Html exposing (..)
 import Page.Common exposing (..)
 import Route exposing (..)
-import Port as P
 import Json.Encode as Encode
 import Json.Decode as Decode
 import Api as Api
@@ -15,6 +14,8 @@ import Api.Decoder as Decoder
 import Api.Endpoint as Endpoint
 import Html.Lazy exposing (lazy, lazy2)
 import Page as Page
+import Task
+
 type alias Model 
     = {
         session : Session,
@@ -34,7 +35,7 @@ type alias Model
         , ofheight : Int
         , need2login : Bool
         , videoStart : String
-        , showAllText : Bool
+        , showAllText : Int
         , likeList : List Int
         , idx : Int
     }
@@ -114,7 +115,7 @@ init session mobile
         , videoStart = ""
         , per_page = 10
         , loading = True
-        , showAllText = False
+        , showAllText = 0
         , like = 0
         , scrap = False
         , togetherData = 
@@ -126,8 +127,7 @@ init session mobile
             }
         }
         ,  Cmd.batch 
-        [ P.checkMobile ()
-        , dataEncoder 1 10 session]
+        [  dataEncoder 1 10 session]
     )
 
 dataEncoder page perpage session=
@@ -178,7 +178,7 @@ type Msg
     | Scrap Int
     | VideoCall ((List Pairing) ,Int)
     | OnLoad
-    | ShowAllText
+    | ShowAllText Int
     | LikeUpdate (Result Http.Error TogetherLikeWrap)
     
 
@@ -209,16 +209,24 @@ update msg model =
                             x
                     )model.appData 
             in
+                let _ = Debug.log "like" udtLike
+                    
+                in
+                
             ({model | appData = udtLike}, Cmd.none)
         LikeUpdate (Err err) ->
             (model, Cmd.none)
-        ShowAllText ->
-            ({model | showAllText = not model.showAllText}, Cmd.none)
+        ShowAllText id->
+            let _ = Debug.log "like" id
+                
+            in
+            
+            ({model | showAllText = id}, Cmd.none)
         OnLoad ->
-            if model.count <= List.length (model.togetherData.data) then
+            if model.count >= List.length (model.togetherData.data) then
             ({model | loading = False}, Cmd.none)
             else
-            ({model | count = model.count + 1}, Cmd.none)
+            ({model | count = model.count + 1, loading = False}, Cmd.none)
         VideoCall (p ,idx) ->  
             let 
                 stringint = String.fromInt(idx)
@@ -257,17 +265,17 @@ update msg model =
                 page = Encode.int (model.page + 1)
             in
             if ok.data == [] then
-            ({model| infiniteLoading = False}, Cmd.none)
+            ({model| infiniteLoading = False, loading = False}, Cmd.none)
             else
-            ({model | appData = model.appData ++ ok.data, page = model.page + 1, infiniteLoading = False}, Cmd.none
+            ({model | appData = model.appData ++ ok.data, page = model.page + 1, infiniteLoading = False, loading = False}, Cmd.none
             -- , Api.togetherDataList page 
             )
         LoadingGetData (Err err) ->
-            (model, Cmd.none)
+            ({model | loading = False}, Cmd.none)
         
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
              if (scrollHeight - scrollTop) <= offsetHeight then
-                ({model | infiniteLoading = True}, loadingEncoder (model.page + 1)  model.per_page model.session)
+                ({model | infiniteLoading = True}, Cmd.batch[loadingEncoder (model.page + 1)  model.per_page model.session])
                 
             else
                 ({model | ofheight = offsetHeight}, Cmd.none)
@@ -335,9 +343,9 @@ update msg model =
         --             Err _->
         --                  ({model | loading = False},Cmd.none)
         GetData (Ok ok) ->
-            ({model | togetherData = ok, appData = ok.data} , Cmd.none )
+            ({model | togetherData = ok, appData = ok.data, loading = False} , Cmd.none )
         GetData (Err err) ->
-            (model, Cmd.none)
+            ({model | loading = False}, Cmd.none)
         IsActive title ->
             ({model | isActive = title} , Cmd.none)
         CheckDevice str ->
@@ -382,6 +390,8 @@ justData item =
         Nothing ->
             "-"
 
+
+
 web model = 
     div [class "containerwrap"] [
                 div [class "container"][
@@ -405,11 +415,11 @@ app model =
      
     div [class "container "] [
         justappHeader "함께해요" "togetherHeader",
-        div [scrollEvent ScrollEvent] [
+        div [scrollEvent ScrollEvent, id "scrollE" ] [
             if model.need2login then
             need2loginAppDetailRoute Route.Together
             else
-            div [ class "scroll", id "scrollE" , scrollEvent ScrollEvent] [
+            div [ class "scroll", scrollEvent ScrollEvent] [
                 -- appTab model,
                 appStartBtn,
                 div [] (List.indexedMap (
@@ -546,14 +556,14 @@ appContentsItem idx item model=
                 div [][]
             , if String.length (justData item.content) > 100 then
                    div [class "togetherArticle"][
-                        if model.showAllText then
+                        if model.showAllText == item.id then
                             text (justData item.content)
                         else
                             text (String.dropRight ((String.length(justData item.content) - 100)) (justData item.content) )
                             
                    , div [] [
                     ul [] [
-                        li [] (List.map (\x-> detailData x model) (justListData item.detail))
+                        li [] (List.map (\x-> detailData x model item.id) (justListData item.detail))
                     ]
                 ]
                 ]
@@ -561,7 +571,7 @@ appContentsItem idx item model=
                    div [class "togetherArticle"]
                    [ text (justData item.content)
                    , div [] 
-                    (List.map (\x-> detailData x model) (justListData item.detail))
+                    (List.map (\x-> detailData x model item.id) (justListData item.detail))
                 ]
                 -- ]
         -- , div [ class "m_to_yf_text" ]
@@ -715,7 +725,7 @@ userItem idx item model =
                             Nothing ->
                                 []
                     ), idx))] [
-                        img [class "toImg", src (justData thumbnail), onLoad OnLoad] []
+                        img [class "toImg", src (justData thumbnail)] []
                     ],
                         div [id ("myElement" ++ String.fromInt(idx)) ]  [] ]
                 Nothing ->
@@ -723,14 +733,14 @@ userItem idx item model =
                 , div [id ("together" ++ (String.fromInt(idx)))] [] 
                 , if String.length (justData item.content) > 100 then
                    div [][
-                        if model.showAllText then
+                        if model.showAllText == item.id then
                             text (justData item.content)
                         else
                             text (String.dropRight ((String.length(justData item.content) - 100)) (justData item.content) )
                             
                    , div [] [
                     ul [] [
-                        li [] (List.map (\x-> detailData x model) (justListData item.detail))
+                        li [] (List.map (\x-> detailData x model item.id) (justListData item.detail))
                     ]
                 ]
                 ]
@@ -738,7 +748,7 @@ userItem idx item model =
                    div []
                    [ text (justData item.content)
                    , div [] 
-                    (List.map (\x-> detailData x model) (justListData item.detail))
+                    (List.map (\x-> detailData x model item.id) (justListData item.detail))
                 ]
                 ]
                   
@@ -770,31 +780,31 @@ userItem idx item model =
             ]
         ]
 
-detailData item model= 
-    div[] [
+detailData item model id= 
+    div[class "detailData"] [
    
-        if List.length item.exercise_items > 3 then
-         ul[] [
-            li [] (List.indexedMap (\idx x->  exerciseItems idx x model) (List.sortBy .sort item.exercise_items))
-            , li [] [
-                if model.showAllText then
-                    div [onClick ShowAllText, class "moreText cursor" ][text "닫기"] 
-                else
-                    div [onClick ShowAllText, class "moreText cursor" ][text " ...자세히보기"] 
-                ]
-            ]
-        else 
+        -- if List.length item.exercise_items > 3 then
+        --  ul[] [
+        --     li [] (List.indexedMap (\idx x->  exerciseItems idx x model id) (List.sortBy .sort item.exercise_items))
+        --     , li [] [
+        --         if model.showAllText == id then
+        --             div [onClick (ShowAllText id), class "moreText cursor" ][text "닫기"] 
+        --         else
+        --             div [onClick (ShowAllText id), class "moreText cursor" ][text " ...자세히보기"] 
+        --         ]
+        --     ]
+        -- else 
         ul [] [
          li [] 
-         (List.indexedMap (\idx x->  exerciseItems idx x model) (List.sortBy .sort item.exercise_items))]
+         (List.indexedMap (\idx x->  exerciseItems idx x model id) (List.sortBy .sort item.exercise_items))]
      ]
    
-exerciseItems idx item model=
+exerciseItems idx item model id=
     li [
-        classList 
-        [ ("hideList", (idx >= 3))
-        , ("allShow", model.showAllText)
-        ]
+        -- classList 
+        -- [ ("hideList", (idx >= 3))
+        -- , ("allShow", model.showAllText == id)
+        -- ]
     ] [
         text ((String.fromInt (item.sort)) ++ ". " ++ item.title ++ " x " ++ (
             if item.is_rest == False then

@@ -88,7 +88,7 @@ need2loginApp =
                 , a [class "button", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
                 ]
 
-
+type Msg = NoOp
 
 
 webContents content page maybeViewer=
@@ -165,7 +165,7 @@ viewHeader page maybeViewer =
                 [ div [ class "navbar-brand yf_brand" ]
                     [ a [ class "navbar-item yf_logo", Route.href Route.Home ]
                         []
-                    , a [  class "navbar-burger burger" ]
+                    , div [  class "navbar-burger burger" ]
                         [ span []
                             []
                         , span []
@@ -174,7 +174,7 @@ viewHeader page maybeViewer =
                             []
                         ]
                     ]
-                , div [ id "navbarBasicExample", class "navbar-menu yf_menu" ]
+                , div [ id "expandMenu", class "navbar-menu yf_menu" ]
                     [ div [ class "navbar-start yf_start" ]
                         [ a [ class "navbar-item yf_item", Route.href Route.Logout ]
                             [ text "로그아웃" ]
@@ -194,7 +194,7 @@ viewHeader page maybeViewer =
                 [ div [ class "navbar-brand yf_brand" ]
                     [ a [ class "navbar-item yf_logo", Route.href Route.Home ]
                         []
-                    , a [  class "navbar-burger burger" ]
+                    , div [  class "navbar-burger burger" ]
                         [ span []
                             []
                         , span []
@@ -203,7 +203,7 @@ viewHeader page maybeViewer =
                             []
                         ]
                     ]
-                , div [ id "navbarBasicExample", class "navbar-menu yf_menu" ]
+                , div [ id "expandMenu", class "navbar-menu yf_menu" ]
                     [ div [ class "navbar-start yf_start" ]
                         [ a [ class "navbar-item yf_item", Route.href Route.Login ]
                             [ text "로그인/회원가입" ]

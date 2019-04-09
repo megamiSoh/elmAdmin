@@ -5,7 +5,6 @@ import Html.Events exposing(..)
 import Html.Attributes exposing(..)
 import Session exposing(..)
 import Html exposing (..)
-import Port as P
 import Route exposing (..)
 import Json.Encode as Encode
 import Json.Decode as Decode
@@ -32,16 +31,21 @@ type alias Model =
     , repassword : String
     , err : String
     , check : Bool
+    , authNo : String
+    , emailComplate : String
     }
 type alias Token =  {
     token : String
     }
 
-
+type alias AuthSendData = {
+    data : String
+    }
 
 datalist model= 
     Encode.object
         [ ("username", Encode.string model.mail)
+        , ("auth_no", Encode.string model.authNo)
         , ("password" , Encode.string model.password)
         , ("password_confirmation", Encode.string model.repassword)]
         
@@ -62,7 +66,12 @@ signupEncoder model session =
     Api.post Endpoint.signup (Session.cred session) SuccessData body (Decoder.tokenDecoder Api.Cred )
 
 
-
+emailAuthEncode email session =
+    let
+        body = Encode.object [("username",Encode.string email)] 
+            |> Http.jsonBody
+    in
+    Api.post Endpoint.emailAuth (Session.cred session) AuthComplete body (Decoder.authMail AuthSendData)
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile
     = (
@@ -77,13 +86,15 @@ init session mobile
         , pwdstyle = ""
         , mail = ""
         , repwd = ""
+        , authNo = ""
         , reborder= ""
         , restyle = ""
         , repassword = ""
         , err = ""
+        , emailComplate = ""
         , check = mobile
         }
-        , P.checkMobile ()
+        , Cmd.none
     )
 
 type Msg 
@@ -96,6 +107,10 @@ type Msg
     | SuccessData (Result Http.Error Cred )
     | GotSession Session
     | KeyDown Int
+    | EmailAuth 
+    | AuthComplete (Result Http.Error AuthSendData)
+    | EmailAuthInput String
+    
 
 toSession : Model -> Session
 toSession model =
@@ -112,6 +127,17 @@ onKeyDown tagger =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        EmailAuthInput str ->
+            ({model | authNo = str} , Cmd.none)
+        AuthComplete (Ok ok) ->
+            ({model | emailComplate = "인증번호가 발송 되었습니다."}, Cmd.none)
+        AuthComplete (Err err) ->
+            (model, Cmd.none)
+        EmailAuth ->
+            if model.mail == "" then
+            ({model | err = "이메일 주소를 입력 해 주세요."}, Cmd.none)
+            else
+            (model, emailAuthEncode model.mail model.session)
         KeyDown key ->
             if key == 13 then
                 update Submit model
@@ -138,18 +164,15 @@ update msg model =
                     , Cmd.none
                     )
         Submit ->
-            if (model.mail |> String.split("@") |> List.length) /=2 then
-                ({model | matchStyle = "noMatch", borderMatch = "noMatchBorder", errmsg = "유효한 이메일 주소를 입력 해 주세요."}, Cmd.none)
-            else if  (model.mail |> String.split("@") |> List.length) == 2 then
-                    if String.length model.password < 4 then
-                        ({model | pwdstyle = "noMatch", pwdborder = "noMatchBorder", pwdmsg = "비밀번호는 4자 이상 입력 해 주세요.", matchStyle = "", borderMatch = "", errmsg = ""}, Cmd.none)
-                    else if String.length model.password > 3 then
-                        if model.password  /= model.repassword then
-                            ({model | restyle = "noMatch", reborder = "noMatchBorder", repwd = "두 개의 비밀번호가 일치하지 않습니다..", matchStyle = "", borderMatch = "", errmsg = "", pwdstyle = "", pwdborder = "", pwdmsg = ""}, Cmd.none)
-                        else 
-                            ({model | restyle = "", reborder = "", repwd = "", matchStyle = "", borderMatch = "", errmsg = "", pwdstyle = "", pwdborder = "", pwdmsg = ""}, signupEncoder model model.session)
-                    else 
-                        (model,signupEncoder model model.session )
+            if model.authNo == "" then
+                ({model | err = "이메일 인증 먼저 진행 해 주세요."}, Cmd.none)
+            else if String.length model.password < 6 then
+                ({model | pwdstyle = "noMatch", pwdborder = "noMatchBorder", pwdmsg = "비밀번호는 7자 이상 입력 해 주세요.", matchStyle = "", borderMatch = "", errmsg = ""}, Cmd.none)
+            else if String.length model.password > 3 then
+                if model.password  /= model.repassword then
+                    ({model | restyle = "noMatch", reborder = "noMatchBorder", repwd = "두 개의 비밀번호가 일치하지 않습니다..", matchStyle = "", borderMatch = "", errmsg = "", pwdstyle = "", pwdborder = "", pwdmsg = ""}, Cmd.none)
+                else 
+                    ({model | restyle = "", reborder = "", repwd = "", matchStyle = "", borderMatch = "", errmsg = "", pwdstyle = "", pwdborder = "", pwdmsg = ""}, signupEncoder model model.session)
             else 
                 (model, signupEncoder model model.session)
         RePasswordCheck repassword ->
@@ -218,6 +241,11 @@ pcLayout model=
                     [ p [ class "control has-icons-left signup_yf_inputbox" ]
                         [ input [ class ("input " ++ model.borderMatch ), type_ "email", placeholder "이메일을 입력해주세요", onInput EmailCheck ]
                             []
+                        , div [class "emailAuth"][
+                            
+                            input [ class "input", type_ "number", placeholder "인증번호를 입력해 주세요.", onInput EmailAuthInput] []
+                            , div [class "button emailButton", onClick EmailAuth] [text "이메일 인증"]]
+                        , div [class "completeAuthEmail"] [text model.emailComplate]
                         , span [ class "icon is-small is-left" ]
                             [ i [ class ("fas fa-envelope "++ model.matchStyle) ]
                                 []

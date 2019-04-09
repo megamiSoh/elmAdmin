@@ -277,7 +277,13 @@ update msg model =
             else
             ({model | loading = True, saveItem = item}, registVideo model item model.session)
         UpdateTitle title ->
-            ({model | title = title}, Cmd.none)
+            let 
+                newTitle = 
+                    title
+                        |> String.replace "&" "%26"
+                        |> String.replace "%" "%25"
+            in
+            ({model | title = newTitle}, Cmd.none)
         ReceiveDataFromStorage data ->
             let 
                 last = Decode.decodeValue (Decode.list(Decoder.filterStep2 FilterData)) data
@@ -359,14 +365,22 @@ view model =
     title = "YourFitExer"
     , content = 
         div [] [
-        if model.loading then
-        div [class "spinnerBack"] [spinner]
-        else
-        div [] [],
         if model.check then
-            app model
+            div [] [
+                if model.loading then
+            div [class "spinnerBack"] [spinner]
+            else
+            div [] []
+            , app model
+            ]
         else 
-            web model
+           div[][
+                if model.loading then
+                div [class "spinnerBackWeb"] [spinner]
+                else
+                div [] []
+                , web model
+           ]
        ]
     }
 
@@ -430,7 +444,7 @@ thumbSetting model=
         , div [ class "yf_titleinput" ]
             [ 
             div [class model.validation] [
-                input [ class ( "input " ++ model.validation ), type_ "text", placeholder "운동제목을 입력하세요", onInput UpdateTitle, value model.title ]
+                input [ class ( "input " ++ model.validation ), type_ "text", placeholder "운동제목을 입력하세요", onInput UpdateTitle ]
                 []
             ]
             , div [] [text model.errTitle]

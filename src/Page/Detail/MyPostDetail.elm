@@ -5,7 +5,6 @@ import Html.Events exposing(..)
 import Html.Attributes exposing(..)
 import Session exposing(..)
 import Html exposing (..)
-import Port as P
 import Json.Encode as E
 import Json.Decode as Decode
 import Page.Common exposing(..)
@@ -87,8 +86,7 @@ init session mobile
             }
         }
         , Cmd.batch 
-        [ P.checkMobile ()
-        , Api.getId ()
+        [  Api.getId ()
         ]
         
     )

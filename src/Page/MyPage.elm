@@ -8,7 +8,6 @@ import Html exposing (..)
 import Page.Common exposing(..)
 import Page.MyPageMenu.MyPageInfoLayout exposing(..)
 import Route exposing (..)
-import Port as P
 import Json.Encode as E
 import Json.Decode as Decode
 import Api as Api
@@ -69,8 +68,7 @@ init session mobile =
                 , username = ""}
              }}
         , Cmd.batch
-        [ P.checkMobile ()
-        , Api.get MyInfoData Endpoint.myInfo (Session.cred session) (Decoder.dataWRap DataWrap MyData UserData)
+        [  Api.get MyInfoData Endpoint.myInfo (Session.cred session) (Decoder.dataWRap DataWrap MyData UserData)
         ]
     )
 
@@ -107,8 +105,8 @@ subscriptions :Model -> Sub Msg
 subscriptions model=
     Session.changes GotSession (Session.navKey model.session)
 
-port scrollRight : () -> Cmd msg
-port scrollLeft : () -> Cmd msg
+-- port scrollRight : () -> Cmd msg
+-- port scrollLeft : () -> Cmd msg
 
 toSession : Model -> Session
 toSession model =
@@ -207,9 +205,9 @@ update msg model =
             
             (model, (Session.changeInterCeptor (Just serverError) model.session))
         ClickRight ->
-            ( model, scrollRight () )
+            ( model, Api.scrollRight () )
         ClickLeft ->
-            (model , scrollLeft ())
+            (model , Api.scrollLeft ())
         SelectTab tab->
             ({model | selecTab = tab} , Cmd.none)
         GotSession session ->

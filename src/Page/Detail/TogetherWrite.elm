@@ -165,11 +165,11 @@ update msg model =
             let
                 st = Encode.encode 0 (Encode.string model.content)
             in
-                    (model, Cmd.batch[shareTogether model.videoId model.session model.content])
+                    (model, Cmd.batch[shareTogether model.videoId model.session model.content, Api.removeId () ])
             
             
         GetShare id -> 
-            let
+            let _ = Debug.log "get" id
                 idDecoder = Decode.decodeValue Decode.string id
                 -- let _ = Debug.log "str" String.filter Char.isDigit str 
                 
@@ -274,7 +274,7 @@ bodyContents_app model =
                 ]
                 -- , textarea [ class "textarea m_togetherWrite_textarea", placeholder "운동, 다이어트, 식단, 일상에 대한 대화를 나눠요", rows 10 , onInput Content ]
                 -- []
-                , div [class "apptogethertextarea"] [editorView model.content Content False "운동, 다이어트, 식단, 일상에 대한 대화e를 나눠요"
+                , div [class "apptogethertextarea"] [editorView model.content Content False "운동, 다이어트, 식단, 일상에 대한 대화를 나눠요"
             ]]
     
         -- ]

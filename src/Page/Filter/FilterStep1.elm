@@ -16,6 +16,8 @@ import Api as Api
 import Http as Http
 import Api.Decoder as Decoder
 import Swiper
+import Browser.Dom as Dom
+import Task
 
 type alias Model 
     = {
@@ -174,6 +176,7 @@ type Msg
     | ScrInfo 
     | Search
     | KeyDown Int
+    | NoOp
     -- | SearchExercise STring
 toSession : Model -> Session
 toSession model =
@@ -245,13 +248,15 @@ scrollInfoDecoder =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        NoOp ->
+            (model, Cmd.none)
         KeyDown key ->
             if key == 13 then
                 update Search model
             else
                 (model, Cmd.none)
         Search ->
-            (model , Cmd.batch[filterEncoder model.getFilter model.session, Api.blur () ])
+            (model , Cmd.batch[filterEncoder model.getFilter model.session, unfocus ])
         ScrInfo ->
              (model, Cmd.none)
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
@@ -416,7 +421,9 @@ update msg model =
                  Route.pushUrl (Session.navKey model.session) Route.Filter])
 
 
-
+unfocus : Cmd Msg
+unfocus =
+    Task.attempt(\_ -> NoOp) (Dom.blur "keyboardBlur")
 
 
 

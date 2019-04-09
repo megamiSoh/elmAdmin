@@ -7,7 +7,6 @@ import Session exposing(Session)
 import Json.Encode as E
 import Json.Decode as Decode
 import Route exposing(..)
-import Port as Ports
 import Api as Api
 type alias Model 
     = {
@@ -22,7 +21,7 @@ init session mobile=
         { session = session
         , title = "" 
         , check = mobile}
-       , Ports.checkMobile ()
+       , Cmd.none
     )
 type Msg = 
     NoOp 

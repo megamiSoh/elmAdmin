@@ -246,9 +246,7 @@ web model=
         [
             commonJustHeader "/image/icon_management.png" "나의 게시물관리"
             , contentsBody model.data
-            , pagination 
-                PageBtn
-                model.data.paginate
+            
         ]
 app model =
     div[class "container"] [
@@ -260,8 +258,12 @@ contentsBody model =
         [ div [ class "myPost_mediabox" ]
             [ 
             if List.length (model.data) > 0 then
-            ul [ class "cbp_tmtimeline" ]
+            div[] [ul [ class "cbp_tmtimeline" ]
             (List.map contentsLayout model.data)
+            
+            , pagination 
+                PageBtn
+                model.paginate]
             else 
             ul [class "m_cbp_tmtimeline"]
                 [

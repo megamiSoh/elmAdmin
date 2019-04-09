@@ -7,7 +7,6 @@ import Session exposing(..)
 import Html exposing (..)
 import Page.Common exposing (..)
 import Route exposing(..)
-import Port as P
 import Json.Encode as Encode
 import Json.Decode as Decode
 import Http as Http exposing(..)
@@ -118,8 +117,7 @@ init session mobile =
             }
         }, 
         Cmd.batch 
-        [ P.checkMobile ()
-        , bodyEncode 1 10 "" session
+        [ bodyEncode 1 10 "" session
         ]
     )
 
@@ -218,15 +216,23 @@ update msg model =
             in
             ({model | saveCheckVal = str},Api.saveId save)
         GetData (Ok ok) -> 
+            let _ = Debug.log "ok" ok.data
+                
+            in
+            
             if model.check then
                 if ok.data == [] then
-                ({model | getlistData = ok, newList = model.newList, infiniteLoading = False, loading =False}, Cmd.none)
+                ({model | getlistData = ok, newList = model.newList ++ ok.data, infiniteLoading = False, loading =False}, Cmd.none)
                 else
-                ({model | getlistData = ok, page = model.page + 1, newList = model.newList ++ ok.data, infiniteLoading = False}, Cmd.none)
+                    let _ = Debug.log "newList" model.newList
+                        
+                    in
+                    
+                ({model | getlistData = ok, page = model.page + 1, newList = model.newList ++ ok.data, infiniteLoading = False, loading = False}, Cmd.none)
             else 
                 ({model | getlistData = ok, loading =False}, Cmd.none)
         GetData (Err err) -> 
-            let
+            let _ = Debug.log "err" err
                 serverErrors =
                     Api.decodeErrors err
             in  
@@ -290,8 +296,8 @@ app model =
     div [ class "container", class "scroll", scrollEvent ScrollEvent, style "height" "85vh" ][
          appStartBox
         ,listTitle
-        ,if List.length model.newList > 0 then
-            div [] [
+        -- ,if List.length model.newList > 0 then
+            ,div [] [
                 div[](List.map appItemContent model.newList) ,
                 if model.infiniteLoading then
                     div [class "loadingPosition"] [
@@ -300,8 +306,8 @@ app model =
                 else
                     span [] []
             ]
-        else
-        div [class "noResult"] [text "맞춤영상이 없습니다."]
+        -- else
+        -- div [class "noResult"] [text "맞춤영상이 없습니다."]
     ]
 
 appStartBox = 
@@ -327,7 +333,12 @@ appItemContent item=
                 ]
       
             , div [ class "m_make_yf_box_title", onClick (CheckId item.id "") ]
-                [ text item.title ]
+                [ text (
+                    if String.length item.title > 10 then
+                    String.left 10 item.title ++ "..."
+                    else
+                    item.title
+                ) ]
             , div [ class "make_yf_ul" ]
                 [ ul []
                     [ li []
@@ -363,7 +374,12 @@ bodyItem item=
         , div [ class "Customtextbox"]
             [ div [ class "m1"  , onClick (CheckId item.id "")]
                 [ h1 [ class "make_yf_titlename" ]
-                    [ text item.title ]
+                    [ text  (
+                    if String.length item.title > 10 then
+                    String.left 10 item.title ++ "..."
+                    else
+                    item.title
+                ) ]
                 ]
             , div [ class "m2" ]
                 [ text (String.dropRight 10 (item.inserted_at)), 

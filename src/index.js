@@ -68,6 +68,22 @@ app.ports.scrollLeft.subscribe(function() {
 });
 })
 
+app.ports.scrollR.subscribe(function(idx) {
+  var target = document.getElementById("scrollCtr" + idx)
+  target.scrollBy({
+    behavior: "smooth",
+    left: 300
+});
+})
+
+app.ports.scrollL.subscribe(function(idx) {
+  var target = document.getElementById("scrollCtr" + idx )
+  target.scrollBy({
+    behavior: "smooth",
+    left: -300
+});
+})
+
 app.ports.saveKey.subscribe(function (key) {
 localStorage.setItem("contentsKey", key)
   app.ports.successSave.send("succees")
@@ -89,6 +105,7 @@ app.ports.saveId.subscribe(function (id) {
 })
 
 app.ports.getId.subscribe(function () {
+  alert(1111)
   var get = localStorage.getItem("id")  
   var parse = JSON.parse (get)
   console.log (parse.code == undefined)
@@ -98,7 +115,9 @@ app.ports.getId.subscribe(function () {
     app.ports.receiveId.send (parse)} 
 })
 
-
+app.ports.removeId.subscribe(function() {
+localStorage.removeItem("id")
+})
 app.ports.storeCache.subscribe(function(token) {
 var t = JSON.stringify(token)
 if (token === null) {
@@ -270,6 +289,7 @@ app.ports.getSomeFilter.subscribe(function() {
 
 
 app.ports.videoData.subscribe(function(data) {
+  alert("call")
   const element = jwplayer("myElement")
 
     if (data.pairing == "undefined" || ! Array.isArray (data.pairing))
@@ -320,4 +340,57 @@ app.ports.blur.subscribe(function() {
   var id = document.getElementById("keyboardBlur")
   id.blur();
 })
-registerServiceWorker();
+
+// app.ports.expand.subscribe(function() {
+//   alert(111)
+//   // const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+
+//   // // Check if there are any navbar burgers
+//   // if ($navbarBurgers.length > 0) {
+
+//   // // Add a click event on each of them
+//   // $navbarBurgers.forEach( el => {
+//   //     el.addEventListener('click', () => {
+
+//   //     // Get the target from the "data-target" attribute
+//   //     const target = el.dataset.target;
+//       const $target = document.getElementById("expandMenu");
+
+//       // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
+//       el.classList.toggle('is-active');
+//       $target.classList.toggle('is-active');
+
+      
+
+//   //     });
+//   // });
+// // }
+// })
+document.addEventListener('DOMContentLoaded', () => {
+  // Get all "navbar-burger" elements
+  const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+
+  // Check if there are any navbar burgers
+  if ($navbarBurgers.length > 0) {
+
+  // Add a click event on each of them
+  $navbarBurgers.forEach( el => {
+      el.addEventListener('click', () => {
+        console.log()
+      if (document.getElementsByClassName("is-active")[0] == undefined){
+      document.getElementById("expandMenu").setAttribute('class','is-active')
+    
+    }
+      else {
+        document.getElementById("expandMenu").removeAttribute('class','is-active')
+        document.getElementById("expandMenu").setAttribute('class','navbar-menu yf_menu')
+      }
+    })
+  });
+}
+
+// app.ports.confirmDialog.subscribe(function () {
+
+// })
+
+});registerServiceWorker();

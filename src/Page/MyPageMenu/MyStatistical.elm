@@ -5,7 +5,6 @@ import Html.Attributes exposing(..)
 import Session exposing(..)
 import Html exposing (..)
 import Page.Common exposing(..)
-import Port as P
 import Json.Encode as E
 import Json.Decode as Decode
 import Route exposing (..)
@@ -25,7 +24,7 @@ init session mobile
         ,activeTab = "weekly"
         , check = mobile
         ,checkDevice =""}
-        , P.checkMobile ()
+        , Cmd.none
     )
 
 type Msg 
@@ -44,14 +43,14 @@ toCheck model =
 
 subscriptions :Model -> Sub Msg
 subscriptions model=
-    P.check CheckDevice
+    Sub.none
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ActiveTab item ->
-            ( {model | activeTab = item}, P.checkMobile () )
+            ( {model | activeTab = item}, Cmd.none )
         CheckDevice str ->
            let 
                 result =

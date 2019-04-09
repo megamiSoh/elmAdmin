@@ -184,6 +184,7 @@ type Msg
     | FilterSaveSuccess E.Value
     | SessionCheck E.Value
     | GotSession Session
+    | Delete Int
 
 toSession : Model -> Session
 toSession model =
@@ -204,6 +205,14 @@ dropLists idx model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of 
+        Delete idx ->
+            let
+                after =takeLists idx model.addData
+                before = dropLists (idx + 1) model.addData
+                result = after ++ before
+            in
+            
+            ({model | addData = result, style = ""}, Cmd.none)
         GotSession session ->
             ({model | session = session}
             , registVideo model model.saveItem model.session
@@ -274,6 +283,8 @@ update msg model =
             in
             if model.title == "" then
             ({model|validation = "vaidColor", errTitle = "제목을 입력 해 주세요."}, Cmd.none)
+            else if List.length model.addData == 0 then
+            (model, Cmd.none)
             else
             ({model | loading = True, saveItem = item}, registVideo model item model.session)
         UpdateTitle title ->
@@ -419,10 +430,13 @@ contentsItem model =
             [
                 thumbSetting model,
                 itemCount model,
+                if List.length model.addData > 0 then
                 div [ class "filterstep2_yf_listselect" ]
                 ( List.indexedMap (\idx x ->
                 selectedItem idx x model
                 ) model.addData)
+                else 
+                div [class "noResult"][text "운동을 다시 설정 해 주세요."]
             ]
 
 appcontentsItem model = 
@@ -430,10 +444,13 @@ appcontentsItem model =
             [
                 appthumbSetting model,
                 appitemCount model,
-                div [ class "m_filterstep2_yf_listselect" ]
+                if List.length model.addData > 0 then
+                div [ class "filterstep2_yf_listselect" ]
                 ( List.indexedMap (\idx x ->
-                appselectedItem idx x model
+                selectedItem idx x model
                 ) model.addData)
+                else 
+                div [class "noResult"][text "운동을 다시 설정 해 주세요."]
             ]                    
 
 thumbSetting model= 
@@ -445,9 +462,9 @@ thumbSetting model=
         , div [ class "yf_titleinput" ]
             [ 
             div [class model.validation] [
-                editorViewInput model.title UpdateTitle False "운동제목을 입력하세요." model.validation
-                -- input [ class ( "input " ++ model.validation ), type_ "text", placeholder "운동제목을 입력하세요", onInput UpdateTitle ]
-                -- []
+                -- editorViewInput model.title UpdateTitle False "운동제목을 입력하세요." model.validation
+                input [ class ( "input " ++ model.validation ), type_ "text", placeholder "운동제목을 입력하세요", onInput UpdateTitle ]
+                []
             ]
             , div [] [text model.errTitle]
             ]
@@ -613,7 +630,7 @@ expandPanel idx model rest=
             , div [] [text model.cannotSave]
             , button [ class "button is-dark filterstep2_save_btn", onClick (Save idx) ]
                 [ text "저장" ]
-            ,button [ class "button is-danger filterstep2_del_btn", onClick (Save idx) ]
+            ,button [ class "button is-danger filterstep2_del_btn", onClick (Delete idx) ]
                 [ text "삭제" ]    
             ]
         ]
@@ -645,7 +662,7 @@ appexpandPanel idx model rest=
                 []
             , button [ class "button is-dark m_filterstep2_save_btn", onClick (Save idx) ]
                 [ text "저장" ]
-            ,button [ class "button is-danger m_filterstep2_del_btn", onClick (Save idx) ]
+            ,button [ class "button is-danger m_filterstep2_del_btn", onClick (Delete idx) ]
                 [ text "삭제" ]    
             ]
         ]

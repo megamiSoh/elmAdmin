@@ -6,7 +6,6 @@ import Session exposing(..)
 import Html exposing (..)
 import Page.Common exposing(..)
 import Route exposing (..)
-import Port as P
 import Json.Decode as Decode
 import Json.Encode as E
 import Api as Api
@@ -24,12 +23,12 @@ init session mobile
         ,checkDevice = "",
         idx = ""
         , check = mobile}
-        , P.checkMobile ()
+        , Cmd.none
     )
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    P.check CheckDevice
+    Sub.none
 
 type Msg 
     = CheckDevice E.Value

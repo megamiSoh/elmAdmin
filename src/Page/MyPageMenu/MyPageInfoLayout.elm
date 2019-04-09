@@ -33,7 +33,7 @@ myInfo item changeNick changeBtn wantChangeNickname changeGo pwdInput changePwd 
                         div [] [text a]
                         , if wantChangeNickname == "nick" then
                             div [] [
-                                    div [class "notmatchPwd"] [text notmatchPwd]
+                                    div [class "notmatchPwd"] []
                                     , input [ class "input myPage_yf_input", type_ "text", placeholder "닉네임을 정해주세요" , onInput changeNick]
                                     []
                                     , div [ class "button mypage_nickbtn", onClick changeGo ]
@@ -44,7 +44,7 @@ myInfo item changeNick changeBtn wantChangeNickname changeGo pwdInput changePwd 
                         ]
                      Nothing ->
                          div [] [
-                             div [class "notmatchPwd"] [text notmatchPwd]
+                             div [class "notmatchPwd"] []
                             , input [ class "input myPage_yf_input", type_ "text", placeholder "닉네임을 정해주세요" , onInput changeNick]
                             []
                             , div [ class "button mypage_nickbtn" , onClick changeGo]
@@ -56,11 +56,11 @@ myInfo item changeNick changeBtn wantChangeNickname changeGo pwdInput changePwd 
                 , if wantChangeNickname == "pwd" then
                     div [] [
                             div [class "notmatchPwd"] [text notmatchPwd]
-                            , input [ class "input myPage_yf_input", type_ "text", placeholder "기존의  패스워드를 입력 해 주세요." , onInput oldInput]
+                            , input [ class "input myPage_yf_input",  placeholder "기존의  패스워드를 입력 해 주세요." , onInput oldInput, type_ "password"]
                             []
-                            , input [ class "input myPage_yf_input", type_ "text", placeholder "변경할 패스워드를 입력 해 주세요." , onInput pwdInput]
+                            , input [ class "input myPage_yf_input", type_ "password", placeholder "변경할 패스워드를 입력 해 주세요." , onInput pwdInput]
                             []
-                            ,input [ class "input myPage_yf_input", type_ "text", placeholder "변경할 패스워드를 한번 더 입력 해 주세요." , onInput repwdInput]
+                            ,input [ class "input myPage_yf_input", type_ "password", placeholder "변경할 패스워드를 한번 더 입력 해 주세요." , onInput repwdInput]
                             []
                             , div [ class "button mypage_nickbtn", onClick changePwd ]
                                 [ text "적용" ]
@@ -165,5 +165,6 @@ accountInfo delete=
                 , div [ class "button is-danger myPage3_yf_danger", onClick delete ]
                     [ text "회원탈퇴" ]
                 ]
+            , div [] [text "회군"]
             ]
         ]
