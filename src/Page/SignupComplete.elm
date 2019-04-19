@@ -44,10 +44,12 @@ view model =
     title = "YourFitExer"
     , content = div [class "noResult"] [
         div [] [
-            text "회원가입이 완료 되었습니다."
+
+             img [ src "image/sign_image.png", alt "sign_image" ][]
+            --  text "회원가입이 완료 되었습니다."
         ]
         ,
         div [] [
-             a [ class "buttons", Route.href Route.Home ] [text "홈으로 이동하기"]
+             a [ class "button is-primary signupComplete_btn", Route.href Route.Home ] [text "홈으로 이동하기"]
         ]
     ]}

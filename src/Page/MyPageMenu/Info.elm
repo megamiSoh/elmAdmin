@@ -24,6 +24,8 @@ type alias Model =
     , check : Bool
     , data : Data
     , page : Int
+    , pageNum : Int
+    , infoPage : Int
     , per_page : Int
     , infiniteLoading : Bool
     , screenInfo : ScreenInfo
@@ -56,6 +58,7 @@ type alias Paginate =
     , total_count : Int
     }
 
+infoEncoder : Int -> Int -> Session -> Cmd Msg
 infoEncoder page per_page session = 
     let
         body = 
@@ -64,16 +67,20 @@ infoEncoder page per_page session =
                 , ("per_page", Encode.int per_page) ]
                 |> Http.jsonBody    
     in
-    Api.post Endpoint.infolist (Session.cred session) GetList body (Decoder.infoData Data DataList Paginate)
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+    (Decoder.infoData Data DataList Paginate)
+    |>Api.post Endpoint.infolist (Session.cred session) GetList body 
+
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
         { session = session
         , page = 1
         , checkList = []
+        , infoPage = 1
         , infiniteLoading = False
         , per_page = 10
         , dataList = []
+        , pageNum = 1
         , screenInfo = 
             { scrollHeight = 0
             , scrollTop = 0
@@ -91,15 +98,15 @@ init session mobile
                 }
                 } 
         ,  check = mobile}
-        ,Cmd.batch[ 
+        , Cmd.batch[ 
+            -- Api.getCookie()
+            -- ,
             infoEncoder 1 10 session
         ]
     )
 
-
 scrollEvent msg = 
     on "scroll" (Decode.map msg scrollInfoDecoder)
-
 
 
 scrollInfoDecoder =
@@ -110,7 +117,10 @@ scrollInfoDecoder =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Api.successId SaveComplete
+    Sub.batch[
+    Api.getPageId GetPageId
+    , Api.successId SaveComplete
+    ]
 
 type Msg 
     = BackBtn
@@ -119,6 +129,8 @@ type Msg
     | SaveComplete Encode.Value
     | PageBtn (Int, String)
     | ScrollEvent ScreenInfo
+    | NoOp 
+    | GetPageId Encode.Value
 
 toSession : Model -> Session
 toSession model =
@@ -132,6 +144,17 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GetPageId str ->
+            let
+                decodeV = Decode.decodeValue Decode.int str
+            in
+                case decodeV of
+                    Ok ok ->
+                        ({model | page = ok, infoPage = ok}, infoEncoder ok model.per_page model.session)
+                    Err err ->
+                        (model,  infoEncoder 1 model.per_page model.session)
+        NoOp ->
+            (model, Cmd.none)
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
              if (scrollHeight - scrollTop) <= offsetHeight then
                 -- case toInt of
@@ -149,13 +172,17 @@ update msg model =
             else
                 (model, Cmd.none)
         PageBtn (idx, str) ->
+            let
+                idxEncode = Encode.int idx
+            in
+            
             case str of
                 "prev" ->
-                    (model, infoEncoder idx model.per_page model.session)
+                    ({model | page = idx, pageNum = model.pageNum - 1}, Cmd.batch[infoEncoder idx model.per_page model.session, Api.setCookie idxEncode])
                 "next" ->
-                    (model, infoEncoder idx model.per_page model.session)
+                    ({model | page = idx, pageNum = model.pageNum + 1}, Cmd.batch[infoEncoder idx model.per_page model.session, Api.setCookie idxEncode])
                 "go" -> 
-                    (model, infoEncoder idx model.per_page model.session)
+                    ({model | page = idx}, Cmd.batch[infoEncoder idx model.per_page model.session, Api.setCookie idxEncode])
                 _ ->
                     (model, Cmd.none)
         SaveComplete str ->
@@ -164,7 +191,10 @@ update msg model =
             in
             case suc of
                 Ok ok ->
-                   (model, Route.pushUrl (Session.navKey model.session) Route.InfoD) 
+                   (model, 
+                   Api.historyUpdate (Encode.string "infoDetail")
+                --    Route.pushUrl (Session.navKey model.session) Route.InfoD
+                   ) 
             
                 Err _->
                     (model, Cmd.none)
@@ -172,7 +202,7 @@ update msg model =
             if ok.data == [] then
             ({model | infiniteLoading = False, checkList = ["empty"]}, Cmd.none)
             else
-            ({model | data = ok, dataList = model.dataList ++ ok.data, page = model.page + 1, infiniteLoading = False}, Cmd.none)
+            ({model | data = ok, dataList = model.dataList ++ ok.data, page = model.page + 1, infiniteLoading = False}, (scrollToTop NoOp))
         GetList (Err err)->
             (model, Cmd.none)
         DetailGo id ->  
@@ -182,7 +212,10 @@ update msg model =
             in
             (model, Api.saveId encodeId)
         BackBtn ->
-            (model , Route.pushUrl (Session.navKey model.session) Route.MyPage)
+            (model , 
+            -- Route.pushUrl (Session.navKey model.session) Route.MyPage
+            Api.historyUpdate (Encode.string "mypage")
+            )
 
 view : Model -> {title : String , content : Html Msg}
 view model =
@@ -217,6 +250,7 @@ web model=
             pagination 
                 PageBtn
                 model.data.paginate
+                model.pageNum
         ]
 app model = 
     div [class "container"] [
@@ -229,7 +263,7 @@ app model =
             else
             tbody [] [
                 tr[] [ 
-                    td [] [text "공지사항이 없습니다."]
+                    td [colspan 3] [text "공지사항이 없습니다."]
                 ]
             ]
         ,if model.infiniteLoading then
@@ -265,7 +299,7 @@ contentsBody model =
             else
             tbody [] [
                 tr[] [ 
-                    td [] [text "공지사항이 없습니다."]
+                    td [colspan 3, style "text-align" "center", style "padding" "3rem"] [text "공지사항이 없습니다."]
                 ]
             ]
            
@@ -274,7 +308,7 @@ contentsBody model =
         ]
 contentsBodyLayout idx item model =
         div [ class "tableRow",  onClick (DetailGo item.id)]
-            [
+            [                                                           
                 div [class "tableCell info_num_text"] [text (
                     String.fromInt(model.data.paginate.total_count - ((model.data.paginate.page - 1) * 10) - (idx)  )
                 )],

@@ -142,7 +142,8 @@ filterEncoder model session=
             list
                 |> Http.jsonBody
     in
-    Api.post Endpoint.filter (Session.cred session) GetFilterData body (Decoder.filterResult FilterResult FilterData)
+    (Decoder.filterResult FilterResult FilterData)
+    |> Api.post Endpoint.filter (Session.cred session) GetFilterData body 
 
 
 subscriptions : Model -> Sub Msg
@@ -418,7 +419,10 @@ update msg model =
             (model,
             Cmd.batch [ 
                 Api.deleteData (),
-                 Route.pushUrl (Session.navKey model.session) Route.Filter])
+                Api.historyUpdate (Encode.string "filter")
+                --  Route.pushUrl (Session.navKey model.session) Route.Filter
+                ]
+                 )
 
 
 unfocus : Cmd Msg

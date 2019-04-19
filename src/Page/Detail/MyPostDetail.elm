@@ -187,16 +187,24 @@ update msg model =
             in
             case result of
                 Ok string ->
-                    ({model | postId = string} , Api.get GetList (Endpoint.postList string) (Session.cred model.session)  (Decoder.mypostDataWrap TogetherDataWrap TogetherData DetailTogether TogetherItems Pairing)
+                    ({model | postId = string} , 
+                    Decoder.mypostDataWrap TogetherDataWrap TogetherData DetailTogether TogetherItems Pairing
+                    |>Api.get GetList (Endpoint.postList string) (Session.cred model.session)  
                     )
             
                 Err _ ->
                     (model,Cmd.none)
         
         GotSession session ->
-            ({model | session = session} , Api.get GetList (Endpoint.postList model.postId) (Session.cred session)  (Decoder.mypostDataWrap TogetherDataWrap TogetherData DetailTogether TogetherItems Pairing))
+            ({model | session = session} , 
+            Decoder.mypostDataWrap TogetherDataWrap TogetherData DetailTogether TogetherItems Pairing
+            |> Api.get GetList (Endpoint.postList model.postId) (Session.cred session) 
+            )
         BackPage ->
-            (model, Route.pushUrl (Session.navKey model.session) Route.MyPost)
+            (model, 
+            Api.historyUpdate (E.string "myPost")
+            -- Route.pushUrl (Session.navKey model.session) Route.MyPost
+            )
           
 
 view : Model -> {title : String , content : Html Msg}

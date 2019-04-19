@@ -50,6 +50,8 @@ import Page.Detail.MyPostDetail as PostD
 import Page.Detail.MakeExerSearch as MSearch
 import Page.Edit.MakeExerEditStepLast as MakeEditLast
 import Page.Private as Private
+import Page.SetPwd as SetPwd
+import Page.ForgotPwd as FPwd
 
 -- type alias Check = 
 --     String
@@ -91,20 +93,13 @@ type Model
      | MSearchModel MSearch.Model
      | MakeEditLastModel MakeEditLast.Model
      | PrivateModel Private.Model
+     | SetPwdModel SetPwd.Model
+     | FPwdModel FPwd.Model
     --  | PageModel Page.Model
     --  | CheckDevice Check
     
 
-main : Program Value Model Msg
-main =
-    Api.application
-        { init = init
-        , onUrlChange = ChangedUrl
-        , onUrlRequest = ClickedLink
-        , subscriptions = subscriptions
-        , update = update
-        , view = view
-        }
+
 
 type Msg
     = Ignored
@@ -146,6 +141,8 @@ type Msg
     | MSearchMsg MSearch.Msg
     | MakeEditLastMsg MakeEditLast.Msg
     | PrivateMsg Private.Msg
+    | SetPwdMsg SetPwd.Msg
+    | FPwdMsg FPwd.Msg
 
 subscriptions model = 
     case model of
@@ -222,6 +219,10 @@ subscriptions model =
         MakeEditLastModel item ->
             Sub.map MakeEditLastMsg (MakeEditLast.subscriptions item)
         PrivateModel item ->
+            Sub.none
+        SetPwdModel item ->
+            Sub.none
+        FPwdModel item ->
             Sub.none
 
 init : Maybe Cred -> Bool -> Url -> Key -> ( Model, Cmd Msg )
@@ -349,6 +350,12 @@ changeRouteTo maybeRoute model  =
         Just Route.Private ->
             Private.init session check
                 |> updateWith PrivateModel PrivateMsg model
+        Just Route.SetPwd ->
+            SetPwd.init session check
+                |> updateWith SetPwdModel SetPwdMsg model
+        Just Route.FPwd ->
+            FPwd.init session check
+                |> updateWith FPwdModel FPwdMsg model
       
 
 
@@ -426,6 +433,10 @@ toCheck page =
             MakeEditLast.toCheck item
         PrivateModel item ->
             Private.toCheck item
+        SetPwdModel item ->
+            SetPwd.toCheck item
+        FPwdModel item ->
+            FPwd.toCheck item
 
 
 toSession : Model -> Session
@@ -503,6 +514,10 @@ toSession page =
             MakeEditLast.toSession item
         PrivateModel item ->
             Private.toSession item
+        SetPwdModel item ->
+            SetPwd.toSession item
+        FPwdModel item ->
+            FPwd.toSession item
         
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -642,6 +657,12 @@ update msg model =
         (PrivateMsg subMsg, PrivateModel pmodel) ->
             Private.update subMsg pmodel
                 |> updateWith PrivateModel PrivateMsg pmodel
+        (SetPwdMsg subMsg, SetPwdModel smodel) ->
+            SetPwd.update subMsg smodel
+                |> updateWith SetPwdModel SetPwdMsg smodel
+        (FPwdMsg subMsg , FPwdModel fmodel) ->
+            FPwd.update subMsg fmodel
+                |> updateWith FPwdModel FPwdMsg fmodel
         ( _, _ ) ->
             ( model, Cmd.none )  
         
@@ -751,3 +772,20 @@ view model =
             viewPage Page.MakeEditLast MakeEditLastMsg (MakeEditLast.view item)
         PrivateModel item ->
             viewPage Page.Private PrivateMsg (Private.view item)
+        SetPwdModel item ->
+            viewPage Page.SetPwd SetPwdMsg (SetPwd.view item)
+        FPwdModel item ->
+            viewPage Page.FPwd FPwdMsg (FPwd.view item)
+
+
+
+main : Program Value Model Msg
+main =
+    Api.application
+        { init = init
+        , onUrlChange = ChangedUrl
+        , onUrlRequest = ClickedLink
+        , subscriptions = subscriptions
+        , update = update
+        , view = view
+        }

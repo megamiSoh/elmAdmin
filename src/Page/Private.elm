@@ -51,7 +51,7 @@ view model =
         div [ class "containerwrap" ]
             [ div [ class "container" ]
                 [ 
-                        appHeaderRDetailClick "이용약관 및 개인정보 취급방침" "myPageHeader whiteColor" Back "fas fa-angle-left"
+                        appHeaderRDetailClick2 "이용약관 및 개인정보 취급방침" "myPageHeader" Back "fas fa-angle-left"
                         , termsArticle "m_yf_termstext"
                     
                 ]
@@ -66,7 +66,8 @@ view model =
                         , goBtn
                     ]
                 ]
-    ]}
+    ]
+    }
 
 
 termsArticle style = 

@@ -48,7 +48,8 @@ type Page
     | MSearch
     | MakeEditLast
     | Private
-    
+    | SetPwd
+    | FPwd
 
 
 -- view:Maybe Cred -> Api.Check  -> Page -> {check : String , title : String, content: Html msg} -> Browser.Document msg
@@ -58,7 +59,7 @@ view maybeViewer checkB  page { title, content}  =
                 
     else
         { title = title 
-        , body = viewHeader page maybeViewer:: webContents content page maybeViewer:: [viewFooter]
+        , body = viewHeader page maybeViewer:: webContents content page maybeViewer:: []
         }
 
 
@@ -77,16 +78,22 @@ footerCommon page =
 
 
 need2login = 
-    div [ class "have2login" ][ 
-        div [] [text "로그인 후 이용가능한 서비스 입니다."] 
-        , a [class "button", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
+    div [ class "need2login" ]
+        [img [src "../image/login.png"]
+        []
+    ,div [class"need2login_text"] [text "로그인 후 이용가능한 서비스 입니다."] 
+        , a [class "button is-link need2login_btn", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
     ]
+    
 
 need2loginApp = 
-    div [class "have2login"] [
-                    div [  ] [text "로그인 후 이용가능한 서비스 입니다."] 
-                , a [class "button", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
-                ]
+    div [ class "m_nave2login" ]
+        [img [src "../image/login.png"]
+        []
+    ,div [class"need2login_text"] [text "로그인 후 이용가능한 서비스 입니다."] 
+        , a [class "button is-link need2login_btn", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
+    ]
+       
 
 type Msg = NoOp
 

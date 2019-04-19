@@ -25,6 +25,7 @@ type alias Model =
     , check : Bool
     , loading : Bool
     , need2login : Bool
+    , zindex : String
     , videoId : CodeId
     }
 -- Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
@@ -45,7 +46,8 @@ type alias DetailData =
     , pairing : List Pairing
     , title : String
     , nickname : Maybe String
-    , thumbnail : String}
+    , thumbnail : String
+    , description : Maybe String}
 
 type alias DetailDataItem = 
     { exercise_id : Int
@@ -68,6 +70,7 @@ init session mobile
         , scrap = False
         , loading = True
         , need2login = False
+        , zindex = ""
         , videoId = 
             { code = ""
             , id = ""}
@@ -81,7 +84,8 @@ init session mobile
             , pairing = []
             , title = ""
             , nickname = Nothing
-            , thumbnail = ""}
+            , thumbnail = ""
+            , description = Nothing}
         }
         , Api.getId ()
     )
@@ -130,13 +134,17 @@ update msg model =
 
             in
             
-            (model, Api.videoData pList)
+            ({model | zindex = "zindex"}, Api.videoData pList)
         GotSession session ->
             ({model | session = session},
-            Api.get GetListData (Endpoint.scrapDetail model.videoId.code model.videoId.id ) (Session.cred session) (Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing)
+            Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
+            |> Api.get GetListData (Endpoint.scrapDetail model.videoId.code model.videoId.id ) (Session.cred session) 
             )
         BackDetail ->
-            ({model | need2login = False}, Api.get GetListData (Endpoint.scrapDetail model.videoId.code model.videoId.id ) (Session.cred model.session) (Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing))
+            ({model | need2login = False}, 
+            Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
+             |> Api.get GetListData (Endpoint.scrapDetail model.videoId.code model.videoId.id ) (Session.cred model.session) 
+            )
 
         GoVideo ->
             let
@@ -151,7 +159,7 @@ update msg model =
                         , ("title", Encode.string p.title)
                         ]
             in
-            (model, Cmd.none)
+             (model, Cmd.none)
         GetListData (Ok ok) -> 
             update GoVideo {model | listData = ok.data, scrap = False, loading = False}
         GetListData (Err err) -> 
@@ -177,14 +185,19 @@ update msg model =
             in
             case d of
                 Ok item ->
-                    ({model | videoId = item}, Api.get GetListData (Endpoint.scrapDetail item.code item.id ) (Session.cred model.session) (Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing))
+                    ({model | videoId = item}, 
+                    Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
+                    |>Api.get GetListData (Endpoint.scrapDetail item.code item.id ) (Session.cred model.session) 
+                    )
             
                 Err _ ->
                     (model, Cmd.none)
             
         BackPage ->
             ( model, 
-            Route.pushUrl (Session.navKey model.session) Route.MyScrap)
+            -- Route.pushUrl (Session.navKey model.session) Route.MyScrap
+            Api.historyUpdate (Encode.string "myScrap")
+            )
 
 view : Model -> {title : String , content : Html Msg}
 view model =
@@ -223,27 +236,29 @@ web msg model=
                 [
                     -- appHeaderRDetailClick  model.listData.title  "yourfitHeader" BackPage "fas fa-times"  
                     -- ,
-                    contentsBody model.listData model.loading
+                    contentsBody model.listData model.loading model.zindex
                     ,goBtnBox msg
                 ]
-contentsBody item loading =
+contentsBody item loading zindex=
     
     div [ class "yf_yfworkout_search_wrap" ]
         [ div [ class "tapbox" ]
             [ div [ class "yf_large" ]
                 [ text item.title ],
-                contentsItem item loading
+                contentsItem item loading zindex
                
             ]
         
         ]
 
-contentsItem item loading=
+contentsItem item loading zindex =
             div [ class "tile is-parent is-vertical" ]
             [lazy2 div [ class "yf_notification" ]
-                [ p [ class "title" ]
+                [ p [ class "video_title" ]
                     [ 
-                        img [src item.thumbnail, onClick (VideoCall item.pairing)] []
+                       
+                         i [ class "fas fa-play-circle", onClick (VideoCall item.pairing) ][],
+                        img [class zindex, src item.thumbnail, onClick (VideoCall item.pairing)] []
                         , div [ id "myElement" ] [
                             ]
                     ]
@@ -258,8 +273,8 @@ contentsItem item loading=
                 , div [ class "yf_part" ]
                     [ text ((justok item.exercise_part_name) ++ " - " ++  (justok item.difficulty_name)) ]
                 ]
-            , 
-            div [ class "yf_text" ]
+            , div [class"yf_explanation"] [text (justok item.description)]
+            , div [ class "yf_text" ]
                (List.indexedMap description item.exercise_items)
             ]
 
@@ -276,9 +291,10 @@ appcontentsItem item loading =
             div []
             [ div []
                 [ p [ class "m_yf_container" ]
-                    [ 
+                    [ i [ class "far fa-play-circle m_yf_container_circle", onClick (VideoCall item.pairing) ][],
                         img [src item.thumbnail, onClick (VideoCall item.pairing)] []
-                        , div [ id "myElement" ] [
+                        ,
+                         div [ id "myElement" ] [
                             ]
                     ]
                 ]
@@ -296,8 +312,8 @@ appcontentsItem item loading =
                 , div [ class "m_yf_work_text" ]
                     [ text ((justok item.exercise_part_name) ++ " - " ++  (justok item.difficulty_name)) ]
                 ]
-            , 
-            div [ class "m_work_script" ]
+            , div [class"m_explanation"][text (justok item.description)]
+            , div [ class "m_work_script" ]
                 (List.indexedMap description item.exercise_items)
             ]
 

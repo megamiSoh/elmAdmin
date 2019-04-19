@@ -34,6 +34,7 @@ type alias Model
         , cannotSave : String
         , saveItem : List Item
         , videoId : String
+        , description : String
     }
 
 type alias FilterData =
@@ -105,17 +106,26 @@ listformUrlencoded object =
 
 registVideo model edit session=
     let
-        
+        newDescriptions = 
+            model.description
+                |> String.replace "&" "%26"
+                |> String.replace "%" "%25"
+        newtitle = 
+            model.title
+                |> String.replace "&" "%26"
+                |> String.replace "%" "%25"
         body =
             formUrlencoded 
-            [ ("title", model.title)
+            [ ("title", newtitle)
+            , ("description",newDescriptions)
             , ("items", "[" ++ listformUrlencoded edit ++ "]"
             )
             ]
 
             |> Http.stringBody "application/x-www-form-urlencoded"
     in
-    Api.post (Endpoint.editComplete model.videoId)(Session.cred session) GoRegistResult body ((Decoder.resultDecoder ResultData))
+    Decoder.resultDecoder ResultData
+    |>Api.post (Endpoint.editComplete model.videoId)(Session.cred session) GoRegistResult body
 
 init session mobile
     = 
@@ -134,13 +144,15 @@ init session mobile
         , cannotSave = ""
         , errTitle = ""
         , loading = True
+        , description = ""
         } 
         ,Cmd.batch[Api.sendData ()
         , Api.getId ()]
     )
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch[Api.receiveData ReceiveDataFromStorage
+    Sub.batch[
+    Api.receiveData ReceiveDataFromStorage
     , Api.getsaveFilter FilterSaveSuccess
     , Session.changes GotSession (Session.navKey model.session)
     , Api.onSucceesSession SessionCheck
@@ -165,6 +177,7 @@ type Msg
     | GotSession Session
     | GetId E.Value
     | GetList (Result Http.Error Me.DetailData)
+    | Description String
 
 toSession : Model -> Session
 toSession model =
@@ -185,8 +198,17 @@ dropLists idx model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of 
-        GetList(Ok ok) ->  
-            ({model | title = ok.data.title}, Cmd.none)
+        Description descriptions ->
+            ({model | description = descriptions}, Cmd.none)
+        GetList(Ok ok) ->
+            let
+                newTitle = 
+                    ok.data.title 
+                        |> String.replace "%26" "&" 
+                        |> String.replace "%25" "%"    
+            in
+            
+            ({model | title = newTitle, description = (justokData ok.data.description)}, Cmd.none)
             -- update GoVideo {model | getData = ok.data}
         GetList(Err err) ->
             let 
@@ -200,7 +222,9 @@ update msg model =
             in
             case result of
                 Ok string ->
-                    ({model | videoId = string}, Api.get GetList (Endpoint.makeDetail string) (Session.cred model.session) (Decoder.makeEdit Me.DetailData Me.DetailItem Me.ExItem Me.Pair))
+                    ({model | videoId = string}, 
+                    (Decoder.makeEdit Me.DetailData Me.DetailItem Me.ExItem Me.Pair)
+                    |> Api.get GetList (Endpoint.makeDetail string) (Session.cred model.session) )
             
                 Err _ ->
                     (model,Cmd.none)
@@ -218,7 +242,10 @@ update msg model =
                     Err _ ->
                         (model, Cmd.none)
         FilterSaveSuccess str ->
-            (model, Route.pushUrl (Session.navKey model.session) Route.FilterS1)
+            (model, 
+            Api.historyUpdate (E.string "filterStep1")
+            -- Route.pushUrl (Session.navKey model.session) Route.FilterS1
+            )
         NextPage ->
             (model, Cmd.batch [
                  Api.getSomeFilter ()
@@ -230,8 +257,11 @@ update msg model =
             
             (model, Cmd.batch [
                 Api.deleteData ()
-                , Route.pushUrl (Session.navKey model.session) Route.MakeExer
-                , Api.showToast text])
+                -- , Route.pushUrl (Session.navKey model.session) Route.MakeExer
+                , Api.showToast text
+                , Api.historyUpdate (E.string "makeExercise")
+                ]
+                )
         GoRegistResult (Err err) ->
             let 
                 serverErrors = Api.decodeErrors err
@@ -277,13 +307,7 @@ update msg model =
             else
             ({model | loading = True, saveItem = item}, registVideo model item model.session)
         UpdateTitle title ->
-            let 
-                newTitle = 
-                    title
-                        |> String.replace "&" "%26"
-                        |> String.replace "%" "%25"
-            in
-            ({model | title = newTitle}, Cmd.none)
+            ({model | title = title}, Cmd.none)
         ReceiveDataFromStorage data ->
             let 
                 last = Decode.decodeValue (Decode.list(Decoder.filterStep2 FilterData)) data
@@ -356,7 +380,10 @@ update msg model =
                 Nothing ->
                     ({model | setData = -1 }, Cmd.none)
         BackBtn ->
-            (model, Route.pushUrl (Session.navKey model.session) Route.FilterS1)
+            (model, 
+            Api.historyUpdate (E.string "filterStep1")
+            -- Route.pushUrl (Session.navKey model.session) Route.FilterS1
+            )
 
 view : Model -> {title : String , content : Html Msg}
 view model =
@@ -385,11 +412,16 @@ view model =
     }
 
 
-justokData data = 
-    case data of
+justokData result = 
+    case result of
         Just ok ->
-            ok
-    
+            let
+                replace = 
+                    ok
+                        |> String.replace "%26" "&"
+                        |> String.replace "%25" "%"  
+            in
+                replace
         Nothing ->
             ""
 
@@ -444,8 +476,9 @@ thumbSetting model=
         , div [ class "yf_titleinput" ]
             [ 
             div [class model.validation] [
-                input [ class ( "input " ++ model.validation ), type_ "text", placeholder "운동제목을 입력하세요", onInput UpdateTitle ]
+                input [ class ( "input " ++ model.validation ), type_ "text", placeholder "운동제목을 수정해 주세요.", onInput UpdateTitle, value model.title ]
                 []
+                , textarea [placeholder "운동 설명을 수정해 주세요.", value model.description, onInput Description] []
             ]
             , div [] [text model.errTitle]
             ]
@@ -458,8 +491,9 @@ appthumbSetting model =
                 []
             ]
         , div [ class "m_yf_titleinputbox" ]
-            [ input [ class ( "input m_yf_titleinput " ++ model.validation ), type_ "text", placeholder "운동제목을 입력하세요",  onInput UpdateTitle, value model.title ]
+            [ input [ class ( "input m_yf_titleinput " ++ model.validation ), type_ "text", placeholder "운동제목을 수정해 주세요.",  onInput UpdateTitle, value model.title ]
                 []
+            , textarea [placeholder "운동 설명을 수정해 주세요.", value model.description, onInput Description] []
             ]
         , div [class "thubmTitle"] [text "썸네일지정" ]
         ]

@@ -27,6 +27,7 @@ type alias Model =
     , screenInfo : ScreenInfo
     , infiniteLoading : Bool
     , newList : List ListData
+    , pageNum : Int
     }
 
 type alias ScreenInfo = 
@@ -74,7 +75,8 @@ bodyEncode page perpage title session=
             list
                 |> Http.jsonBody
     in
-    Api.post Endpoint.makeExerList (Session.cred session) GetData body (Decoder.makeExerList GetListData ListData Paginate)
+    (Decoder.makeExerList GetListData ListData Paginate)
+    |> Api.post Endpoint.makeExerList (Session.cred session) GetData body 
     
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile =
@@ -96,6 +98,7 @@ init session mobile =
         , saveCheckVal = ""
         , loading = True
         , newList = []
+        , pageNum = 1
         , screenInfo = 
             { scrollHeight = 0
             , scrollTop = 0
@@ -132,6 +135,7 @@ type Msg
     | PageBtn (Int, String)
     | OnLoad
     | ScrollEvent ScreenInfo
+    | NoOp
 
 
 toSession : Model -> Session
@@ -165,6 +169,8 @@ onLoad msg =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        NoOp ->
+            (model, Cmd.none)
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
              if (scrollHeight - scrollTop) <= offsetHeight then
                 ({model | infiniteLoading = True}, bodyEncode (model.page)  model.per_page model.title model.session)
@@ -179,11 +185,11 @@ update msg model =
         PageBtn (idx, str) ->
             case str of
                 "prev" ->
-                    (model, bodyEncode idx model.per_page model.title model.session)
+                    ({model | page = idx, pageNum = model.pageNum - 1}, bodyEncode idx model.per_page model.title model.session)
                 "next" ->
-                    (model, bodyEncode idx model.per_page model.title model.session)
+                    ({model | page = idx, pageNum = model.pageNum + 1}, bodyEncode idx model.per_page model.title model.session)
                 "go" -> 
-                    (model, bodyEncode idx model.per_page model.title model.session)
+                    ({model | page = idx}, bodyEncode idx model.per_page model.title model.session)
                 _ ->
                     (model, Cmd.none)
         DeleteSuccess (Ok ok) ->
@@ -191,7 +197,9 @@ update msg model =
         DeleteSuccess (Err err) ->
             (model, Cmd.none)
         Delete id ->
-            (model, Api.get DeleteSuccess (Endpoint.makeDelete (String.fromInt (id)))(Session.cred model.session) Decoder.resultD )
+            (model, 
+            Decoder.resultD
+            |> Api.get DeleteSuccess (Endpoint.makeDelete (String.fromInt (id)))(Session.cred model.session)  )
         GotSession session ->
             ({model | session = session}
             , bodyEncode model.page model.per_page model.title session
@@ -207,37 +215,35 @@ update msg model =
                         (model, Cmd.none)
         SaveIdComplete str ->
             if model.saveCheckVal == "" then
-            (model, Route.pushUrl (Session.navKey model.session) Route.MakeDetail)
+            (model, 
+            -- Route.pushUrl (Session.navKey model.session) Route.MakeDetail
+            Api.historyUpdate (Encode.string "makeExerciseDetail")
+            )
             else 
-            (model, Route.pushUrl (Session.navKey model.session) Route.TogetherW)
+            (model, 
+            -- Route.pushUrl (Session.navKey model.session) Route.TogetherW
+            Api.historyUpdate (Encode.string "togetherWrite")
+            )
         CheckId id str->
             let
                 save = Encode.int id
             in
             ({model | saveCheckVal = str},Api.saveId save)
         GetData (Ok ok) -> 
-            let _ = Debug.log "ok" ok.data
-                
-            in
-            
             if model.check then
                 if ok.data == [] then
                 ({model | getlistData = ok, newList = model.newList ++ ok.data, infiniteLoading = False, loading =False}, Cmd.none)
                 else
-                    let _ = Debug.log "newList" model.newList
-                        
-                    in
-                    
-                ({model | getlistData = ok, page = model.page + 1, newList = model.newList ++ ok.data, infiniteLoading = False, loading = False}, Cmd.none)
+                ({model | getlistData = ok, page = model.page + 1, newList = model.newList ++ ok.data, infiniteLoading = False, loading = False}, (scrollToTop NoOp))
             else 
                 ({model | getlistData = ok, loading =False}, Cmd.none)
         GetData (Err err) -> 
-            let _ = Debug.log "err" err
+            let
                 serverErrors =
                     Api.decodeErrors err
             in  
             (model, (Session.changeInterCeptor (Just serverErrors) model.session))
-        
+            
 
 view : Model -> {title : String , content : Html Msg}
 view model =
@@ -290,6 +296,7 @@ web model =
                      ,pagination 
                     PageBtn
                     model.getlistData.paginate
+                    model.pageNum
                 ]
             ]
 app model =
@@ -326,6 +333,13 @@ listTitle =
         ]
 
 appItemContent item=
+    let
+        titleReplace = 
+            item.title 
+                |> String.replace "%26" "&"
+                |> String.replace "%25" "%"    
+    in
+    
         div [ class "m_make_yf_box2" ]
             [ div [ class "m_make_videoimg", onClick (CheckId item.id "") ]
                 [ img [ src item.thembnail, onLoad OnLoad ]
@@ -334,10 +348,10 @@ appItemContent item=
       
             , div [ class "m_make_yf_box_title", onClick (CheckId item.id "") ]
                 [ text (
-                    if String.length item.title > 10 then
-                    String.left 10 item.title ++ "..."
+                    if String.length titleReplace > 10 then
+                    String.left 10 titleReplace ++ "..."
                     else
-                    item.title
+                    titleReplace
                 ) ]
             , div [ class "make_yf_ul" ]
                 [ ul []
@@ -365,6 +379,12 @@ appItemContent item=
             ]
 
 bodyItem item=
+    let
+        titleReplace = 
+            item.title 
+                |> String.replace "%26" "&"
+                |> String.replace "%25" "%"    
+    in
     div [ class "make_box_card_wrap" ]
     [ div [ class "make_videoboxwrap"]
         [ div [ class "video_image" , onClick (CheckId item.id "")]
@@ -375,10 +395,10 @@ bodyItem item=
             [ div [ class "m1"  , onClick (CheckId item.id "")]
                 [ h1 [ class "make_yf_titlename" ]
                     [ text  (
-                    if String.length item.title > 10 then
-                    String.left 10 item.title ++ "..."
+                    if String.length titleReplace > 10 then
+                    String.left 10 titleReplace ++ "..."
                     else
-                    item.title
+                    titleReplace
                 ) ]
                 ]
             , div [ class "m2" ]
@@ -412,7 +432,7 @@ bodyContentTitle =
           div [ class "make_yf_box" ] 
         
                 [ 
-            img [ src "image/runimage.png", alt "runimage" ]
+            img [ src "image/makeimage.png", alt "makeimage" ]
                 []
            ,
                     h1 [ class "make_yf_h1" ]

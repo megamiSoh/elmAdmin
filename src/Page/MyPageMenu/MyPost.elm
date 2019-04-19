@@ -29,6 +29,7 @@ type alias Model
         , deleteComplete : Bool
         , errAuth : String
         , deleteId : Int
+        , pageNum : Int
         , loading : Bool
     }
 
@@ -66,6 +67,7 @@ init session mobile
         , checkList = []
         , errAuth = ""
         , loading = True
+        , pageNum = 1
         , infiniteLoading = False
         , per_page = 10
         , screenInfo = 
@@ -102,7 +104,8 @@ mypostList page per_page session =
                 , ("per_page" ,Encode.int per_page)]    
                 |> Http.jsonBody
     in
-    Api.post Endpoint.myPost (Session.cred session) GetList body (Decoder.mypostdata DataList Data Paginate)
+    (Decoder.mypostdata DataList Data Paginate)
+    |> Api.post Endpoint.myPost (Session.cred session) GetList body 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -120,6 +123,7 @@ type Msg
     | GetId String
     | SaveId Encode.Value
     | GotSession Session
+    | NoOp
 
 toSession : Model -> Session
 toSession model =
@@ -133,9 +137,13 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        NoOp ->
+            (model, Cmd.none)
         GotSession session ->
             if model.errAuth == "delete" then
-            ({model | session =session},  Api.get DeleteComplete (Endpoint.myPostDelete (String.fromInt(model.deleteId))) (Session.cred session ) (Decoder.resultD))
+            ({model | session =session},  
+            (Decoder.resultD)
+            |> Api.get DeleteComplete (Endpoint.myPostDelete (String.fromInt(model.deleteId))) (Session.cred session ) )
             else
             ({model | session =session}, mypostList model.page model.per_page session)
         SaveId complete ->
@@ -144,7 +152,10 @@ update msg model =
             in
             case c of
                 Ok ok ->
-                    (model, Route.pushUrl (Session.navKey model.session) Route.PostD)
+                    (model,
+                    --  Route.pushUrl (Session.navKey model.session) Route.PostD
+                    Api.historyUpdate (Encode.string "myPostDetail")
+                     )
             
                 Err _ ->
                     (model, Cmd.none)
@@ -173,11 +184,11 @@ update msg model =
         PageBtn (idx, str) ->
             case str of
                 "prev" ->
-                    (model, mypostList idx model.per_page model.session)
+                    ({model | page = idx, pageNum = model.pageNum - 1}, mypostList idx model.per_page model.session)
                 "next" ->
-                    (model, mypostList idx model.per_page model.session)
+                    ({model | page = idx, pageNum = model.pageNum + 1}, mypostList idx model.per_page model.session)
                 "go" -> 
-                    (model, mypostList idx model.per_page model.session)
+                    ({model | page = idx}, mypostList idx model.per_page model.session)
                 _ ->
                     (model, Cmd.none)
         DeleteComplete (Ok ok) ->
@@ -194,10 +205,12 @@ update msg model =
             
             ({model | errAuth = "delete"}, (Session.changeInterCeptor (Just serverErrors) model.session))
         DeletePost id ->
-            ({model | deleteId = id}, Api.get DeleteComplete (Endpoint.myPostDelete (String.fromInt(id))) (Session.cred model.session ) (Decoder.resultD))
+            ({model | deleteId = id}, 
+            (Decoder.resultD)
+            |> Api.get DeleteComplete (Endpoint.myPostDelete (String.fromInt(id))) (Session.cred model.session ) )
         GetList (Ok ok) ->
             if model.deleteComplete then
-            ({model | data = ok, dataList = ok.data, page = model.page, deleteComplete = False, loading = False}, Cmd.none)
+            ({model | data = ok, dataList = ok.data, page = model.page, deleteComplete = False, loading = False}, (scrollToTop NoOp))
             else
                 if ok.data == [] then
                 ({model | infiniteLoading = False, checkList = ["empty"], loading = False}, Cmd.none)
@@ -245,7 +258,7 @@ web model=
      div [ class "container" ]
         [
             commonJustHeader "/image/icon_management.png" "나의 게시물관리"
-            , contentsBody model.data
+            , contentsBody model.data model.pageNum
             
         ]
 app model =
@@ -253,7 +266,7 @@ app model =
         appHeaderRDetail "나의 게시물관리" "myPageHeader whiteColor" Route.MyPage "fas fa-angle-left"
         , appcontentsBody model.dataList model.infiniteLoading model.loading
     ]
-contentsBody model =
+contentsBody model pageNum=
     div [ class "myPost_searchbox" ]
         [ div [ class "myPost_mediabox" ]
             [ 
@@ -263,7 +276,8 @@ contentsBody model =
             
             , pagination 
                 PageBtn
-                model.paginate]
+                model.paginate
+                pageNum]
             else 
             ul [class "m_cbp_tmtimeline"]
                 [

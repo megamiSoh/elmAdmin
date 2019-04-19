@@ -69,7 +69,8 @@ detailEncoder part level session =
             list
                 |> Http.jsonBody
     in
-     Api.post Endpoint.yfDetail (Session.cred session) GetList body (Decoder.yourfitDetailListData ListData DetailData)
+    (Decoder.yourfitDetailListData ListData DetailData)
+    |> Api.post Endpoint.yfDetail (Session.cred session) GetList body 
 
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile =
@@ -92,8 +93,10 @@ init session mobile =
         },
          Cmd.batch
             [ Api.getKey () 
-            , Api.get GetLevel Endpoint.level (Session.cred session) (Decoder.levelDecoder LevelData Level)
-            , Api.get GetPart Endpoint.yourfitVideoList (Session.cred session)(Decoder.yourfitList YfE.YourFitList YfE.ListData YfE.ExerciseList )
+            , Decoder.levelDecoder LevelData Level
+            |> Api.get GetLevel Endpoint.level (Session.cred session) 
+            ,Decoder.yourfitList YfE.YourFitList YfE.ListData YfE.ExerciseList 
+            |> Api.get GetPart Endpoint.yourfitVideoList (Session.cred session)
             ]
     )
 
@@ -163,13 +166,19 @@ update msg model =
         GetPart (Err err) ->
             (model, Cmd.none) 
         BackPage ->
-            (model, Route.pushUrl (Session.navKey model.session) Route.YourFitExer)
+            (model, 
+            -- Route.pushUrl (Session.navKey model.session) Route.YourFitExer
+            Api.historyUpdate (Encode.string "yourfitExercise")
+            )
         GotSession session ->
             ({model | session = session}
             , Cmd.none
             )
         Success str ->
-            (model, Route.pushUrl (Session.navKey model.session) Route.YourfitDetail)
+            (model, 
+            -- Route.pushUrl (Session.navKey model.session) Route.YourfitDetail
+            Api.historyUpdate (Encode.string "yourfitDetail")
+            )
         DetailGo id ->
             let
                 encodeId = Encode.int id

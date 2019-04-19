@@ -70,7 +70,9 @@ init session mobile =
         , swipingState = Swiper.initialSwipingState
         }
         , Cmd.batch
-        [  Api.get GetList Endpoint.yourfitVideoList (Session.cred session) (Decoder.yourfitList YourFitList ListData ExerciseList )
+        [  
+            Decoder.yourfitList YourFitList ListData ExerciseList
+                |> Api.get GetList Endpoint.yourfitVideoList (Session.cred session) 
         
         ]
     )
@@ -133,7 +135,10 @@ update msg model =
             , Cmd.none
             )
         SuccessId str ->  
-            (model, Route.pushUrl (Session.navKey model.session) Route.YourfitDetail)
+            (model, 
+            -- Route.pushUrl (Session.navKey model.session) Route.YourfitDetail
+            Api.historyUpdate (Encode.string "yourfitDetail")
+            )
 
         GoContentsDetail id ->
             let
@@ -142,7 +147,10 @@ update msg model =
             
             (model, Api.saveId (encodeId))
         Success str ->
-            (model,Route.pushUrl (Session.navKey model.session) Route.YourFitList)
+            (model,
+            -- Route.pushUrl (Session.navKey model.session) Route.YourFitList
+            Api.historyUpdate (Encode.string "yourfitListDetail")
+            )
         GoDetail code ->
             let
                 go = Encode.string code
@@ -225,9 +233,6 @@ web model =
                 [ div [ class "notification yf_workout" ]
                     [
                         commonHeader "/image/icon_workout.png" "유어핏운동",
-                        if model.loading then
-                            spinner
-                        else
                         div [] (List.indexedMap (\idx x -> 
                             bodyContents idx x
                             ) model.data)

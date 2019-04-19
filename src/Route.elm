@@ -54,6 +54,8 @@ type Route
     | MSearch
     | MakeEditLast
     | Private
+    | SetPwd
+    | FPwd
 
 parser : Parser (Route -> a) a
 parser =
@@ -96,6 +98,8 @@ parser =
         , Parser.map MSearch (s "makeExerciseSearch")
         , Parser.map MakeEditLast (s "makeEditStepLast")
         , Parser.map Private (s "privateTerms")
+        , Parser.map SetPwd (s "setpassword")
+        , Parser.map FPwd (s "forgotpassword")
         ]
 
 
@@ -207,5 +211,9 @@ routeToString page =
                     ["makeEditStepLast"]
                 Private ->
                     ["privateTerms"]
+                SetPwd ->
+                    ["setpassword"]
+                FPwd ->
+                    ["forgotpassword"]
     in
     "#/" ++ String.join "/" pages

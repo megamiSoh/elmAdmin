@@ -26,6 +26,7 @@ type alias Model
         , per_page :Int
         , count : Int
         , loading : Bool
+        , pageNum : Int
     }
 
 type alias ScreenInfo = 
@@ -69,6 +70,7 @@ init session mobile
         , checkList = []
         , count = 1
         , loading = True
+        , pageNum = 1
         , infiniteLoading = False
         , screenInfo = 
             { scrollHeight = 0
@@ -126,7 +128,8 @@ scrapDataEncoder page per_page session =
                 , ("per_page", Encode.int per_page)]
                     |> Http.jsonBody
     in
-    Api.post Endpoint.scrapList (Session.cred session) GetList list (Decoder.myscrapData Data DataList DetailData Paginate)
+    (Decoder.myscrapData Data DataList DetailData Paginate)
+    |> Api.post Endpoint.scrapList (Session.cred session) GetList list 
     
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -140,11 +143,11 @@ update msg model =
         PageBtn (idx, str) ->
             case str of
                 "prev" ->
-                    (model, scrapDataEncoder idx model.per_page model.session)
+                    ({model | page = idx, pageNum = model.pageNum - 1}, scrapDataEncoder idx model.per_page model.session)
                 "next" ->
-                    (model, scrapDataEncoder idx model.per_page model.session)
+                    ({model | page = idx, pageNum = model.pageNum + 1}, scrapDataEncoder idx model.per_page model.session)
                 "go" -> 
-                    (model, scrapDataEncoder idx model.per_page model.session)
+                    ({model | page = idx}, scrapDataEncoder idx model.per_page model.session)
                 _ ->
                     (model, Cmd.none)
         GotSession session ->
@@ -157,7 +160,10 @@ update msg model =
             in
                 case save of
                     Ok ok ->
-                        (model, Route.pushUrl (Session.navKey model.session) Route.ScrapD)
+                        (model, 
+                        -- Route.pushUrl (Session.navKey model.session) Route.ScrapD
+                        Api.historyUpdate (Encode.string "myScrapDetail")
+                        )
                 
                     Err _ ->
                        (model, Cmd.none) 
@@ -200,9 +206,9 @@ update msg model =
                 if ok.data == [] then
                     ({model | infiniteLoading = False, checkList = ["empty"], loading = False}, Cmd.none)
                 else
-                    ({model | data = ok, dataList = model.dataList ++ ok.data, page = model.page + 1, infiniteLoading = False}, Cmd.none)
+                    ({model | data = ok, dataList = model.dataList ++ ok.data, page = model.page + 1, infiniteLoading = False, loading = False}, Cmd.none)
             else
-                ({model | data = ok}, Cmd.none)
+                ({model | data = ok}, (scrollToTop NoOp))
         GetList (Err err) -> 
             let
                 serverErrors = 
@@ -227,6 +233,7 @@ view model =
             else 
             div [] [] ,
             -- contentsCount (List.length (model.data.data)),
+            
             if model.data.data == [] then
             div [class "noResult"] [
                 text "스크랩한 게시물이 없습니다."
@@ -263,6 +270,7 @@ view model =
                 , pagination 
                 PageBtn
                 model.data.paginate
+                model.pageNum
                 ]
             ]
         ]
@@ -277,16 +285,16 @@ listappDetail item =
     )
 
 appcontent item= 
-        div [ class "container yf_container" ]
+        div [ class "containerm_mypage_scrap" ]
         [ div []
-            [ div [ class "yf_box yf_box_scrap" ] 
-                [ img [ src item.thembnail, onLoad OnLoad ]
+            [ div [ class "yf_box m_yf_box_scrap" ] 
+                [ img [ src item.thembnail ]
                     []
-                , div [ class "yf_boxtext" ]
+                , div [ class "m_scrap_boxtext" ]
                     [ ul []
-                        [ li [ class "box_name" ]
+                        [ li [ class "m_scrap_box_name" ]
                             [ text item.title ]
-                        ,li [ class "box_date" ]
+                        ,li [ class "m_scrap_date" ]
                             [ text (String.dropRight 15 (justData(item.lookup_at))) ]
                         ]
                     ]

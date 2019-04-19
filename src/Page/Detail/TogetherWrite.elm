@@ -54,7 +54,8 @@ type alias DetailData =
     , pairing : List YfD.Pairing
     , title : String
     , nickname : Maybe String
-    , thumbnail: String}
+    , thumbnail: String
+    , description : Maybe String}
 
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile
@@ -81,7 +82,8 @@ init session mobile
             , pairing = []
             , title = ""
             , nickname = Nothing
-            , thumbnail = ""}
+            , thumbnail = ""
+            , description = Nothing}
         , check = mobile}
         , Api.getId ()
     )
@@ -169,7 +171,7 @@ update msg model =
             
             
         GetShare id -> 
-            let _ = Debug.log "get" id
+            let
                 idDecoder = Decode.decodeValue Decode.string id
                 -- let _ = Debug.log "str" String.filter Char.isDigit str 
                 
@@ -228,8 +230,8 @@ bodyContents model =
                 --     img [ src "/image/dummy_video_image3.png" ]
                 --     []
                 -- , text model.checkDevice]
-                videoContent model
-               , div [class "togethertextarea"] [
+                videoContent2 model
+               , div [class "togethertextarea yf_textarea"] [
                    editorView model.content Content False "운동, 다이어트, 식단, 일상에 대한 대화를 나눠요"
                ]
             ]
@@ -269,25 +271,25 @@ bodyContents_app model =
                 else
                 div [] [
                 text model.checkDevice
-                , videoContent model
+                , videoContent2 model
                 ]
                 ]
                 -- , textarea [ class "textarea m_togetherWrite_textarea", placeholder "운동, 다이어트, 식단, 일상에 대한 대화를 나눠요", rows 10 , onInput Content ]
                 -- []
-                , div [class "apptogethertextarea"] [editorView model.content Content False "운동, 다이어트, 식단, 일상에 대한 대화를 나눠요"
+                , div [class "m_apptogethertextarea"] [editorView model.content Content False "운동, 다이어트, 식단, 일상에 대한 대화를 나눠요"
             ]]
     
         -- ]
                 
 videoContent model = 
-    div [ class "yf_box" ]
+    div [ class "columns togetherWrite_yf_box" ]
         [ 
-            div [class "m_yf_img"] [
+            div [class "column m_to_img"] [
                 img [ src model.getData.thumbnail ]
             []
             ]
-        , div [ class "text_wrap" ]
-            [ div [ class "yf_box_title" ]
+        , div [ class "column togetherWrite_text" ]
+            [ div [ class "yf_togetherWrite_title" ]
                 [ text model.getData.title ]
             , div [ class "togetherUl" ]
                 [ ul []
@@ -357,6 +359,48 @@ onChange tagger =
 targetFiles : Decode.Decoder (List String)
 targetFiles = 
     Decode.at ["target", "files"] (Decode.list Decode.string)
+
+
+videoContent2 model = 
+    div [ class "columns m_togetherWrite_yf_box" ]
+        [ 
+            div [class "column m_to_img2"] [
+                img [ src model.getData.thumbnail ]
+            []
+            ]
+        , div [ class "column m_togetherWrite_text" ]
+            [ div [ class "yf_togetherWrite_title" ]
+                [ text model.getData.title ]
+            , div [ class "togetherUl" ]
+                [ ul []
+                    [ li [] [
+                        i [ class "fas fa-stopwatch" ]
+                        [] ,
+                        text " ",
+                        text model.getData.duration]
+                    , li [class "itemlist"] [
+                        ul [] (
+                            List.indexedMap ( \idx x ->
+                            exerciseItems idx x model
+                                -- exerciseItems idx (List.sortBy x.sort)
+                            ) (List.sortBy .sort model.getData.exercise_items)
+                            
+                        )
+                        ,
+                        if List.length model.getData.exercise_items > 3 then
+                            if model.listShow then
+                                 div [onClick ListShow, class "button is-small"] [text "닫기"]
+                            else
+                                 div [onClick ListShow, class "button is-small"] [text "자세히.."]
+                        else
+                        div [] []
+                    ]
+                    , li [class "m_wr_date"]
+                        [ text (String.dropRight 10(model.getData.inserted_at)) ]
+                    ]
+                ]
+            ]
+        ]  
 
 
 

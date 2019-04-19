@@ -13,9 +13,11 @@ html, body, h1, h2 {
   margin: 0;
   overflow-x: hidden;
     overflow-y: auto;
+  height: 100%;
+  width: 100%;
 }
 body {
-  font-family: 'Source Sans Pro', 'Trebuchet MS', 'Lucida Grande', 'Bitstream Vera Sans', 'Helvetica Neue', sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
   margin: 0;
   text-align: center;
   color: #293c4b;
@@ -212,7 +214,7 @@ a {
 * {
     
   padding:0;
-  font-family: "Roboto";
+  font-family: 'Noto Sans KR', sans-serif;
   
 }
 a {
@@ -260,12 +262,15 @@ min-height: 45px;
 }
 
 
+
+
 .yf_brand a.yf_logo
 {  background: url(/image/logo.png) no-repeat -20px center;;
  width: 100px;
  display: block;
  float: left;
  background-size: 100px;
+ z-index: 120;
 }
 
 
@@ -281,6 +286,7 @@ height: 45px;
 position: fixed;
 height: 45px;
 width: 100%;
+z-index: 100;
 }
 
 .yf_start
@@ -348,6 +354,7 @@ height: auto;
  display:block;
  height: 0 auto;
  background-color: #59bcd6;
+  
 }
 
 .columns
@@ -355,6 +362,12 @@ height: auto;
  width: 100%;
  margin: 0;
 }
+
+.qwe
+{
+  height: 15rem;
+}
+
 
 /* login */
 .login_logo
@@ -420,6 +433,25 @@ color: white;
  height: 2.7rem;
 }
 
+.login_text1
+{
+color: red;
+font-size: .8rem;
+margin-top: 1rem;
+}
+
+
+.login_text2
+{
+color: red;
+font-size: .8rem;
+display: block;
+width: 16rem;
+margin: 0 auto;
+text-align: left;  
+}
+
+
 
 /* signup */
 
@@ -452,6 +484,12 @@ color: white;
 
 }
 
+.signup_yf_input
+{
+  margin-right: 1rem;
+  width: 55%;
+}
+
 .signup_yf_terms
 {
   color: blue;
@@ -468,7 +506,20 @@ color: white;
   margin-top: 40px;
 }
 
+.sign_text
+{
+  font-size: .9rem;
+  color: red;
+  display: block;
+  margin: 0 auto;
+  text-align: left;
+  margin-left:25%;
+}
 
+
+.container {
+  /* margin-bottom: 5rem; */
+}
 /* yourfitExercise */
 
 .container_backcolor
@@ -556,7 +607,7 @@ color: white;
   font-size:20px;
   position: absolute;
   top:45px;
-  right:11px;
+  right:14px;
   writing-mode: tb-rl;
 }
 
@@ -666,20 +717,19 @@ margin: 30px 0px 0px 0px;
   display: flex;
   flex-direction: row;
   width: 640px;
-  height: 60px;
   margin: 0 auto;
  }
  .yf_subnav div {
 
-   height: 60px;
-   display: flex;
-   align-items: center;
-   box-sizing: border-box;
-   font-weight: 600;
-   text-align: center;
-   vertical-align: middle;
-   font-size: 1.5rem;
-   width: 200px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  font-weight: 600;
+  font-size: 1.2rem;
+  text-align: center;
+  vertical-align: middle;
+  width: 200px;
  }
 
 .yf_time,.yf_scrapt
@@ -720,6 +770,14 @@ padding: 1rem;}
 .yf_workout_backbtn
 {
   text-align: left;
+}
+
+.video_title img
+{
+  width: 100%;
+  z-index: 3;
+  left: 0;
+  pointer-events: visible;
 }
 
 
@@ -852,14 +910,14 @@ font-size: 25px;
   border: solid #CCCCCC;
   border-width: .1rem;
   margin: auto;
-  margin-top: 3rem;
+  margin-top: 30px;
   text-align:  center;
 }
 
 .make_yf_box img
 {
+  width: 35rem;
   padding: 1.2rem 0 0 0;
-  width: 8rem;
 }
 
 
@@ -967,7 +1025,7 @@ color: black;
 }
 .pagination-list
 {
-  margin: 0 0 1rem 0;
+  margin: .5rem 0 1rem 0;
 }
 
 /* makeExerciseDetail */
@@ -1009,6 +1067,7 @@ color: black;
   height: 3rem;
   font-size: 1.3rem;
   margin-right: 1rem;
+  margin-top: .5rem;
 }
 
 .yf_on{color: white; background-color: #56BC8A;}
@@ -1023,6 +1082,17 @@ color: black;
   float: right;
 }
 
+.filter_yf_title
+{
+  text-align: center;
+}
+
+.filter_yf_title img
+{
+width: 20rem;
+margin-top: 1rem;
+
+}
 
 /* filterStep1 */
 
@@ -1168,9 +1238,26 @@ border-right: .1px #CCCCCC solid;
 {
  width: 60%;
   margin-left: 10px;
-  margin-top: 25px;
   float: left;
 }
+
+.yf_titleinput
+{
+ width: 60%;
+  margin-left: 10px;
+  float: left;
+  color:red;
+  font-size: .9rem;
+}
+
+.yf_titleinput textarea
+{
+ width: 100%;
+ margin-top: 1rem;
+ color: #363636;
+}
+
+
 
 .filterstep2_yf_select
 { 
@@ -1345,6 +1432,7 @@ margin:  0 0 2.8rem 0;
   height: 100%;
   position: relative;
   overflow: hidden;
+  margin-top: 30px;
  }
 
  .together_mediabox,.together_mediabox2
@@ -1352,7 +1440,7 @@ margin:  0 0 2.8rem 0;
  border:solid;
  border-width: .1rem;
  padding: 10px;
- border-color: #E4E4E4; 
+ border-color: #cccccc; 
  height: 100%;
  margin: 0 0 1rem 0;
  }
@@ -1429,6 +1517,13 @@ height: 2.5rem;
 {
   margin-left: 1.5rem;
   margin-top: 20px;
+}
+
+.together_grid
+{
+  width: 432px;
+  float: left;
+  margin: .5rem;
 }
 
 
@@ -1524,6 +1619,28 @@ height: 2.5rem;
   margin: 0 1rem 0 0 ;
 }
 
+.mypage_count
+{
+  color: #3d3d3d;
+}
+
+.mypage_nickname_btn
+{
+  margin: 0 1rem 0 0;
+}
+
+.mypage_nickname_not
+{
+  color: red;
+  margin: .4rem 0 .4rem 0;
+  font-size: .9rem;
+}
+
+.mypage_nick_blank{
+  margin: 0 0 .5rem 0;
+}
+
+
 /* myPage2 */
 
 .myPage2_man{font-size: 2rem; color: #148ACD;}
@@ -1549,11 +1666,13 @@ height: 2.5rem;
 .myPage2_yf_input_box
 {
   width: 6rem;
+  min-width: 200px;
 }
 
 .myPage2_yf_input_box2{
   width: 5rem;
   margin-left: 1rem;
+  min-width: 220px;
 }
 
 /* myPage3 */
@@ -1871,8 +1990,7 @@ margin: 30px 0px 0px 0px;
 
 .yf_text
 {
-  font-size: 18rem;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   border-top: 1px solid #CCCCCC;
 }
 
@@ -2069,7 +2187,7 @@ padding-left: .5rem;
  border-width: .1rem;
  border-style: solid;
  border-color: #E4E4E4; 
- margin: 30px 0px 0px 0px;
+ margin: 30px 0px 1rem 0px;
  }
 
 
@@ -3008,8 +3126,45 @@ float: left;
 }
 
 .toImg{
-  height: 100%;
+  height: 240px;
 }
+
+.toImg2
+{
+  width: 657px;
+ 
+}
+
+.together_closebtn
+{
+  display: block;
+  margin-bottom: .5rem;
+}
+
+
+
+.together_nav
+{
+  margin-left: 1rem;
+  font-weight: 700;
+}
+
+.detailData
+{
+  font-weight: 600;
+  font-size: .8rem;
+  color: #3d3d3d;
+}
+
+.together_list{
+  padding: .5rem;  
+}
+
+.together_yf_scrap
+{
+  margin-left: 5rem;
+}
+
 .loginHeight {
   height: 20vh;
   display: flex;
@@ -3032,7 +3187,7 @@ float: left;
 .notmatchPwd {
   font-size: 11px;
   color: #db0000;
-  padding: 1rem 0 .5rem;
+  padding: 0 0 .5rem;
 }
 .myPage_yf_input {
   margin-bottom: .5rem;
@@ -3120,8 +3275,8 @@ float: left;
 .title {
   position: relative;
   width: 100%;
-  min-height: 758px;
-  /* min-height: 100vh; */
+  /* min-height: 758px; */
+  min-height: 56vh;
   height: auto;
   overflow: hidden;
 }
@@ -3227,4 +3382,341 @@ float: left;
 }
 .completeAuthEmail {
   font-size: 13px;
+}
+.fas.fa-play-circle {
+  font-size: 4rem;
+    color: #fff;
+    margin: 0;
+    position: absolute;
+    top: 45%;
+    -ms-transform:  translate(0, -50%);
+    transform: translate(0, -50%);
+    /* z-index: 999; */
+    width: 100%;
+    text-align: center;
+    left: 0;
+}
+.genderRadio {
+  border: 1px solid #d0caca;
+    border-radius: 5px;
+    padding: 1rem;
+    box-shadow: 3px 3px #eae5e5;
+    width: 70px;
+    height: 70px;
+}
+.activeGender {
+  background-color: #f2f2f2;
+  box-shadow: 0 0 white;
+
+}
+
+.togetherdetail {
+  /* background-color: transparent; */
+    height: 100%;
+    top: 0;
+    position: fixed;
+    display: flex;
+    /* align-items: center; */
+    /* justify-content: center; */
+    width: 100%;
+    left: 0;
+    z-index: 9999;
+    /* top: 0; */
+    /* left: 0; */
+    width: 100%;
+    height: 100%;
+    overflow: scroll;
+    background: rgba(201, 201, 201, 0.4);
+}
+
+.togetherdetailItem {
+    background-color: #fff;
+    margin: auto;
+    pointer-events: auto;
+    align-items: center;
+    justify-content: center;
+    -webkit-box-align: center;
+    padding: 1rem;
+    
+}
+
+ /*contents*/
+ .containerwrap
+ {
+   background-color:white; 
+   width: 100%;
+   position: sticky;
+ }
+ 
+ .yf_workout
+ {
+   background-color: white;
+   border-radius: 0px;
+   /* padding: 1rem; */
+   overflow: hidden;
+ 
+ }
+ 
+ .pagename
+ {
+   font-size: 2rem;
+   margin: auto;
+ 
+ }
+ 
+ .yficon
+ {
+   width: 32px;
+   height: 32px;
+   float: left;
+ 
+ }
+ 
+ .yftext
+ {
+   margin-left: 50px;
+ }
+ 
+ .yf_box
+ {
+   border: solid #CCCCCC;
+   border-width: .1rem;
+   width:  80%;
+   margin: auto;
+   padding: 1rem;
+   margin-top: 3rem;
+ 
+ }
+ 
+ .yf_password
+ {
+   margin: auto;
+   text-align: center;
+   display: block;
+ }
+ 
+ .yf_passbox
+ {
+   margin-bottom: 1rem;
+   width: 60%;
+   border: solid #c1e9f2 .1px;
+   margin: 0 auto;
+   background-color: #d9edf7;
+   color: #397396;
+   text-align: left;
+   font-size: 1rem;
+   padding: .5rem;
+   margin-bottom: 1rem;
+ }
+ 
+ .yf_mail_send
+ {
+   text-align: left;
+   width: 60%;
+   margin: 0 auto;
+ }
+ 
+ .yf_mail_send2
+ {
+   text-align: left;
+   width: 60%;
+   margin: 0 auto;
+   margin-top: .5rem;
+ }
+ 
+ .yf_sendbtn
+ {
+   width: 60%;
+   height: 2.5rem;
+   display: block;
+   margin: auto;
+   margin-top: 1rem;
+ }
+ 
+ .yf_box img{
+   margin: auto;
+   text-align: center;
+   width: 10rem;
+   display: block;
+ }
+ .serpwdbox {
+   flex-direction: column;
+ }
+ .colorRed {
+   color: red;
+ }
+
+ .zindex {
+  display: none !important;
+ }
+ .sbuttonHidden {
+  display: none;
+}
+.pagination
+{
+  float: left;
+  width: 100%;
+  margin-top: .5rem;
+}
+
+.signupComplete_btn
+{
+  margin-top: 1rem;
+  font-size: 1.2rem;
+}
+
+
+.need2login_text
+{
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.yf_footer
+{
+ position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  padding: 2rem 1.5rem 2rem;
+}
+
+
+.need2login img
+{
+  width: 15rem;
+}
+
+.m_nave2login img
+{
+  width: 13rem;
+}
+
+.headerSpace ul li.toptitle_2
+{
+  font-size: 1.2rem;
+}
+
+
+
+.have2login_btn
+{
+margin-bottom: 1rem;
+}
+
+
+
+.have2login_text
+{
+  font-weight: 700;
+  font-size: 1.2rem;
+  margin-bottom:1rem;
+}
+
+.have2login1 img{
+ width: 10rem;
+}
+
+.have2login_btn, .need2login_btn
+{
+  font-size: 1.1rem;
+  margin-top: 1rem;
+  width: 15rem;
+}
+
+.together_yf_boxtop img
+{
+  width: 64px;
+  height: 64px;
+}
+
+
+@media screen and (min-width: 1472px){
+ .together_grid
+ {
+   width: 432px;
+ } 
+}
+
+@media screen and (max-width: 1471px){
+  .together_grid
+  {
+    width: 360px;
+  } 
+ }
+ 
+ @media screen and (max-width: 1278px){
+  .together_grid
+  {
+    width: 304px;
+  } 
+ }
+ 
+ @media screen and (max-width: 958px){
+  .together_grid
+  {
+    width: 400px;
+  } 
+ }
+ 
+ @media screen and (max-width: 832px){
+  .together_grid
+  {
+    width: 320px;
+  } 
+ }
+ @media screen and (max-width: 671px){
+  .together_grid
+  {
+    width: 95%;
+  } 
+ }
+ 
+ 
+.photo_upload
+{
+ margin: 1.5rem 0 0 0;
+}
+
+.photo_width
+{
+  width: 60%;
+  display: block;
+  margin: 0 auto;
+  margin-bottom: .2rem;
+  margin-top: .5rem;
+}
+
+.photo_change
+{
+  margin: 0 2rem 1rem 0 ;
+}
+
+.mypage_yf_image img
+{
+  width: 128px;
+  height: 128px;
+}
+
+.photo_warningtext
+{
+  display: block;
+  color: red;
+  font-size: .9rem;
+  font-weight: 550;
+} 
+
+.commonHeaderBoth a{
+
+  color: white
+}
+
+.yf_explanation
+{
+  text-align: left;
+}
+
+.m_explanation{
+ float: left;
+ text-align: left;
 }

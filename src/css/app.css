@@ -224,7 +224,12 @@ width: 80%;
   display: flex;
   margin: 1px;
   padding: 5px;
+  color: white;
 }
+
+.headerSpace, .headerSpace i
+{color: white;}
+
 
 .commonHeader
 {
@@ -321,6 +326,7 @@ ul.commonHeaderBoth {
   position: fixed;
   width: 100%;
   z-index: 999999999999999;
+  color: white;
 }
 ul.commonHeaderBoth li {
   display: flex;
@@ -365,8 +371,9 @@ ul.commonHeaderBack {
 }
 ul.commonHeaderBack li {
   display: flex;
-  margin: 1px;
+  margin: 10px;
   padding: 5px;
+  font-size: 1.5rem;
 }
 .loginwrap {
   height: 80vh;
@@ -374,16 +381,23 @@ ul.commonHeaderBack li {
 .toptitle {
   color: #fff;
 }
-.have2login {
+.have2login,.have2login2 {
   display: flex;
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  height: 50vh;
+  height: 70vh;
+
 }
 .have2login div {
   margin-bottom: 1rem;
 }
+
+.have2login img
+{
+  width: 15rem;
+}
+
 .m_yf_workoutvideo_lavel_bg
 {
   background: url(/image/m_video_label.png) no-repeat 21px top;
@@ -488,6 +502,7 @@ position: relative;
   padding: 1rem;
   min-height: 160px;
   display: flex;
+  visibility: visible;
 }
 .yf_workoutvideopic {
   position: relative;
@@ -641,9 +656,28 @@ position: relative;
   width: 100%;
 }
 
+.m_yf_container_circle
+{
+  color: white;
+  position: absolute;   
+  z-index: 1;
+  font-size: 3rem;
+  margin: 4rem 0 0 -1rem;
+}
+
+.m_to_video_circle
+{
+  color: white;
+  position: absolute;   
+  z-index: 1;
+  font-size: 3rem;
+  margin: 4rem 0 0 10rem;
+  }
+
+
 .m_yf_work_textbox
 {
-  /* height: 100px; */
+ 
   padding: 0.5rem;
   width: 100%;
   display: flex;
@@ -673,10 +707,10 @@ margin-left: 2rem;}
 
 .m_work_script
 {
-  display: block;
-  float: left;
-  padding: 1rem;
+  margin: 1rem 0 0 0;
   text-align: left;
+  padding: .4rem;
+  margin: .4rem 0 0 0;
 }
 
 /* makeExercise */
@@ -965,9 +999,9 @@ padding: 10px;
 
 /* filterStep2 */
 
-.makeExerHeader
+.makeExerHeader 
 {
-  background-color: #8ABB5A;
+  color: white;
 }
 
 .m_filterstep2_yf_box
@@ -981,15 +1015,16 @@ padding: 10px;
 
 .m_yf_box_top
 {
-  padding: 1rem;
+  /* padding: 1rem; */
   /* height: 15rem; */
 }
 
 .m_yf_thumbnail
 {
   /* font-size: 1.5rem; */
-  width: 20%;
+  width: 70px;
   float: left;
+  margin: 1rem 0 0 0.5rem;
 }
 
 .m_yf_thumbnail img
@@ -1347,8 +1382,8 @@ height: 30rem;
 }
 .m_mypage_loginbox img
 {
-  height: 100%;
-  width: 100%;
+  height: 80px;
+  width: 80px;
   /* padding: .2rem; */
 }
 
@@ -2171,12 +2206,19 @@ ul.commonHeaderBoth li.m_backbtnD {
   border-width: 10px;
 }
 .m_profilebox {
-  padding-bottom: 1rem;
+  padding:1rem 0 1rem 0;
 }
 .m_profilebox img {
-  width: 5rem; 
+  width: 80px;
+  height: 80px; 
   margin: 0 auto;
 }
+
+.m_profilebox div
+{
+display: inline;
+}
+
 .loginbox_info, .yf_terms{
   display: flex;
   flex-direction: row;
@@ -2191,7 +2233,6 @@ ul.commonHeaderBoth li.m_backbtnD {
 height: 25%;
 margin-right: 1rem;
 }
-
 .scrollHegiht {
   height: 90vh;
   overflow: scroll;
@@ -2238,4 +2279,170 @@ margin-right: 1rem;
 
 .bgFooter {
   background-color: #404756 !important;
+}
+.noShowToast {
+  height: 0;
+}
+.noShowToast ul {
+  height: 0;
+  transition: height .5s;  
+}
+
+
+.showbottomToast {
+  position: fixed;
+    bottom: 0;
+    width: 100%;
+    background-color: rgba(201, 201, 201, 0.4);
+    top: 0;
+    left: 0;
+    z-index: 999;
+    height: 100%;
+    
+}
+
+.showbottomToast ul {
+  display: flex;
+    flex-direction: column;
+    align-items: center;
+    bottom: 0;
+    position: fixed;
+    width: 100%;
+    height: 13rem;
+    /* transition: height .5s; */
+
+}
+.showbottomToast ul li {
+  width: 95%;
+  margin-top: .1rem;
+  border-radius: 0 0 10px 10px;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    padding: 1.3rem;
+    font-size: 1.3rem;
+    background-color: #fff;
+    
+}
+.showbottomToast ul li:first-child {
+  border-radius: 10px 10px 0 0;
+}
+.showbottomToast ul li.toastCancel {
+  border-radius: 10px;
+  margin-top: .5rem;
+  padding: .8rem;
+  margin-bottom: .3rem;
+}
+.lastShowToast {
+  position: initial;
+}
+.lastShowToast ul {
+  height: 0;
+  transition: height .5s;  
+  
+}
+.appFile {
+  display: none;
+}
+
+.m_yf_titleinputbox textarea
+{
+  width: 70%;
+  margin: .5rem 0 1rem 0.7rem;
+  font-size: 1rem;
+}
+
+.myPageHeader i
+{
+  color: white;
+}
+
+.m_photo_changebox
+{
+  margin-top: 2rem;
+  margin-left: 3rem;
+}
+
+
+.m_findpassbox img
+{
+  width: 10rem;
+  margin-top: 1rem;
+}
+
+.m_yf_passbox
+{
+  margin-bottom: 1rem;
+  border: solid #c1e9f2 .1px;
+  margin: 0 auto;
+  background-color: #d9edf7;
+  color: #397396;
+  text-align: left;
+  font-size: 1rem;
+  padding: .5rem;
+  margin-bottom: 1rem;
+  width: 95%;
+}
+
+.yf_m_mail_send
+{
+  width: 95%;
+  margin: 0 auto;
+}
+
+.yf_m_mail_send
+{
+  width: 95%;
+  margin: 0 auto;
+}
+
+.mail_send2
+{
+  margin-bottom: .5rem;
+}
+
+.m_to_yf_id img
+{
+width: 64px;
+height: 64px;
+padding: .3rem;
+}
+
+.m_work_maketext
+{
+ text-align: left;
+ margin-left: 5px;
+}
+
+.m_yf_box_scrap
+{
+  border: solid;
+  border-width: .1rem;
+  padding: .5rem;
+  border-style: solid;
+  border-color: #E4E4E4;
+  display: flex;
+  margin-top: .5rem;
+  float: left;
+  width: 100%;
+}
+
+.m_scrap_boxtext
+{
+  width: 55%;
+  margin-left: .5rem;
+}
+
+.m_yf_box_scrap
+{
+  float: left;
+}
+
+.m_scrap_date
+{
+font-size: .9rem;
+}
+
+.jwplayer {
+  z-index: 9999;
 }

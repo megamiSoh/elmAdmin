@@ -41,6 +41,8 @@ type alias Token =  {
 type alias AuthSendData = {
     data : String
     }
+type alias CheckOverlapUserName = 
+    { data : Bool}
 
 datalist model= 
     Encode.object
@@ -63,15 +65,27 @@ signupEncoder model session =
             wrap
                 |> Http.jsonBody
     in
-    Api.post Endpoint.signup (Session.cred session) SuccessData body (Decoder.tokenDecoder Api.Cred )
+    (Decoder.tokenDecoder Api.Cred )
+    |> Api.post Endpoint.signup (Session.cred session) SuccessData body 
 
+overlapIdEncoder username session = 
+    let
+        body =
+            Encode.object 
+                [ ("username", Encode.string username)]
+                    |> Http.jsonBody
+    in
+    (Decoder.checkOverlapmail CheckOverlapUserName)
+    |> Api.post Endpoint.checkoverlapId (Session.cred session) CanUseUsername body 
+    
 
 emailAuthEncode email session =
     let
         body = Encode.object [("username",Encode.string email)] 
             |> Http.jsonBody
     in
-    Api.post Endpoint.emailAuth (Session.cred session) AuthComplete body (Decoder.authMail AuthSendData)
+    (Decoder.authMail AuthSendData)
+    |> Api.post Endpoint.emailAuth (Session.cred session) AuthComplete body 
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile
     = (
@@ -110,6 +124,7 @@ type Msg
     | EmailAuth 
     | AuthComplete (Result Http.Error AuthSendData)
     | EmailAuthInput String
+    | CanUseUsername (Result Http.Error CheckOverlapUserName)
     
 
 toSession : Model -> Session
@@ -127,17 +142,29 @@ onKeyDown tagger =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        EmailAuthInput str ->
-            ({model | authNo = str} , Cmd.none)
-        AuthComplete (Ok ok) ->
-            ({model | emailComplate = "인증번호가 발송 되었습니다."}, Cmd.none)
-        AuthComplete (Err err) ->
+        CanUseUsername (Ok ok) ->
+            if ok.data then
+            ({model | err = ""}, emailAuthEncode model.mail model.session)
+            else 
+            ({model | err = "이미 사용 중입니다."}, Cmd.none)
+        CanUseUsername (Err err) ->
             (model, Cmd.none)
+        EmailAuthInput str ->
+            if model.authNo == "" then
+            ({model | authNo = str} , Cmd.none)
+            else
+            ({model | authNo = str, emailComplate = ""} , Cmd.none)
+        AuthComplete (Ok ok) ->
+            ({model | emailComplate = "인증번호가 발송 되었습니다."}, Api.showToast (Encode.string "인증번호가 발송 되었습니다."))
+        AuthComplete (Err err) ->
+            ({model | emailComplate = ""}, Cmd.none)
         EmailAuth ->
             if model.mail == "" then
             ({model | err = "이메일 주소를 입력 해 주세요."}, Cmd.none)
             else
-            (model, emailAuthEncode model.mail model.session)
+            (model, 
+            overlapIdEncoder model.mail model.session
+            )
         KeyDown key ->
             if key == 13 then
                 update Submit model
@@ -156,7 +183,7 @@ update msg model =
                     Api.decodeErrors err
             in
                 if serverErrors == "badbody" then
-                    ( { model | err = "사용중인 이메일 입니다." }
+                    ( { model | err = "회원가입을 진행 할 수 없습니다." }
                         , Cmd.none
                         )
                 else
@@ -214,10 +241,6 @@ view model =
         else
             div [] [
                 pcLayout model
-                , div [] [
-                    appHeadermypage "회원가입" "myPageHeader" 
-                    -- mobileLayout model
-                ]
             ]
             
     }
@@ -236,21 +259,23 @@ pcLayout model=
                 
                     h1 [ class "signup_yf_h1" ]
                     [ text "유어핏에서 사용할 이메일을 입력해주세요" ]
-                , div [] [text model.err]
+                , div [class"sign_text"] [text model.err]
                 , div [ class "signup_yf_box2" ]
                     [ p [ class "control has-icons-left signup_yf_inputbox" ]
-                        [ input [ class ("input " ++ model.borderMatch ), type_ "email", placeholder "이메일을 입력해주세요", onInput EmailCheck ]
+                        [ input [ class ("input signup_yf_input" ++ model.borderMatch ), type_ "email", placeholder "이메일을 입력해주세요", onInput EmailCheck ]
                             []
+                            , div [class "button is-link emailButton", onClick EmailAuth] [text "인증번호 보내기"]
+                        , span [ class "icon is-small is-left " ]
+                        [ i [ class ("fas fa-envelope a"++ model.matchStyle) ]
+                                []
+                        ]
+                        ]
                         , div [class "emailAuth"][
                             
-                            input [ class "input", type_ "number", placeholder "인증번호를 입력해 주세요.", onInput EmailAuthInput] []
-                            , div [class "button emailButton", onClick EmailAuth] [text "이메일 인증"]]
-                        , div [class "completeAuthEmail"] [text model.emailComplate]
-                        , span [ class "icon is-small is-left" ]
-                            [ i [ class ("fas fa-envelope "++ model.matchStyle) ]
-                                []
-                            ]
-                        ]
+                            input [ class "input signup_yf_inputbox", type_ "number", placeholder "인증번호를 입력해 주세요.", onInput EmailAuthInput] []
+                          ]
+                        , div [class "completeAuthEmail"] [text model.emailComplate]                        
+
                     , p [] [text model.errmsg]
                     , p [ class "control has-icons-left signup_yf_inputbox" ]
                         [ input [ class ("input " ++ model.pwdborder ), type_ "password", placeholder "비밀번호를 입력해주세요", onInput PasswordCheck ]
@@ -303,16 +328,27 @@ mobileLayout model =
                 [ p [ class "control has-icons-left m_signup_yf_inputbox" ]
                  [ input [ class ("input " ++ model.borderMatch ), type_ "email", placeholder "이메일을 입력해주세요", onInput EmailCheck ]
                             []
+                         , div [class "button is-link emailButton m_signup_yf_inputbox", onClick EmailAuth] [text "인증번호 보내기"]
                         , span [ class "icon is-small is-left" ]
                             [ i [ class "fas fa-envelope sign_icon" ]
                                 []
                             ]
                         ]
                     , p [ class "control has-icons-left m_signup_yf_inputbox" ]
+                        [ input [ class "input signup_yf_inputbox", type_ "number", placeholder "인증번호를 입력해 주세요.", onInput EmailAuthInput ]
+                            []
+                        , span [ class "icon is-small is-left" ]
+                            [ i [ class "fas fa-envelope sign_icon" ]
+                                []
+                            ]
+                        , div [class "completeAuthEmail"] [text model.emailComplate]  
+                        ]
+                    , p [] [text model.errmsg]
+                    , p [ class "control has-icons-left m_signup_yf_inputbox" ]
                         [ input [onKeyDown KeyDown, class ("input " ++ model.pwdborder ), type_ "password", placeholder "비밀번호를 입력해주세요", onInput PasswordCheck ]
                             []
                         , span [ class "icon is-small is-left" ]
-                            [ i [ class "fas fa-lock sign_icon" ]
+                            [ i [ class ("fas fa-lock "++  model.pwdstyle) ]
                                 []
                             ]
                         ]
@@ -320,7 +356,7 @@ mobileLayout model =
                         [ input [ onKeyDown KeyDown, class ("input " ++ model.reborder ), type_ "password", placeholder "비밀번호를 한번 더 입력해주세요", onInput RePasswordCheck ]
                             []
                         , span [ class "icon is-small is-left" ]
-                            [ i [ class "fas fa-lock sign_icon" ]
+                            [ i [ class ("fas fa-lock "++  model.restyle) ]
                                 []
                             ]
                         ]

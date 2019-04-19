@@ -41,6 +41,8 @@ type alias Model
         , loading : Bool
         , cannotSave : String
         , saveItem : List Item
+        , sbuttonHidden : String
+        , workoutDescription : String
     }
 type EditorTab
     = Editor
@@ -123,13 +125,15 @@ registVideo model edit session=
         body =
             formUrlencoded 
             [ ("title", model.title)
+            , ("description", model.workoutDescription)
             , ("items", "[" ++ listformUrlencoded edit ++ "]"
             )
             ]
 
             |> Http.stringBody "application/x-www-form-urlencoded"
     in
-    Api.post (Endpoint.registFilter)(Session.cred session) GoRegistResult body ((Decoder.resultDecoder ResultData))
+    (Decoder.resultDecoder ResultData)
+    |> Api.post (Endpoint.registFilter)(Session.cred session) GoRegistResult body 
 
 defaultOptions =
     { softAsHardLineBreak = False
@@ -156,7 +160,9 @@ init session mobile
         , validation = ""
         , cannotSave = ""
         , errTitle = ""
+        , sbuttonHidden = ""
         , loading = True
+        , workoutDescription = ""
         } 
         ,Cmd.batch[Api.sendData ()]
     )
@@ -185,6 +191,7 @@ type Msg
     | SessionCheck E.Value
     | GotSession Session
     | Delete Int
+    | Description String
 
 toSession : Model -> Session
 toSession model =
@@ -205,6 +212,15 @@ dropLists idx model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of 
+        Description descriptions->
+            let
+                newDescriptions = 
+                    descriptions
+                        |> String.replace "&" "%26"
+                        |> String.replace "%" "%25"
+            in
+            
+            ({model | workoutDescription = newDescriptions}, Cmd.none)
         Delete idx ->
             let
                 after =takeLists idx model.addData
@@ -227,7 +243,10 @@ update msg model =
                     Err _ ->
                         (model, Cmd.none)
         FilterSaveSuccess str ->
-            (model, Route.pushUrl (Session.navKey model.session) Route.FilterS1)
+            (model, 
+            Api.historyUpdate (E.string "filterStep1" )
+            -- Route.pushUrl (Session.navKey model.session) Route.FilterS1
+            )
         NextPage ->
             (model, Cmd.batch [
                  Api.getSomeFilter ()
@@ -239,7 +258,8 @@ update msg model =
             
             (model, Cmd.batch [
                 Api.deleteData ()
-                , Route.pushUrl (Session.navKey model.session) Route.MakeExer
+                -- , Route.pushUrl (Session.navKey model.session) Route.MakeExer
+                , Api.historyUpdate (E.string "makeExercise")
                 , Api.showToast text])
         GoRegistResult (Err err) ->
             let 
@@ -285,6 +305,8 @@ update msg model =
             ({model|validation = "vaidColor", errTitle = "제목을 입력 해 주세요."}, Cmd.none)
             else if List.length model.addData == 0 then
             (model, Cmd.none)
+            else if model.workoutDescription == "" then
+            ({model |  errTitle = "운동 설명을 입력 해 주세요."}, Cmd.none)
             else
             ({model | loading = True, saveItem = item}, registVideo model item model.session)
         UpdateTitle title ->
@@ -320,9 +342,9 @@ update msg model =
             (model, Cmd.none)
             else
                 if model.style == String.fromInt(idx) then
-                    ({model | style = "", setData = set, cannotSave = ""}, Cmd.none)
+                    ({model | style = "", setData = set, cannotSave = "", sbuttonHidden = ""}, Cmd.none)
                 else
-                    ({model | style = String.fromInt(idx), setData = set, cannotSave = ""}, Cmd.none)
+                    ({model | style = String.fromInt(idx), sbuttonHidden = "sbuttonHidden", setData = set, cannotSave = ""}, Cmd.none)
 
         Plus idx ->
             ( {model | setData = model.setData + 1 },  Cmd.none)
@@ -344,7 +366,8 @@ update msg model =
                                 , title= x.title
                                 , value = Just model.setData
                                 , duration = x.duration
-                                , thembnail = x.thembnail}
+                                , thembnail = x.thembnail
+                                }
                             else
                                 x
                         ) model.addData
@@ -367,7 +390,10 @@ update msg model =
                 Nothing ->
                     ({model | setData = -1 }, Cmd.none)
         BackBtn ->
-            (model, Route.pushUrl (Session.navKey model.session) Route.FilterS1)
+            (model,
+            --  Route.pushUrl (Session.navKey model.session) Route.FilterS1
+            Api.historyUpdate (E.string "filterStep1")
+             )
 
 view : Model -> {title : String , content : Html Msg}
 view model =
@@ -463,8 +489,9 @@ thumbSetting model=
             [ 
             div [class model.validation] [
                 -- editorViewInput model.title UpdateTitle False "운동제목을 입력하세요." model.validation
-                input [ class ( "input " ++ model.validation ), type_ "text", placeholder "운동제목을 입력하세요", onInput UpdateTitle ]
+                input [ class ( "input " ++ model.validation ), type_ "text", placeholder "운동제목을 입력해 주세요.", onInput UpdateTitle ]
                 []
+                , textarea [ placeholder "운동 설명을 입력 해 주세요.", onInput Description] []
             ]
             , div [] [text model.errTitle]
             ]
@@ -477,10 +504,11 @@ appthumbSetting model =
                 []
             ]
         , div [ class "m_yf_titleinputbox" ]
-            [ input [ class ( "input m_yf_titleinput " ++ model.validation ), type_ "text", placeholder "운동제목을 입력하세요",  onInput UpdateTitle ]
+            [ input [ class ( "input m_yf_titleinput " ++ model.validation ), type_ "text", placeholder "운동제목을 입력해 주세요.",  onInput UpdateTitle ]
                 []
+            , textarea [placeholder "운동 설명을 입력 해 주세요.",  onInput Description] []
             ]
-        , div [class "thubmTitle"] [text "썸네일지정" ]
+        -- , div [class "thubmTitle"] [text "썸네일지정" ]
         ]
 
 itemCount model= 
@@ -501,9 +529,9 @@ selectedItem idx item model=
     div [ class "filterstep2_videolistbox" ]
         [ div [ class "yf_switch" ]
             [ 
-                img [ src "/image/switch_up.png", class "upIcon", onClick (SwitchItem idx)]
+                img [ src "/image/switch_up.png", class ("upIcon " ++ model.sbuttonHidden), onClick (SwitchItem idx)]
                 []
-                , img [ src "/image/switch_down.png", class "downIcon" , onClick (SwitchItem idx)]
+                , img [ src "/image/switch_down.png", class ("downIcon "++ model.sbuttonHidden) , onClick (SwitchItem idx)]
                 []
             
             ]

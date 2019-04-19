@@ -65,7 +65,8 @@ init session mobile
         , check= mobile}
         , Cmd.batch
         [ 
-         Api.get GetPart Endpoint.partFilter (Session.cred session) (Decoder.levelDecoder FilterCode CodeData)
+         Decoder.levelDecoder FilterCode CodeData
+         |> Api.get GetPart Endpoint.partFilter (Session.cred session) 
         ]
         
        
@@ -115,10 +116,14 @@ update msg model =
                     Ok continue ->
                         (model,
                         Cmd.batch [
-                            Api.get GetPart Endpoint.partFilter (Session.cred model.session) (Decoder.levelDecoder FilterCode CodeData)
-                            , Api.get GetLevel Endpoint.levelFilter (Session.cred model.session) (Decoder.levelDecoder FilterCode CodeData)
-                            , Api.get GetTool Endpoint.toolFilter (Session.cred model.session) (Decoder.levelDecoder FilterCode CodeData)
-                            , Api.get GetExer Endpoint.exerFilter (Session.cred model.session) (Decoder.levelDecoder FilterCode CodeData)
+                            (Decoder.levelDecoder FilterCode CodeData)
+                            |> Api.get GetPart Endpoint.partFilter (Session.cred model.session) ,
+                            (Decoder.levelDecoder FilterCode CodeData)
+                            |> Api.get GetLevel Endpoint.levelFilter (Session.cred model.session) ,
+                            (Decoder.levelDecoder FilterCode CodeData)
+                            |> Api.get GetTool Endpoint.toolFilter (Session.cred model.session) ,
+                            (Decoder.levelDecoder FilterCode CodeData)
+                            |> Api.get GetExer Endpoint.exerFilter (Session.cred model.session) 
                         ])
                     Err _ ->
                         (model, Cmd.none)
@@ -127,11 +132,16 @@ update msg model =
             , Cmd.none
             )
         FilterSaveSuccess str ->
-            (model, Route.pushUrl (Session.navKey model.session) Route.FilterS1)
+            (model,
+            Api.historyUpdate(Encode.string "filterStep1")
+            --  Route.pushUrl (Session.navKey model.session) Route.FilterS1
+             )
         GoNextPage ->
             (model, Api.filter (filterEncoder model))
         GetPart(Ok ok) ->
-            ({model | part = ok.data } , Api.get GetExer Endpoint.exerFilter (Session.cred model.session) (Decoder.levelDecoder FilterCode CodeData))
+            ({model | part = ok.data } ,
+            (Decoder.levelDecoder FilterCode CodeData)
+            |> Api.get GetExer Endpoint.exerFilter (Session.cred model.session) )
         GetPart(Err err) ->
             let
                 serverErrors = Api.decodeErrors err
@@ -143,11 +153,15 @@ update msg model =
         GetLevel(Err err) ->
             (model,Cmd.none)
         GetTool(Ok ok) ->
-            ({model | tool = ok.data } , Api.get GetLevel Endpoint.levelFilter (Session.cred model.session) (Decoder.levelDecoder FilterCode CodeData))
+            ({model | tool = ok.data } , 
+            (Decoder.levelDecoder FilterCode CodeData)
+            |> Api.get GetLevel Endpoint.levelFilter (Session.cred model.session) )
         GetTool(Err err) ->
             (model,Cmd.none)
         GetExer(Ok ok) ->
-            ({model | exer = ok.data }, Api.get GetTool Endpoint.toolFilter (Session.cred model.session) (Decoder.levelDecoder FilterCode CodeData))
+            ({model | exer = ok.data }, 
+            (Decoder.levelDecoder FilterCode CodeData)
+            |> Api.get GetTool Endpoint.toolFilter (Session.cred model.session) )
         GetExer(Err err) ->
             (model,Cmd.none)
         IsActivePart part ->
@@ -175,7 +189,10 @@ update msg model =
             else
                 ({model | isActiveTool = [tool] ++ model.isActiveTool}, Cmd.none)
         BackBtn ->
-            (model, Route.pushUrl (Session.navKey model.session) Route.MakeExer )
+            (model, 
+            Api.historyUpdate(Encode.string "makeExercise")
+            -- Route.pushUrl (Session.navKey model.session) Route.MakeExer 
+            )
         NextBtn ->
             (model , Cmd.none)
 
@@ -218,8 +235,19 @@ filterItem item list=
 
 filterbox part level exer tool model=
     div [ class "filter_yf_box" ]
-        [ ul []
-            [ li [ class "filter_yf_li" ]
+    
+        [ul []
+          [ li [ class "filter_yf_title" ]            
+         [ img [ src "image/checkimage.png", alt "checkimage" ]
+                []
+                ],
+                   h1 [ class "make_yf_h1" ]
+                   [ text "원하는 운동 필터에 체크하세요" ]
+
+          ],
+          ul []
+            
+                    [ li [ class "filter_yf_li" ]
                 [ text "운동부위" ]
             , li [class "filter_btn"]
             (

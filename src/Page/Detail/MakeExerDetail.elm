@@ -25,9 +25,11 @@ type alias Model
         , loading : Bool
         , scrap : Bool
         , videoId : String
+        , zindex : String
         , deleteAuth: String
     }
-
+type alias GetData = 
+    { data : DetailData }
 type alias DetailData =    
     { difficulty_name : Maybe String
     , duration : String
@@ -38,13 +40,14 @@ type alias DetailData =
     , pairing : List Pairing
     , title : String
     , nickname : Maybe String
-    , thumbnail : String}
+    , thumbnail : String
+    , description : Maybe String}
 
 type alias Pairing = 
     { file : String
     , image : String
     , title : String}
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
         { session = session
@@ -53,6 +56,7 @@ init session mobile
         , loading = True
         , scrap = False
         , videoId = ""
+        , zindex = ""
         , deleteAuth = ""
         , getData = 
             { difficulty_name = Nothing
@@ -64,7 +68,8 @@ init session mobile
             , pairing = []
             , title = ""
             , nickname = Nothing
-            , thumbnail = ""}
+            , thumbnail = ""
+            , description = Nothing}
         }
         , Cmd.batch 
         [  Api.getId ()
@@ -77,7 +82,7 @@ type Msg
     = CheckDevice E.Value
     | BackPage
     | GetId E.Value
-    | GetList (Result Http.Error YfD.GetData)
+    | GetList (Result Http.Error GetData)
     | GoVideo (List Pairing)
     | Loading E.Value
     | Scrap Int
@@ -111,7 +116,10 @@ update msg model =
             in
             case decodestr of
                 Ok ok ->
-                   (model,Route.pushUrl(Session.navKey model.session) Route.TogetherW) 
+                   (model,
+                   Api.historyUpdate (E.string "togetherWrite")
+                --    Route.pushUrl(Session.navKey model.session) Route.TogetherW
+                   ) 
             
                 Err _ ->
                     (model, Cmd.none)
@@ -119,7 +127,9 @@ update msg model =
             -- if model.deleteAuth == "scrap" then
             --     update Scrap {model | session = session }
             -- else
-           ({model | session = session}, Api.get GetList (Endpoint.makeDetail model.videoId) (Session.cred session)  (Decoder.yfDetailDetail YfD.GetData YfD.DetailData YfD.DetailDataItem YfD.Pairing)
+           ({model | session = session}, 
+           (Decoder.yfDetailDetail GetData DetailData YfD.DetailDataItem YfD.Pairing)
+           |> Api.get GetList (Endpoint.makeDetail model.videoId) (Session.cred session)  
            )
         ScrapComplete (Ok ok) ->
             let
@@ -146,7 +156,7 @@ update msg model =
                         , ("title", E.string p.title)
                         ]
             in
-            (model, Api.videoData videoList)
+            ({model | zindex = "zindex"}, Api.videoData videoList)
         GetList(Ok ok) ->
             ({model | getData = ok.data, loading = False}, Cmd.none)
         GetList(Err err) ->
@@ -172,7 +182,9 @@ update msg model =
             in
             case result of
                 Ok string ->
-                    ({model | videoId = string} , Api.get GetList (Endpoint.makeDetail string) (Session.cred model.session)  (Decoder.yfDetailDetail YfD.GetData YfD.DetailData YfD.DetailDataItem YfD.Pairing)
+                    ({model | videoId = string} , 
+                    (Decoder.yfDetailDetail GetData DetailData YfD.DetailDataItem YfD.Pairing)
+                    |> Api.get GetList (Endpoint.makeDetail string) (Session.cred model.session)  
                     )
             
                 Err _ ->
@@ -189,7 +201,9 @@ update msg model =
                         ({model | checkDevice = "pc"}, Cmd.none)
         BackPage ->
             (model, 
-            Route.pushUrl (Session.navKey model.session) Route.MakeExer)
+            Api.historyUpdate (E.string "makeExercise")
+            -- Route.pushUrl (Session.navKey model.session) Route.MakeExer
+            )
         Scrap id ->
             (model, Cmd.batch[Api.saveId (E.string (String.fromInt id))])
           
@@ -209,7 +223,7 @@ view model =
 web msg model= 
     div [class "container"] [
         commonHeader "/image/icon_customworkout.png" "맞춤운동" ,
-        contentsBody model.getData model.loading Scrap model.scrap GoVideo "공유하기",
+        contentsBody model.getData model.loading Scrap model.scrap GoVideo "공유하기" model.zindex,
         goBtn BackPage 
 
     ]
@@ -242,8 +256,9 @@ appcontentsItem item model goVideo=
             div [ ]
             [ div []
                 [ p [ class "m_yf_container" ]
-                    [ 
-                        img [src item.thumbnail , onClick (goVideo item.pairing)][]                        
+                     [ 
+                        i [ class "far fa-play-circle m_yf_container_circle" ][]
+                        , img [src item.thumbnail, onClick (GoVideo item.pairing)] []
                         , videoCall
                     ]
                 ]
@@ -265,18 +280,26 @@ appcontentsItem item model goVideo=
                         ]
                     ]
                 ]
-            , div [ class "m_work_script" ]
+         
+        
+            
+             , div [class"m_work_maketext"] [
+                text (justokData item.description)    
+                
+                
+                , div [ class "m_work_script" ]
                   (List.indexedMap YfD.description item.exercise_items)
+            ]
                 
             ]
 
-contentsBody item model scrap modelscrap goVideo scrapText=
+contentsBody item model scrap modelscrap goVideo scrapText zindex=
     
     div [ class "yf_yfworkout_search_wrap" ]
         [ div [ class "tapbox" ]
             [ div [ class "yf_large" ]
                 [ text item.title ],
-                contentsItem item model scrap modelscrap goVideo scrapText
+                contentsItem item model scrap modelscrap goVideo scrapText zindex
                
             ]
         
@@ -284,13 +307,14 @@ contentsBody item model scrap modelscrap goVideo scrapText=
 
 
 
-contentsItem item loading scrap modelscrap govideo scrapText=
+contentsItem item loading scrap modelscrap govideo scrapText zindex =
             div [ class "tile is-parent is-vertical" ]
             [ div [ class "yf_notification" ]
-                [ p [ class "title" ]
+                [ p [ class "video_title" ]
                     [ 
                          div [] [
-                             img [ src item.thumbnail , onClick (govideo item.pairing)] []
+                            i [ class "fas fa-play-circle" ][],
+                             img [class zindex, src item.thumbnail , onClick (govideo item.pairing)] []
                             , videoCall
                          ]
                     ]
@@ -316,19 +340,31 @@ contentsItem item loading scrap modelscrap govideo scrapText=
                         ], text scrapText
                     ]
                 ]
-            , 
             -- if loading then 
             -- div [] []
             -- else
-            div [ class "yf_text" ]
-               (List.indexedMap YfD.description item.exercise_items)
+            
+            , div [ class "yf_text" ]
+            [
+                div [] [ text (justokData item.description)]
+                , div [] (List.indexedMap YfD.description item.exercise_items)
+            ]
+               
             ]
 
+            
 justokData result = 
     case result of
         Just ok ->
-            ok
+            let
+                replace = 
+                    ok
+                        |> String.replace "%26" "&"
+                        |> String.replace "%25" "%"  
+            in
+                replace
         Nothing ->
             ""
+
 videoCall = 
     div [id "myElement"] []

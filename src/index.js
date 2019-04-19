@@ -105,14 +105,20 @@ app.ports.saveId.subscribe(function (id) {
 })
 
 app.ports.getId.subscribe(function () {
-  alert(1111)
+  // alert(1111)
   var get = localStorage.getItem("id")  
-  var parse = JSON.parse (get)
-  console.log (parse.code == undefined)
+  if (get == null) {
+    return false
+  } else {
+    var parse = JSON.parse (get)
    if (parse.code ==  undefined) {
     app.ports.receiveId.send (get)} 
-    else{
+    else if (parse.code == null) {
+      return false;
+    }
+    else {
     app.ports.receiveId.send (parse)} 
+  }
 })
 
 app.ports.removeId.subscribe(function() {
@@ -289,9 +295,7 @@ app.ports.getSomeFilter.subscribe(function() {
 
 
 app.ports.videoData.subscribe(function(data) {
-  alert("call")
-  const element = jwplayer("myElement")
-
+  
     if (data.pairing == "undefined" || ! Array.isArray (data.pairing))
   	{
       jwplayer("myElement").setup(
@@ -310,6 +314,7 @@ app.ports.videoData.subscribe(function(data) {
       app.ports.videoSuccess.send(true)
     }
   }
+  return false;
 });
 
 
@@ -326,7 +331,7 @@ app.ports.togetherDataList.subscribe(function(data) {
     }
   ).on("ready")
 }
-    
+  return false;
  
 })
 app.ports.showToast.subscribe(function (text) {
@@ -334,46 +339,55 @@ app.ports.showToast.subscribe(function (text) {
     x.className = "show";
     x.textContent = text
     setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+    return false;
 })
 
 app.ports.blur.subscribe(function() {
   var id = document.getElementById("keyboardBlur")
   id.blur();
+
 })
 
-// app.ports.expand.subscribe(function() {
-//   alert(111)
-//   // const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
-
-//   // // Check if there are any navbar burgers
-//   // if ($navbarBurgers.length > 0) {
-
-//   // // Add a click event on each of them
-//   // $navbarBurgers.forEach( el => {
-//   //     el.addEventListener('click', () => {
-
-//   //     // Get the target from the "data-target" attribute
-//   //     const target = el.dataset.target;
-//       const $target = document.getElementById("expandMenu");
-
-//       // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
-//       el.classList.toggle('is-active');
-//       $target.classList.toggle('is-active');
-
-      
-
-//   //     });
-//   // });
-// // }
+// app.ports.setCookie.subscribe (function (value) {
+//   var setCookie = function (name , val) {
+//     document.cookie = name + '=' + val +';expires =' + null + ';path =/';
+//   }
+//   setCookie ("pageId", value)
+//   app.ports.setCookieSuccess.send("success")
 // })
+
+// app.ports.getCookie.subscribe(function () {
+//   var value = document.cookie.match('(^|;) ?' + "pageId" + '=([^;]*)(;|$)');
+//   return  value ? app.ports.getPageId.send(parseInt(value[2])) : false 
+  
+  
+// })
+
+app.ports.getscrollHeight.subscribe(function(data) {
+  var heightValue = document.documentElement.scrollTop
+  // console.log (heightValue)
+  // app.ports.getHeightValue.send (String(heightValue - 45))
+  if (data){
+  document.documentElement.style.position = "fixed"
+  document.documentElement.style.top = '-' + String(heightValue) + 'px'
+  } else {
+    document.documentElement.style.position = ""
+  document.documentElement.style.top = ''
+  }
+})
+
+app.ports.historyUpdate.subscribe(function (data) {
+  location.href = "/#/" + data
+})
+
+window.addEventListener('hashchange', function() {
+}, false);
+
 document.addEventListener('DOMContentLoaded', () => {
-  // Get all "navbar-burger" elements
   const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
 
-  // Check if there are any navbar burgers
   if ($navbarBurgers.length > 0) {
 
-  // Add a click event on each of them
   $navbarBurgers.forEach( el => {
       el.addEventListener('click', () => {
         console.log()
@@ -387,10 +401,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     })
   });
+  event.stopPropagation();
 }
 
-// app.ports.confirmDialog.subscribe(function () {
 
-// })
+
 
 });registerServiceWorker();

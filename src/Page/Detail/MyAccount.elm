@@ -15,6 +15,8 @@ import Api.Decoder as Decoder
 import Page.MyPage as My
 import Json.Decode as Decode
 import Json.Encode as Encode
+import File as Files
+import Task
 
 type alias Model 
     = {
@@ -34,7 +36,12 @@ type alias Model
         , newpwd : String
         , pwd : String
         , deleteAuth : String
-    }
+        , showbottomtoast : String  
+        , profileImg : List Files.File
+        , cannotChange : String
+        , profileFileName : Maybe String
+        , preview : List String
+        }
 
 type alias BodyData = 
     {data : BodyInfoData }
@@ -47,6 +54,8 @@ type alias BodyInfoData =
     , is_male : Bool
     , weight : Int 
     }
+type alias DataWrap = 
+    { data : MyData }
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 type alias MyData =
     { exercise : Int
@@ -56,7 +65,20 @@ type alias MyData =
 type alias UserData =
     { id : Int
     , nickname : Maybe String
-    , username : String}
+    , username : String
+    , profile: Maybe String}
+
+type alias FileData = 
+    {data : File}
+
+type alias File =
+    { content_lenth : Int
+    , content_type : String
+    , extension : String
+    , name : String
+    , origin_name : String
+    , path : String}
+
 
 init session mobile
     = (
@@ -66,25 +88,32 @@ init session mobile
         , nickname = ""
         , sex = ""
         , deleteAuth = ""
+        , cannotChange = ""
         , notmatchPwd = ""
         , oldpwd = ""
         , newpwd = ""
+        , profileFileName = Nothing
         , pwd = ""
+        , profileImg = []
         , weight = 0
         , goal_weight = 0
         , height = 0
+        , preview = []
         , birthday = ""
         , is_male = False
+        , showbottomtoast = ""
         , mydata = 
             { exercise = 0
             , share = 0
             , user = 
                 { id = 0
                 , nickname = Nothing
-                , username = ""}
+                , username = ""
+                , profile = Nothing}
              }}
         ,Cmd.batch [
-            Api.get MyInfoData Endpoint.myInfo (Session.cred session) (Decoder.dataWRap My.DataWrap MyData UserData)
+            Decoder.dataWRap My.DataWrap MyData UserData
+             |> Api.get MyInfoData Endpoint.myInfo (Session.cred session) 
         ]
     )
 
@@ -114,6 +143,13 @@ type Msg
     | NewPwd String
     | ChangePwd
     | PwdComplete (Result Http.Error Decoder.Success)
+    | ChangeProfileImg Bool
+    | ResetProfileImg
+    | ResetComplete (Result Http.Error Decoder.Success)
+    | ChangeComplete (Result Http.Error FileData)
+    | ChangeProfileImage (List Files.File)
+    | GotPreviews (List String)
+    | ChangeProfile
 
 toSession : Model -> Session
 toSession model =
@@ -138,7 +174,8 @@ saveEncode model =
                 , ("is_male", Encode.bool model.is_male)]
                 |> Http.jsonBody    
     in
-    Api.post Endpoint.bodyRecord (Session.cred model.session) SaveComplete body Decoder.resultD
+    Decoder.resultD
+    |> Api.post Endpoint.bodyRecord (Session.cred model.session) SaveComplete body 
 pwdEncode model session = 
     let
         list = 
@@ -148,11 +185,64 @@ pwdEncode model session =
              , ("new_password_confirmation", Encode.string model.newpwd)]   
                 |> Http.jsonBody
     in
-    Api.post Endpoint.pwdChange (Session.cred session) PwdComplete list Decoder.resultD
+    Decoder.resultD
+    |> Api.post Endpoint.pwdChange (Session.cred session) PwdComplete list 
+
+profileEncode profileImg session =
+    let
+        body = (List.map (Http.filePart "profile")profileImg)
+            |> Http.multipartBody 
+    in
+    (Decoder.profileData FileData File)
+    |> Api.post Endpoint.profileImg (Session.cred session) ChangeComplete body 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of 
+        ChangeProfile ->
+            (model, profileEncode model.profileImg model.session)
+            -- (model, Cmd.none)
+        GotPreviews urls ->
+            ({model | preview = urls}, Cmd.none)
+        ChangeProfileImage file->
+            let
+                title =
+                    List.head (file)
+            in
+            case title of
+                Just a ->
+                    ({model | profileImg = file, profileFileName = Just (Files.name a), currentPage = "image"}, Task.perform GotPreviews <| Task.sequence <|
+                    List.map Files.toUrl (file)
+                    )
+            
+                Nothing ->
+                    (model, Cmd.none)
+        ChangeComplete (Ok ok) ->
+            ({model | currentPage = "", showbottomtoast = "showbottomToast  lastShowToast"}, Cmd.batch [
+                Api.showToast (Encode.string "프로필이 변경되었습니다.")
+                ,Decoder.dataWRap My.DataWrap MyData UserData
+                    |> Api.get MyInfoData Endpoint.myInfo (Session.cred model.session) 
+            ])
+        ChangeComplete (Err err) ->
+            ({model | currentPage = "", showbottomtoast = "showbottomToast  lastShowToast"}, Api.showToast (Encode.string "프로필을 변경할 수 없습니다."))
+        ResetComplete (Ok ok) ->
+            ({model | showbottomtoast = "showbottomToast  lastShowToast"}, Cmd.batch [
+                Api.showToast (Encode.string "기본이미지로 변경되었습니다.")
+                , 
+                Decoder.dataWRap DataWrap MyData UserData
+                |> Api.get MyInfoData Endpoint.myInfo (Session.cred model.session) 
+            ])
+        ResetComplete (Err err) ->
+            ({model | showbottomtoast = "showbottomToast  lastShowToast"}, Api.showToast (Encode.string "기본 이미지를 변경할 수 없습니다."))
+        ResetProfileImg ->
+            ({model | showbottomtoast = "showbottomToast  lastShowToast"}, 
+            Decoder.resultD
+                |> Api.get ResetComplete Endpoint.resetprofileImg (Session.cred model.session))
+        ChangeProfileImg bool ->
+            if bool then
+            ({model | showbottomtoast = "showbottomToast "}, Cmd.none)
+            else
+            ({model | showbottomtoast = "showbottomToast  lastShowToast"}, Cmd.none)
         GotSession session ->
             if model.deleteAuth == "pwd" then
             update ChangePwd {model | session = session}
@@ -213,7 +303,9 @@ update msg model =
             in
             (model, Cmd.batch
             [ Api.showToast text
-            , Route.pushUrl (Session.navKey model.session) Route.MyAccount])
+            , Api.historyUpdate (Encode.string "myAccount")
+            -- , Route.pushUrl (Session.navKey model.session) Route.MyAccount
+            ])
         SaveComplete (Err err) ->
             (model, Cmd.none) 
         SaveBody ->
@@ -248,7 +340,8 @@ update msg model =
         AllDeleteText ->
             ({model | nickname = ""}, Cmd.none)
         DeleteSuccess (Ok ok) ->
-            (model,Route.pushUrl (Session.navKey model.session) Route.Logout)
+            (model,
+            Route.replaceUrl (Session.navKey model.session) Route.Logout)
         DeleteSuccess (Err err) -> 
             let
                 serverErrors = Api.decodeErrors err
@@ -261,14 +354,18 @@ update msg model =
                     |> Http.jsonBody
             in
             
-            (model, Api.post Endpoint.accountDelete (Session.cred model.session) DeleteSuccess body  Decoder.resultD )
+            (model, 
+            Decoder.resultD
+            |> Api.post Endpoint.accountDelete (Session.cred model.session) DeleteSuccess body   )
         KeyDown key ->
             if key == 13 then
                 update ChangeGo model
             else
                 (model, Cmd.none)
         SuccessNickname (Ok ok) ->
-            ({model | currentPage = ""}, Api.get MyInfoData Endpoint.myInfo (Session.cred model.session) (Decoder.dataWRap My.DataWrap MyData UserData))
+            ({model | currentPage = ""}, 
+            Decoder.dataWRap My.DataWrap MyData UserData
+           |>  Api.get MyInfoData Endpoint.myInfo (Session.cred model.session) )
         SuccessNickname (Err err) ->
             let
                 serverErrors = Api.decodeErrors err
@@ -283,20 +380,27 @@ update msg model =
                         |> Http.stringBody "application/x-www-form-urlencoded"
             in
             (model, Cmd.batch 
-            [ Api.post Endpoint.changeNick (Session.cred model.session)  SuccessNickname list Decoder.resultD])
+            [ 
+                Decoder.resultD
+                |>Api.post Endpoint.changeNick (Session.cred model.session)  SuccessNickname list ])
         ChangeNick str ->
             ({model | nickname = str},Cmd.none)
         ChangePage str ->
             if str == "body" then
-            (model, Api.get BodyInfoComplete Endpoint.getBodyInfo (Session.cred model.session) (Decoder.bodyInfo BodyData BodyInfoData))
+            (model, 
+            Decoder.bodyInfo BodyData BodyInfoData
+                |>Api.get BodyInfoComplete Endpoint.getBodyInfo (Session.cred model.session) )
             else
-            ({model | currentPage = str}, Cmd.none)
+            ({model | currentPage = str,  showbottomtoast = "showbottomToast  lastShowToast"}, Cmd.none)
         MyInfoData (Ok ok) ->
             ({model | mydata = ok.data}, Cmd.none)
         MyInfoData (Err err) ->
             (model, Cmd.none)
         BackBtn ->
-            ( model, Route.pushUrl (Session.navKey model.session) Route.MyPage )
+            ( model, 
+            -- Route.pushUrl (Session.navKey model.session) Route.MyPage 
+            Api.historyUpdate (Encode.string "myPage")
+            )
 
 view : Model -> {title : String , content : Html Msg}
 view model =
@@ -316,7 +420,7 @@ view model =
                     ]
         else if model.currentPage == "account" then
                 div [] [
-                    appHeaderRDetailClick "계정관리" "myPageHeader  whiteColor" BackBtn "fas fa-angle-left"
+                    appHeaderRDetailClick "계정관리" "myPageHeader  whiteColor" (ChangePage "") "fas fa-angle-left"
                     , accountContents model
                 ]
         else if model.currentPage == "body" then
@@ -324,7 +428,11 @@ view model =
                     appHeaderConfirmDetailR "신체정보관리" "myPageHeader whiteColor" (ChangePage "")  SaveBody  "저장"
                     , bodyRecord model 
                 ]
-
+        else if model.currentPage == "image" then
+            div [] [
+                appHeaderConfirmDetailR "프로필 사진 변경" "myPageHeader whiteColor" (ChangePage "")  ChangeProfile  "저장"
+                , div [] (List.map previewLayout model.preview )
+            ]
         else
                div [] [
                     appHeaderRDetailClick "마이페이지" "myPageHeader whiteColor" BackBtn "fas fa-angle-left"
@@ -332,6 +440,11 @@ view model =
                 ]             
     
     }
+
+previewLayout item = 
+    div [] [
+        img [src item] []
+    ]
 justData cases = 
     case cases of
         Just a ->
@@ -366,8 +479,19 @@ contents model =
         div [ class "container yf_container" ]
             [ div [ class "m_yf_mypage_setting" ]
                 [ div [ class "m_profilebox" ]
-                    [ img [ src "../image/profile.png" ]
-                        []
+                    [ div [onClick (ChangeProfileImg True)] [
+                        case model.mydata.user.profile of
+                            Just image ->
+                                img [src image][]
+                        
+                            Nothing ->
+                                img [src "../image/profile.png"] []
+                        , div [class"m_photo_changebox"]
+                         [
+                            div [ class "button is-dark m_photo_change"]
+                            [ text "프로필 사진 변경" ]
+                        ]
+                    ]
                     , p [class"m_account_id"]
                         [ text (justData model.mydata.user.nickname) ]
                     ]
@@ -393,6 +517,27 @@ contents model =
                     ]
                 , p [ class "m_yf_version" ]
                     [ text "버전정보 v1.0" ]
+                , div [class ("noShowToast " ++ model.showbottomtoast)] [
+                    ul [] [
+                        li [onClick ResetProfileImg] [
+                            text "기본 이미지로 변경"
+                        ]
+                        , li [] [
+                            label [] [
+                            text "앨범에서 사진 선택"
+                            , div [] [
+                                input [ class "appFile", type_ "file", multiple False, id "thumbFile", accept "image/*" 
+                            , on "change" (Decode.map ChangeProfileImage targetFiles)  
+                            ]
+                                []
+                            ]
+                            ]
+                        ]
+                        , li [class "toastCancel", onClick (ChangeProfileImg False)] [
+                            text "취소"
+                        ]
+                    ]
+                ]
                 ]
             ]
 

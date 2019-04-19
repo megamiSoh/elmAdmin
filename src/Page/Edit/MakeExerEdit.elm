@@ -56,7 +56,8 @@ type alias DetailItem =
     , id : Int
     , inserted_at : String
     , pairing : List Pair
-    , title : String }
+    , title : String
+    , description : Maybe String }
 
 type alias ExItem = 
     { action_id : Maybe Int
@@ -180,7 +181,8 @@ filterEncoder model session=
             list
                 |> Http.jsonBody
     in
-    Api.post Endpoint.filter (Session.cred session) GetFilterData body (Decoder.filterResult FilterResult FilterData)
+    (Decoder.filterResult FilterResult FilterData)
+    |> Api.post Endpoint.filter (Session.cred session) GetFilterData body 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -336,7 +338,9 @@ update msg model =
             in
             case result of
                 Ok string ->
-                    ({model | videoId = string}, Api.get GetList (Endpoint.makeDetail string) (Session.cred model.session) (Decoder.makeEdit DetailData DetailItem ExItem Pair)
+                    ({model | videoId = string}, 
+                    (Decoder.makeEdit DetailData DetailItem ExItem Pair)
+                    |>Api.get GetList (Endpoint.makeDetail string) (Session.cred model.session) 
                     )
             
                 Err _ ->
@@ -423,7 +427,10 @@ update msg model =
             case sucData of
                 Ok ok ->
                     
-                    (model,Route.pushUrl (Session.navKey model.session) Route.MakeEditLast)
+                    (model,
+                    Api.historyUpdate (Encode.string "makeEditStepLast")
+                    -- Route.pushUrl (Session.navKey model.session) Route.MakeEditLast
+                    )
             
                 Err err ->
                     (model,Cmd.none)
@@ -511,7 +518,10 @@ update msg model =
             (model,
             Cmd.batch [ 
                 Api.deleteData (),
-                 Route.pushUrl (Session.navKey model.session) Route.Filter])
+                --  Route.pushUrl (Session.navKey model.session) Route.Filter
+                Api.historyUpdate (Encode.string "filter")
+            ]
+            )
 
 
 

@@ -4,9 +4,11 @@ import Html.Events exposing(..)
 import Html.Attributes exposing(..)
 import Session exposing(..)
 import Html exposing (..)
-import Route exposing(..)
-
-
+import Route as Route
+import Task exposing (Task)
+import Browser.Dom as Dom
+import Json.Decode as Decode
+import File exposing(File)
 commonHeader : String -> String -> Html msg
 commonHeader icon title =
     div [ class "titlewrap" ]
@@ -72,7 +74,7 @@ commonJustHeader icon title =
             ]
         ]
 
-myPageCommonHeader scrRight scrLeft= 
+myPageCommonHeader scrRight scrLeft another= 
     div [ class "submenu" ]
         [  
             i [ class "fas fa-caret-left scrStyle", onClick scrLeft ]
@@ -248,6 +250,21 @@ appHeaderRDetailClick title style back icon=
         ]
     ]
 
+appHeaderRDetailClick2 title style back icon=
+    div [class "headerSpace"] [
+    ul [ class ("commonHeaderBack " ++ style) ]
+        [ li [] [
+            div [ class "", onClick back]
+            [ i [ class icon ]
+                []
+            ]
+        ]
+        , li [ class "toptitle_2" ]
+            [ text title ]
+ 
+        ]
+    ]
+
 appHeaderinforDetail title style back icon=
     div [ class ("commonHeader " ++ style) ]
         [ a [ class "", Route.href back]
@@ -286,7 +303,7 @@ appHeaderConfirmDetailleft title style back confirm btnText =
                 ]
             , li [ class "" ]
                 [ text title ]
-            , li [ class "", onClick confirm ]
+            , li [ class "m_editt", onClick confirm ]
                 [ text btnText ]
             ]
     ]
@@ -334,7 +351,7 @@ appHeaderBackComplete title style back complete =
 
 spinner = 
     div [ class "loading-spinner" ]
-                        []
+        []
 infiniteSpinner = 
    div [ class "sk-fading-circle" ]
         [ div [ class "sk-circle1 sk-circle" ]
@@ -362,59 +379,155 @@ infiniteSpinner =
         , div [ class "sk-circle12 sk-circle" ]
             []
         ]
-
-pagination btn page= 
+pagination btn page initNum= 
     let
-        index = (page.total_count // page.per_page) + 1
+        index = 
+            if (page.total_count // page.per_page) == 0 then
+                1
+            else
+                if (page.total_count // page.per_page) * page.per_page < page.total_count then
+                    (page.total_count // page.per_page) + 1
+                else
+                    (page.total_count // page.per_page)
     in
     
     nav [ class "pagination" ]
         [ div [ class "pagination-previous", title "This is the first page",  onClick (
-            if (page.page - 1) == 0 then
-                btn (1 , "prev")
+             if (initNum * 10) > 10 then
+                btn (
+                    (initNum - 1) * 10
+                    , "prev")
             else
-                btn ((page.page - 1), "prev")
+                btn ( 0 , "" )
         ) ]
-            [ text "Previous" ]
+            [ text "뒤로" ]
         
         , ul [ class "pagination-list" ]
             (
                 List.indexedMap (\idx x ->
                     
                     item idx x page.page btn
-                ) (List.range 1 index)
+                ) (List.range (
+                    if initNum  == 1 then
+                        1
+                    else
+                        ((initNum - 1) * 10 ) + 1
+                ) (
+                    if index > (10 * initNum) then
+                        10 * initNum
+                    else if index < 10 then 
+                        index
+                    else
+                        ((initNum - 1 ) * 10 ) + ( index - ((initNum - 1) * 10 ))
+                )
+            )
             )
         , div [ class "pagination-next" , onClick (
-            if (page.page + 1) > index then
-                btn (index, "next")
+            if (initNum * 10) < index then
+                btn ((initNum * 10 + 1), "next")
             else
-                btn ((page.page + 1), "next")
+                btn ( 0 , "" )
         )]
-            [ text "Next page" ]
+            [ text "앞으로" ]
         ]
 
 
 item  idx num current btn=
-    li [class (
-        if (idx + 1) == current then
+    a [class (
+        if (num) == current then
         "pagination-link is-current"
         else
         "pagination-link"
-        ), onClick (btn ((idx + 1), "go"))] [
-        div [] [ text (String.fromInt (idx + 1)) ]
-    ]
+        ), href "",  onClick (btn ((num), "go"))] [
+            div [] [ text (String.fromInt (num)) ]
+            -- ]
+        ]
+    
 
 need2loginAppDetail route = 
     div [class "have2login"] [
-                    div [  ] [text "로그인 후 이용가능한 서비스 입니다."] 
-                , a [class "button need2Login", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
-                , div [class "button", onClick route] [text "이전 페이지로 이동"]
+                 
+                    div [class"have2login_text"] [text "로그인 후 이용가능한 서비스 입니다."] 
+                , a [class "button is-link have2login_btn", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
+                , div [class "button have2login_btn", onClick route] [text "이전 페이지로 이동"]
                 ]
 
-
+need2loginAppDetailRoute: Route.Route -> Html msg
 need2loginAppDetailRoute route = 
-    div [class "have2login"] [
-                    div [  ] [text "로그인 후 이용가능한 서비스 입니다."] 
-                , a [class "button need2Login", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
-                , a [class "button", Route.href route] [text "이전 페이지로 이동"]
+    div [class "have2login2"] [
+                    
+   
+                    p[class"have2login_text"] [text "로그인 후 이용가능한 서비스 입니다."] 
+                   
+                , a [class "button is-link have2login_btn", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
+                , a [class "button have2login_btn", Route.href route] [text "이전 페이지로 이동"]
                 ]
+
+scrollToTop : msg -> Cmd msg
+scrollToTop noop=
+    Task.perform (\_ -> noop) (Dom.setViewport 0 0)
+
+
+
+fileupload getFile thumb =
+    div [ class "field is-horizontal" ] [
+        div [ class "file has-name is-right is-fullwidth photo_width" ]
+            [ label [ class "file-label" ]
+                [ input [ class "file-input", type_ "file", multiple False, id "thumbFile", accept "image/x-png,image/gif,image/jpeg"
+                , on "change" (Decode.map getFile targetFiles)  ]
+                    []
+                , span [ class "file-cta" ]
+                    [ span [ class "file-icon" ]
+                        [ i [ class "fas fa-upload" ]
+                            []
+                        ]
+                    , span [ class "file-label" ]
+                        [ text "사진찾기" ]
+                    ]
+                , span [ class "file-name" ]
+                    [ 
+                        if thumb == "" then
+                        text "프로필 사진을 변경 해 주세요."
+                        else
+                        text thumb
+                        -- text (Debug.toString thumb)
+                    ]
+                ]
+            ]
+        ]
+fileuploadapp getFile thumb =
+    div [ class "field is-horizontal " ] [
+        div [ class "file has-name is-right is-fullwidth" ]
+            [ label [ class "file-label" ]
+                [ input [ class "file-input ", type_ "file", multiple False, id "thumbFile", accept "image/*" 
+                , on "change" (Decode.map getFile targetFiles)  ]
+                    []
+                , span [ class "file-cta" ]
+                    [ span [ class "file-icon" ]
+                        [ i [ class "fas fa-upload" ]
+                            []
+                        ]
+                    , span [ class "file-label" ]
+                        [ text "사진찾기" ]
+                    ]
+                , span [ class "file-name" ]
+                    [ 
+                        if thumb == "" then
+                        text "프로필 사진을 변경 해 주세요."
+                        else
+                        text thumb
+                        -- text (Debug.toString thumb)
+                    ]
+                ]
+            ]
+        ]
+-- onChange: (String -> msg) -> Html.Attribute msg
+-- onChange tagger = 
+--     on "change" (Decode.map tagger targetValue)
+
+-- targetFiles : Decode.Decoder (List File)
+targetFiles = 
+    Decode.at ["target", "files"] (Decode.list File.decoder)
+
+
+    

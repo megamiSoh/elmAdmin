@@ -38,7 +38,12 @@ module Api.Endpoint exposing
     , pwdChange
     , editComplete
     , togetherlike
-    , emailAuth)
+    , emailAuth
+    , connect
+    , temporaryPwd
+    , profileImg
+    , resetprofileImg
+    , checkoverlapId)
 
 import Http
 import Url.Builder exposing (QueryParameter)
@@ -212,3 +217,17 @@ togetherlike id =
 emailAuth = 
     url ["auth","send"] []
 
+connect = 
+    url ["front", "connect"] []
+
+temporaryPwd = 
+    url ["auth", "password"] []
+
+profileImg = 
+    url ["front", "my", "profile"] []
+
+resetprofileImg = 
+    url ["front", "my", "profile", "delete"] []
+
+checkoverlapId = 
+    url ["auth", "id" ,"posible"] []

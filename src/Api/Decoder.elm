@@ -67,6 +67,7 @@ yfDetailData yfdetail detailitem pairItem=
         |> required "title" string
         |> optional "nickname" (Decode.map Just string) Nothing
         |> required "thumbnail" string
+        |> optional "description" (Decode.map Just string) Nothing
 
 
 yfDetailDataItem detailitem= 
@@ -202,11 +203,14 @@ mydata my user=
         |> required "exercise" int
         |> required "share" int
         |> required "user" (userdata user)
+       
 userdata user = 
     Decode.succeed user
         |> required "id" int
         |> optional "nickname" (Decode.map Just string) Nothing
         |> required "username" string
+        |> optional "profile" (Decode.map Just string ) Nothing
+
 scrInfo info = 
     Decode.succeed info
         |> required "height" int
@@ -238,6 +242,7 @@ sddata togetherdata detail item pair=
         |> required "recommend_cnt" int
         |> optional "nickname" (Decode.map Just string) Nothing
         
+        
 
 sdetailTogether detail item pair= 
     Decode.succeed detail 
@@ -262,6 +267,7 @@ tdata togetherdata detail item pair=
         |> required "link_code" string
         |> required "recommend_cnt" int
         |> optional "nickname" (Decode.map Just string) Nothing
+        |> optional "profile" (Decode.map Just string) Nothing
         
 
 detailTogether detail item pair= 
@@ -410,6 +416,7 @@ makeEditDetail item exitem pair=
         |> required "inserted_at"  string
         |> required "pairing"  (Decode.list (makeeditpair pair))
         |> required "title"  string
+        |> optional "description" (Decode.map Just string) Nothing
 
 makeEditexitem exitem = 
     Decode.succeed exitem
@@ -436,3 +443,20 @@ makeeditpair pair =
 authMail data = 
     Decode.succeed data
         |> required "data" string
+
+profileData data img= 
+    Decode.succeed data
+        |> required "data" (profileImage img)
+
+profileImage img = 
+    Decode.succeed img
+        |> required "content_length" int
+        |> required "content_type" string
+        |> required "extension" string
+        |> required "name" string
+        |> required "origin_name" string
+        |> required "path" string
+
+checkOverlapmail data =
+    Decode.succeed data
+        |> required "data" bool

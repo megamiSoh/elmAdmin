@@ -69,6 +69,10 @@ port reReceiveData : (Value -> msg) -> Sub msg
 port getsaveFilter : (Value -> msg) -> Sub msg
 port videoSuccess : (Value -> msg ) -> Sub msg
 port screenInfo : (Value -> msg) -> Sub msg
+port getPageId : (Value -> msg) -> Sub msg
+port setCookieSuccess : (Value -> msg) -> Sub msg
+port getHeightValue : (Value -> msg) -> Sub msg
+
 viewerChanges toMsg decoder =
     onStoreChange (\value -> toMsg (decodeFromChange decoder value))
 
@@ -126,6 +130,11 @@ port scrollR : Value -> Cmd msg
 port scrollL : Value -> Cmd msg
 port expand : () -> Cmd msg
 port removeId : () -> Cmd msg
+port setCookie : Value -> Cmd msg
+port getCookie : () -> Cmd msg
+port getscrollHeight : Value -> Cmd msg
+port backUrl : () -> Cmd msg
+port historyUpdate : Value -> Cmd msg
 -- port logout : () -> Cmd msg
 -- application :
     -- Decoder (Cred -> viewer)

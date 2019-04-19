@@ -8,6 +8,7 @@ import Json.Encode as E
 import Json.Decode as Decode
 import Route exposing(..)
 import Api as Api
+import Page as P
 type alias Model 
     = {
         session : Session,
@@ -79,7 +80,7 @@ webOrApp model =
                     [ img [ src "/image/home_pic.png" ]
                         []
                     ]
-                ]
+                ],P.viewFooter
             ]
     
         

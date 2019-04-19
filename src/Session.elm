@@ -65,9 +65,9 @@ changeInterCeptor error sessionHere=
 navKey : Session -> Nav.Key
 navKey session =
     case session of
-        Guest key ->
-            key
         LoggedIn key _ ->
+            key
+        Guest key ->
             key
 
 

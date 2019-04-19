@@ -26,6 +26,7 @@ type alias Model =
     , loading : Bool
     , need2login : Bool
     , videoId : String
+     , zindex : String
     }
 -- Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
 type alias GetData = 
@@ -41,7 +42,8 @@ type alias DetailData =
     , pairing : List Pairing
     , title : String
     , nickname : Maybe String
-    , thumbnail : String}
+    , thumbnail : String
+    , description: Maybe String}
 
 type alias DetailDataItem = 
     { exercise_id : Int
@@ -65,6 +67,7 @@ init session mobile
         , loading = True
         , need2login = False
         , videoId = ""
+        , zindex = ""
         , listData = 
             { difficulty_name = Nothing
             , duration = ""
@@ -75,7 +78,8 @@ init session mobile
             , pairing = []
             , title = ""
             , nickname = Nothing
-            , thumbnail = ""}
+            , thumbnail = ""
+            , description = Nothing}
         }
         , Api.getId ()
     )
@@ -113,7 +117,10 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         BackDetail ->
-            ({model | need2login = False}, Api.get GetListData (Endpoint.yfDetailDetail model.videoId ) (Session.cred model.session) (Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing))
+            ({model | need2login = False}, 
+            (Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing)
+            |> Api.get GetListData (Endpoint.yfDetailDetail model.videoId ) (Session.cred model.session) 
+            )
         ScrapComplete (Ok ok) ->
             let
                 text = Encode.string "스크랩 되었습니다."
@@ -130,7 +137,9 @@ update msg model =
             else
                 (model, Api.showToast cannotScrap)
         Scrap ->
-            (model, Api.get ScrapComplete (Endpoint.scrap model.videoId)(Session.cred model.session) Decoder.resultD)
+            (model, 
+            Decoder.resultD
+            |> Api.get ScrapComplete (Endpoint.scrap model.videoId)(Session.cred model.session) )
         GoVideo pairing->
             let
                 videoList = 
@@ -144,7 +153,7 @@ update msg model =
                         , ("title", Encode.string p.title)
                         ]
             in
-            (model, Api.videoData videoList)
+             ({model | zindex = "zindex"}, Api.videoData videoList)
         GetListData (Ok ok) -> 
              ({model | listData = ok.data, scrap = False, loading = False}, Cmd.none)
         GetListData (Err err) -> 
@@ -166,7 +175,10 @@ update msg model =
             in
             case d of
                 Ok item ->
-                    ({model | videoId = item}, Api.get GetListData (Endpoint.yfDetailDetail item ) (Session.cred model.session) (Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing))
+                    ({model | videoId = item}, 
+                    (Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing)
+                    |>Api.get GetListData (Endpoint.yfDetailDetail item ) (Session.cred model.session) 
+                    )
             
                 Err _ ->
                     (model, Cmd.none)
@@ -212,26 +224,26 @@ app model=
                      , if model.need2login then
                         need2loginAppDetail BackDetail
                     else
-                    appcontentsItem model.listData model.loading Scrap model
+                    appcontentsItem model.listData model.loading Scrap model model.zindex
                 ]
 
 web msg model= 
     div [ class "container" ]
                 [
-                    commonHeader "image/icon_workout.png" "유어핏운동"
+                    commonHeader2 "image/icon_workout.png" "유어핏운동"
                     , if model.need2login then
                         need2loginAppDetail BackDetail
                     else
-                    contentsBody model.listData model.loading Scrap model.scrap GoVideo "스크랩"
-                    ,goBtnBox msg
+                    contentsBody model.listData model.loading Scrap model.scrap GoVideo "스크랩"model.zindex,
+                    goBtnBox msg
                 ]
-contentsBody item model scrap modelscrap goVideo scrapText=
+contentsBody item model scrap modelscrap goVideo scrapText zindex=
     
     div [ class "yf_yfworkout_search_wrap" ]
         [ div [ class "tapbox" ]
             [ div [ class "yf_large" ]
                 [ text item.title ],
-                contentsItem item model scrap modelscrap goVideo scrapText
+                contentsItem item model scrap modelscrap goVideo scrapText zindex
                
             ]
         
@@ -239,15 +251,16 @@ contentsBody item model scrap modelscrap goVideo scrapText=
 
 
 
-contentsItem item loading scrap modelscrap govideo scrapText=
+contentsItem item loading scrap modelscrap govideo scrapText zindex=
             div [ class "tile is-parent is-vertical" ]
             [lazy2 div [ class "yf_notification" ]
-                [ p [ class "title" ]
+                [ p [ class "video_title " ]
                     [ 
-                         div [] [
-                             img [ src item.thumbnail , onClick (govideo item.pairing)] []
+                        --  div [] [
+                            i [ class "fas fa-play-circle" , onClick (govideo item.pairing)][],
+                             img [class zindex, src item.thumbnail , onClick (govideo item.pairing)] []
                             , videoCall
-                         ]
+                        --  ]
                     ]
                 ], 
             div [ class "yf_subnav" ]
@@ -275,7 +288,8 @@ contentsItem item loading scrap modelscrap govideo scrapText=
             -- if loading then 
             -- div [] []
             -- else
-            div [ class "yf_text" ]
+            div [class"yf_explanation"] [text (justok item.description)]
+            , div [ class "yf_text" ]
                (List.indexedMap description item.exercise_items)
             ]
 
@@ -288,12 +302,13 @@ justok casees =
         Nothing ->
             "  "
 
-appcontentsItem item loading scrap modelscrap= 
+appcontentsItem item loading scrap modelscrap zindex= 
             div [ ]
             [ div []
                 [ p [ class "m_yf_container" ]
                     [ 
-                        img [src item.thumbnail, onClick (GoVideo item.pairing)] []
+                        i [ class ("far fa-play-circle m_yf_container_circle " ++ zindex), onClick (GoVideo item.pairing) ][]
+                        , img [src item.thumbnail, onClick (GoVideo item.pairing)] []
                         , videoCall
                     ]
                 ]
@@ -324,10 +339,13 @@ appcontentsItem item loading scrap modelscrap=
                 ]
             , 
             if loading then 
-            div [][]
+            div [] []
             else
-            div [ class "m_work_script" ]
+            div [class"m_explanation"] [
+                div [] [text (justok item.description)]
+                , div [ class "m_work_script" ]
                 (List.indexedMap description item.exercise_items)
+            ]
             ]
 
 description idx item = 
@@ -350,5 +368,5 @@ goBtnBox backPage =
 
 
 videoCall =
-    div [] []
-    -- div [id "myElement"] []
+    -- div [] []
+    div [id "myElement"] []

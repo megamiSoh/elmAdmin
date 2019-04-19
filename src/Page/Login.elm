@@ -272,7 +272,7 @@ layout model =
             [ img [ src "../image/login_logo.png", alt "logo" ]
                 []
             ]
-        , div [] [text model.err]
+        , div [class "login_text1"] [text model.err]
         , div [ class "yf_login" ]
             [ p [ class "control has-icons-left" ]
                 [ input [ class "input yf_loginput", type_ "email", placeholder "이메일을 입력해주세요", onInput EnteredEmail ]
@@ -283,7 +283,7 @@ layout model =
                     ]
                 ]
             ]
-            , div [] (List.map (\x ->
+            , div [class "login_text2"] (List.map (\x ->
                 let
                     errorMessage =
                         case x of
@@ -313,7 +313,7 @@ layout model =
                                 str
                 in
                 if errorMessage == "비밀번호를 입력 해 주세요." then
-                div [] [ text errorMessage ]
+                div [class "login_text2"] [ text errorMessage ]
                 else 
                 div [] []
             ) model.problems)
@@ -328,7 +328,7 @@ layout model =
                         [ text "이메일로 가입하기" ]
                     ]
                  , li [class "yf_login_li"]
-                    [ a [ class "button emailsignup", Route.href Route.Signup]
+                    [ a [ class "button emailsignup", Route.href Route.FPwd]
                         [ text "비밀번호 찾기" ]
                     ]
                 ]

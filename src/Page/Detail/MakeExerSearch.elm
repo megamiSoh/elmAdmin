@@ -75,7 +75,8 @@ bodyEncode page perpage title session=
             list
                 |> Http.jsonBody
     in
-    Api.post Endpoint.makeExerList (Session.cred session) GetData body (Decoder.makeExerList GetListData ListData Paginate)
+    (Decoder.makeExerList GetListData ListData Paginate)
+    |> Api.post Endpoint.makeExerList (Session.cred session) GetData body 
     
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile =
@@ -199,7 +200,9 @@ update msg model =
         DeleteSuccess (Err err) ->
             (model, Cmd.none)
         Delete id ->
-            (model, Api.get DeleteSuccess (Endpoint.makeDelete (String.fromInt (id)))(Session.cred model.session) Decoder.resultD )
+            (model, 
+            Decoder.resultD
+                |> Api.get DeleteSuccess (Endpoint.makeDelete (String.fromInt (id)))(Session.cred model.session)  )
         GotSession session ->
             ({model | session = session}
             , Cmd.none
@@ -215,9 +218,15 @@ update msg model =
                         (model, Cmd.none)
         SaveIdComplete str ->
             if model.saveCheckVal == "" then
-            (model, Route.pushUrl (Session.navKey model.session) Route.MakeDetail)
+            (model, 
+            Api.historyUpdate (Encode.string "makeExerciseDetail")
+            -- Route.pushUrl (Session.navKey model.session) Route.MakeDetail
+            )
             else 
-            (model, Route.pushUrl (Session.navKey model.session) Route.TogetherW)
+            (model,
+             Api.historyUpdate (Encode.string "togetherWrite")
+            -- Route.pushUrl (Session.navKey model.session) Route.TogetherW
+            )
         CheckId id str->
             let
                 save = Encode.int id
