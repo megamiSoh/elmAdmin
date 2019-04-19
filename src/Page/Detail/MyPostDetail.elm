@@ -202,8 +202,8 @@ update msg model =
             )
         BackPage ->
             (model, 
-            Api.historyUpdate (E.string "myPost")
-            -- Route.pushUrl (Session.navKey model.session) Route.MyPost
+            -- -- Api.historyUpdate (E.string "myPost")
+            Route.pushUrl (Session.navKey model.session) Route.MyPost
             )
           
 

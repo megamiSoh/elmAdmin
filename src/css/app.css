@@ -2287,7 +2287,10 @@ margin-right: 1rem;
   height: 0;
   transition: height .5s;  
 }
-
+/* .noShowToast li {
+  height: 0;
+  transition: height .5s;  
+} */
 
 .showbottomToast {
   position: fixed;
@@ -2445,4 +2448,8 @@ font-size: .9rem;
 
 .jwplayer {
   z-index: 9999;
+}
+
+.m_yf_mypage_setting {
+  overflow: hidden;
 }

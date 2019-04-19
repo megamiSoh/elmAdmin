@@ -3720,3 +3720,72 @@ margin-bottom: 1rem;
  float: left;
  text-align: left;
 }
+
+
+
+.togetherWrite_yf_box
+{
+  border: solid #CCCCCC;
+  border-width: .1rem;
+  margin: auto;
+  padding: 1rem;
+  display: block;
+  height: 26rem;
+}
+
+.togetherWrite_text
+{
+  float: left;
+  width: 400px;
+  font-size: 1.2rem;
+  text-align: left;
+  margin-left: 1.1rem;
+}
+
+.m_to_img
+{
+  display: block;
+  width: 200px;
+  float: left;
+}
+
+.yf_togetherWrite_title
+{
+  font-size: 1.5rem;
+}
+
+.yf_textarea
+{
+  margin-top: 1rem 0 0 0;
+}
+
+.itemlist
+{
+  font-size: .9rem;
+}
+
+.m_wr_date
+{
+  font-size: .9rem;
+}
+
+.m_togetherWrite_text
+{
+  text-align: left;
+  padding:0 .5rem;
+  height: 100%;
+}
+
+.m_apptogethertextarea
+{
+  padding: 1rem 0 0 0;
+  height: 200px;
+}
+
+
+@media screen and (max-width: 685px){
+  .togetherWrite_text
+  {
+    width: 100%;
+  } 
+ }

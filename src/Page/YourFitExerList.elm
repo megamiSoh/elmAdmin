@@ -167,8 +167,8 @@ update msg model =
             (model, Cmd.none) 
         BackPage ->
             (model, 
-            -- Route.pushUrl (Session.navKey model.session) Route.YourFitExer
-            Api.historyUpdate (Encode.string "yourfitExercise")
+            Route.pushUrl (Session.navKey model.session) Route.YourFitExer
+            -- Api.historyUpdate (Encode.string "yourfitExercise")
             )
         GotSession session ->
             ({model | session = session}
@@ -176,8 +176,8 @@ update msg model =
             )
         Success str ->
             (model, 
-            -- Route.pushUrl (Session.navKey model.session) Route.YourfitDetail
-            Api.historyUpdate (Encode.string "yourfitDetail")
+            Route.pushUrl (Session.navKey model.session) Route.YourfitDetail
+            -- Api.historyUpdate (Encode.string "yourfitDetail")
             )
         DetailGo id ->
             let

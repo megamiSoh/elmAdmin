@@ -136,8 +136,8 @@ update msg model =
             )
         SuccessId str ->  
             (model, 
-            -- Route.pushUrl (Session.navKey model.session) Route.YourfitDetail
-            Api.historyUpdate (Encode.string "yourfitDetail")
+            Route.pushUrl (Session.navKey model.session) Route.YourfitDetail
+            -- Api.historyUpdate (Encode.string "yourfitDetail")
             )
 
         GoContentsDetail id ->
@@ -148,8 +148,8 @@ update msg model =
             (model, Api.saveId (encodeId))
         Success str ->
             (model,
-            -- Route.pushUrl (Session.navKey model.session) Route.YourFitList
-            Api.historyUpdate (Encode.string "yourfitListDetail")
+            Route.pushUrl (Session.navKey model.session) Route.YourFitList
+            -- Api.historyUpdate (Encode.string "yourfitListDetail")
             )
         GoDetail code ->
             let

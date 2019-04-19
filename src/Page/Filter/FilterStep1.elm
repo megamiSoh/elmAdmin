@@ -419,8 +419,8 @@ update msg model =
             (model,
             Cmd.batch [ 
                 Api.deleteData (),
-                Api.historyUpdate (Encode.string "filter")
-                --  Route.pushUrl (Session.navKey model.session) Route.Filter
+                -- -- Api.historyUpdate (Encode.string "filter")
+                 Route.pushUrl (Session.navKey model.session) Route.Filter
                 ]
                  )
 

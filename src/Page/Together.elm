@@ -798,7 +798,7 @@ detailItem idx item model =
                                         a
                                     Nothing ->
                                         []
-                            ), idx)) ][]
+                            ), item.id)) ][]
                             , img [class "toImg2", src (justData thumbnail)] []
                         ],
                             div [id ("myElement" ++ String.fromInt(item.id)) ]  [] ]

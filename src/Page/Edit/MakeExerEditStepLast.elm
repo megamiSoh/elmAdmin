@@ -243,8 +243,8 @@ update msg model =
                         (model, Cmd.none)
         FilterSaveSuccess str ->
             (model, 
-            Api.historyUpdate (E.string "filterStep1")
-            -- Route.pushUrl (Session.navKey model.session) Route.FilterS1
+            -- -- Api.historyUpdate (E.string "filterStep1")
+            Route.pushUrl (Session.navKey model.session) Route.FilterS1
             )
         NextPage ->
             (model, Cmd.batch [
@@ -257,9 +257,9 @@ update msg model =
             
             (model, Cmd.batch [
                 Api.deleteData ()
-                -- , Route.pushUrl (Session.navKey model.session) Route.MakeExer
+                , Route.pushUrl (Session.navKey model.session) Route.MakeExer
                 , Api.showToast text
-                , Api.historyUpdate (E.string "makeExercise")
+                -- , -- Api.historyUpdate (E.string "makeExercise")
                 ]
                 )
         GoRegistResult (Err err) ->
@@ -381,8 +381,8 @@ update msg model =
                     ({model | setData = -1 }, Cmd.none)
         BackBtn ->
             (model, 
-            Api.historyUpdate (E.string "filterStep1")
-            -- Route.pushUrl (Session.navKey model.session) Route.FilterS1
+            -- -- Api.historyUpdate (E.string "filterStep1")
+            Route.pushUrl (Session.navKey model.session) Route.FilterS1
             )
 
 view : Model -> {title : String , content : Html Msg}

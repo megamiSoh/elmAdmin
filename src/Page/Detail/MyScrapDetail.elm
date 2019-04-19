@@ -195,8 +195,8 @@ update msg model =
             
         BackPage ->
             ( model, 
-            -- Route.pushUrl (Session.navKey model.session) Route.MyScrap
-            Api.historyUpdate (Encode.string "myScrap")
+            Route.pushUrl (Session.navKey model.session) Route.MyScrap
+            -- -- Api.historyUpdate (Encode.string "myScrap")
             )
 
 view : Model -> {title : String , content : Html Msg}

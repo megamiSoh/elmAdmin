@@ -303,8 +303,8 @@ update msg model =
             in
             (model, Cmd.batch
             [ Api.showToast text
-            , Api.historyUpdate (Encode.string "myAccount")
-            -- , Route.pushUrl (Session.navKey model.session) Route.MyAccount
+            -- , -- Api.historyUpdate (Encode.string "myAccount")
+            , Route.pushUrl (Session.navKey model.session) Route.MyAccount
             ])
         SaveComplete (Err err) ->
             (model, Cmd.none) 
@@ -398,8 +398,8 @@ update msg model =
             (model, Cmd.none)
         BackBtn ->
             ( model, 
-            -- Route.pushUrl (Session.navKey model.session) Route.MyPage 
-            Api.historyUpdate (Encode.string "myPage")
+            Route.pushUrl (Session.navKey model.session) Route.MyPage 
+            -- -- Api.historyUpdate (Encode.string "myPage")
             )
 
 view : Model -> {title : String , content : Html Msg}

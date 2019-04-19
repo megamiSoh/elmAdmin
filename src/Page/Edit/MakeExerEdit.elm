@@ -428,8 +428,8 @@ update msg model =
                 Ok ok ->
                     
                     (model,
-                    Api.historyUpdate (Encode.string "makeEditStepLast")
-                    -- Route.pushUrl (Session.navKey model.session) Route.MakeEditLast
+                    -- -- Api.historyUpdate (Encode.string "makeEditStepLast")
+                    Route.pushUrl (Session.navKey model.session) Route.MakeEditLast
                     )
             
                 Err err ->
@@ -518,8 +518,8 @@ update msg model =
             (model,
             Cmd.batch [ 
                 Api.deleteData (),
-                --  Route.pushUrl (Session.navKey model.session) Route.Filter
-                Api.historyUpdate (Encode.string "filter")
+                 Route.pushUrl (Session.navKey model.session) Route.Filter
+                -- -- Api.historyUpdate (Encode.string "filter")
             ]
             )
 

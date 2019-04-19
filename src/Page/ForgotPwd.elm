@@ -82,8 +82,8 @@ update msg model =
     case msg of
         SendPwd ( Ok ok ) ->
             (model, Cmd.batch[
-                Api.historyUpdate (Encode.string "login")
-                -- Route.pushUrl (Session.navKey model.session) Route.Login, 
+                -- Api.historyUpdate (Encode.string "login")
+                Route.pushUrl (Session.navKey model.session) Route.Login 
                 , Api.showToast (Encode.string "임시비밀번호가 발송되었습니다")
                 ])
         SendPwd ( Err err ) ->

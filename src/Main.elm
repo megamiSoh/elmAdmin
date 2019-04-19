@@ -536,7 +536,9 @@ update msg model =
 
                         Just _ ->
                             ( model
-                            , Nav.pushUrl (Session.navKey (toSession model)) (Url.toString url)
+                            , Cmd.batch[Nav.pushUrl (Session.navKey (toSession model)) (Url.toString url)
+                            , Api.removeJw () ]
+                            
                             )
                             
 

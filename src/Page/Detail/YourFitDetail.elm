@@ -368,5 +368,4 @@ goBtnBox backPage =
 
 
 videoCall =
-    -- div [] []
     div [id "myElement"] []

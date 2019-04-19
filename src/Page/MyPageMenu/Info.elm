@@ -192,8 +192,8 @@ update msg model =
             case suc of
                 Ok ok ->
                    (model, 
-                   Api.historyUpdate (Encode.string "infoDetail")
-                --    Route.pushUrl (Session.navKey model.session) Route.InfoD
+                   -- Api.historyUpdate (Encode.string "infoDetail")
+                   Route.pushUrl (Session.navKey model.session) Route.InfoD
                    ) 
             
                 Err _->
@@ -213,8 +213,8 @@ update msg model =
             (model, Api.saveId encodeId)
         BackBtn ->
             (model , 
-            -- Route.pushUrl (Session.navKey model.session) Route.MyPage
-            Api.historyUpdate (Encode.string "mypage")
+            Route.pushUrl (Session.navKey model.session) Route.MyPage
+            -- Api.historyUpdate (Encode.string "mypage")
             )
 
 view : Model -> {title : String , content : Html Msg}

@@ -247,8 +247,8 @@ update msg model =
             case strDecode of
                 Ok ok ->
                     (model, 
-                    -- Route.pushUrl (Session.navKey model.session) Route.Info
-                    Api.historyUpdate (E.string "info")
+                    Route.pushUrl (Session.navKey model.session) Route.Info
+                    -- Api.historyUpdate (E.string "info")
                     )        
             
                 Err err ->

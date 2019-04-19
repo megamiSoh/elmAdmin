@@ -85,8 +85,8 @@ update msg model =
                 textEncode = E.string "변경되었습니다."
             in
             (model, Cmd.batch[Api.showToast textEncode, 
-            -- Route.pushUrl (Session.navKey model.session) Route.MyPage
-            Api.historyUpdate (E.string "myPage")
+            Route.pushUrl (Session.navKey model.session) Route.MyPage
+            -- Api.historyUpdate (E.string "myPage")
             ])
         PwdComplete (Err err) ->
             let

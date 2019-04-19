@@ -117,8 +117,8 @@ update msg model =
             case decodestr of
                 Ok ok ->
                    (model,
-                   Api.historyUpdate (E.string "togetherWrite")
-                --    Route.pushUrl(Session.navKey model.session) Route.TogetherW
+                --    -- Api.historyUpdate (E.string "togetherWrite")
+                   Route.pushUrl(Session.navKey model.session) Route.TogetherW
                    ) 
             
                 Err _ ->
@@ -201,8 +201,7 @@ update msg model =
                         ({model | checkDevice = "pc"}, Cmd.none)
         BackPage ->
             (model, 
-            Api.historyUpdate (E.string "makeExercise")
-            -- Route.pushUrl (Session.navKey model.session) Route.MakeExer
+            Route.pushUrl (Session.navKey model.session) Route.MakeExer
             )
         Scrap id ->
             (model, Cmd.batch[Api.saveId (E.string (String.fromInt id))])

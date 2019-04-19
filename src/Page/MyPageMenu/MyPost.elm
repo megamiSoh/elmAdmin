@@ -153,8 +153,8 @@ update msg model =
             case c of
                 Ok ok ->
                     (model,
-                    --  Route.pushUrl (Session.navKey model.session) Route.PostD
-                    Api.historyUpdate (Encode.string "myPostDetail")
+                    Route.pushUrl (Session.navKey model.session) Route.PostD
+                    -- Api.historyUpdate (Encode.string "myPostDetail")
                      )
             
                 Err _ ->

@@ -140,8 +140,8 @@ update msg model =
             )
         FilterSaveSuccess str ->
             (model, 
-            Api.historyUpdate(Encode.string "makeExerciseEdit")
-            -- Route.pushUrl (Session.navKey model.session) Route.MakeEdit
+            -- -- Api.historyUpdate(Encode.string "makeExerciseEdit")
+            Route.pushUrl (Session.navKey model.session) Route.MakeEdit
             )
         GoNextPage ->
             (model, Api.filter (filterEncoder model))
@@ -199,8 +199,8 @@ update msg model =
                 ({model | isActiveTool = [tool] ++ model.isActiveTool}, Cmd.none)
         BackBtn ->
             (model, 
-            Api.historyUpdate (Encode.string "makeExercise")
-            -- Route.pushUrl (Session.navKey model.session) Route.MakeExer 
+            -- -- Api.historyUpdate (Encode.string "makeExercise")
+            Route.pushUrl (Session.navKey model.session) Route.MakeExer 
             )
         NextBtn ->
             (model , Cmd.none)

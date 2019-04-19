@@ -135,6 +135,7 @@ port getCookie : () -> Cmd msg
 port getscrollHeight : Value -> Cmd msg
 port backUrl : () -> Cmd msg
 port historyUpdate : Value -> Cmd msg
+port removeJw : () -> Cmd msg
 -- port logout : () -> Cmd msg
 -- application :
     -- Decoder (Cred -> viewer)

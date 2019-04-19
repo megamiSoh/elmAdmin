@@ -161,8 +161,8 @@ update msg model =
                 case save of
                     Ok ok ->
                         (model, 
-                        -- Route.pushUrl (Session.navKey model.session) Route.ScrapD
-                        Api.historyUpdate (Encode.string "myScrapDetail")
+                        Route.pushUrl (Session.navKey model.session) Route.ScrapD
+                        -- Api.historyUpdate (Encode.string "myScrapDetail")
                         )
                 
                     Err _ ->

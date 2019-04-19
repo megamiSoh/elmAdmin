@@ -219,13 +219,13 @@ update msg model =
         SaveIdComplete str ->
             if model.saveCheckVal == "" then
             (model, 
-            Api.historyUpdate (Encode.string "makeExerciseDetail")
-            -- Route.pushUrl (Session.navKey model.session) Route.MakeDetail
+            -- -- Api.historyUpdate (Encode.string "makeExerciseDetail")
+            Route.pushUrl (Session.navKey model.session) Route.MakeDetail
             )
             else 
             (model,
-             Api.historyUpdate (Encode.string "togetherWrite")
-            -- Route.pushUrl (Session.navKey model.session) Route.TogetherW
+            --  -- Api.historyUpdate (Encode.string "togetherWrite")
+            Route.pushUrl (Session.navKey model.session) Route.TogetherW
             )
         CheckId id str->
             let

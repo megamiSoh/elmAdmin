@@ -295,8 +295,11 @@ app.ports.getSomeFilter.subscribe(function() {
 
 
 app.ports.videoData.subscribe(function(data) {
-  
-    if (data.pairing == "undefined" || ! Array.isArray (data.pairing))
+  if (data == null) {jwplayer('myElement').remove()
+
+}
+  else{
+  if (data.pairing == "undefined" || ! Array.isArray (data.pairing))
   	{
       jwplayer("myElement").setup(
         {"playlist" : data 
@@ -314,25 +317,28 @@ app.ports.videoData.subscribe(function(data) {
       app.ports.videoSuccess.send(true)
     }
   }
-  return false;
+  return false;}
 });
 
 
 app.ports.togetherDataList.subscribe(function(data) {
-  console.log(data)
   if (data == null)
   {
-
+    jwplayer("myElement" + data.id ).remove()
   }
   else { 
-    jwplayer("myElement" + data.id ).setup(
+    jwplayer("myElement" + data.id ).setup (
     { "playlist" : data.pairing
     , autostart : true 
     }
   ).on("ready")
-}
+
   return false;
- 
+}
+})
+app.ports.removeJw.subscribe( function () {
+  // jwplayer('myElement').remove()
+  // alert (document.getElementById('myElement'))
 })
 app.ports.showToast.subscribe(function (text) {
     var x = document.getElementById("webToast") || document.getElementById("appToast");
@@ -376,9 +382,9 @@ app.ports.getscrollHeight.subscribe(function(data) {
   }
 })
 
-app.ports.historyUpdate.subscribe(function (data) {
-  location.href = "/#/" + data
-})
+// app.ports.historyUpdate.subscribe(function (data) {
+//   location.href = "/#/" + data
+// })
 
 window.addEventListener('hashchange', function() {
 }, false);
