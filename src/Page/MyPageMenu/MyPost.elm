@@ -31,6 +31,7 @@ type alias Model
         , deleteId : Int
         , pageNum : Int
         , loading : Bool
+        , show : String
     }
 
 type alias ScreenInfo = 
@@ -67,6 +68,7 @@ init session mobile
         , checkList = []
         , errAuth = ""
         , loading = True
+        , show = ""
         , pageNum = 1
         , infiniteLoading = False
         , per_page = 10
@@ -82,7 +84,10 @@ init session mobile
                 , per_page = 0
                 , total_count = 0 }
             }}
-        , mypostList 1 10 session
+        , Cmd.batch [
+            mypostList 1 10 session
+            , Api.removeJw ()
+        ]
     )
 
 scrollEvent msg = 
@@ -116,7 +121,7 @@ subscriptions model =
 type Msg 
     = GetList (Result Http.Error DataList)
     | BackBtn
-    | DeletePost Int
+    | DeletePost 
     | DeleteComplete (Result Http.Error Decoder.Success)
     | PageBtn (Int, String)
     | ScrollEvent ScreenInfo
@@ -124,6 +129,7 @@ type Msg
     | SaveId Encode.Value
     | GotSession Session
     | NoOp
+    | DeleteConfirm Int
 
 toSession : Model -> Session
 toSession model =
@@ -204,10 +210,15 @@ update msg model =
             in
             
             ({model | errAuth = "delete"}, (Session.changeInterCeptor (Just serverErrors) model.session))
-        DeletePost id ->
-            ({model | deleteId = id}, 
+        DeleteConfirm id ->
+            if id == 0 then
+            ({model | deleteId = id, show = ""},Cmd.none)
+            else
+            ({model | deleteId = id, show = "logoutShow"},Cmd.none)
+        DeletePost ->
+            ({model | show = ""}, 
             (Decoder.resultD)
-            |> Api.get DeleteComplete (Endpoint.myPostDelete (String.fromInt(id))) (Session.cred model.session ) )
+            |> Api.get DeleteComplete (Endpoint.myPostDelete (String.fromInt(model.deleteId))) (Session.cred model.session ) )
         GetList (Ok ok) ->
             if model.deleteComplete then
             ({model | data = ok, dataList = ok.data, page = model.page, deleteComplete = False, loading = False}, (scrollToTop NoOp))
@@ -228,23 +239,49 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
-    , content = 
-        if model.check then
-            div [] [
-                if model.loading then
-                div [class "spinnerBack"] [
-                    spinner
-                    ]
-                else 
-                div [] []
-            , app model
-            ]
+    if model.check then
+        if model.loading then
+        { title = "내 게시물"
+        , content = div [class "spinnerBack"] [
+                            spinner
+                            ]
+        }
         else
-        web model
-    }
+            if List.length model.dataList > 0 then
+            { title = "내 게시물"
+            , content = 
+                div [] [ app model appcontentsBody]
+            }
+            else
+            { title = "내 게시물"
+            , content = 
+                div [] [ app model noappcontentsBody]
+            }
+    else
+        if List.length (model.data.data) > 0 then
+        { title = "내 게시물"
+        , content = 
+            div [] [
+                div [ class "container" ]
+            [
+                commonJustHeader "/image/icon_management.png" "나의 게시물관리"
+                , contentsBody model.data model.pageNum model.show
+                
+            ]
+            ]
+        }
+        else
+        { title = "내 게시물"
+        , content = 
+            div [] [
+                div [ class "container" ]
+        [
+            commonJustHeader "/image/icon_management.png" "나의 게시물관리"
+            , nocontentsBody model.data model.pageNum model.show
+            
+        ]
+            ]
+        }
 
 justData item =
     case item of
@@ -258,19 +295,29 @@ web model=
      div [ class "container" ]
         [
             commonJustHeader "/image/icon_management.png" "나의 게시물관리"
-            , contentsBody model.data model.pageNum
+            , contentsBody model.data model.pageNum model.show
             
         ]
-app model =
+app model appcontent=
     div[class "container"] [
         appHeaderRDetail "나의 게시물관리" "myPageHeader whiteColor" Route.MyPage "fas fa-angle-left"
-        , appcontentsBody model.dataList model.infiniteLoading model.loading
+        , appcontent model.dataList model.infiniteLoading model.loading model.show
     ]
-contentsBody model pageNum=
+nocontentsBody model pageNum show=
     div [ class "myPost_searchbox" ]
         [ div [ class "myPost_mediabox" ]
             [ 
-            if List.length (model.data) > 0 then
+            ul [class "m_cbp_tmtimeline"]
+                [
+                    li [class "noResult"] [text "나의 게시물이 없습니다."]
+                ]
+        ]
+        ]
+contentsBody model pageNum show=
+    div [ class "myPost_searchbox" ]
+        [ div [ class "myPost_mediabox" ]
+            [ 
+            
             div[] [ul [ class "cbp_tmtimeline" ]
             (List.map contentsLayout model.data)
             
@@ -278,31 +325,33 @@ contentsBody model pageNum=
                 PageBtn
                 model.paginate
                 pageNum]
-            else 
-            ul [class "m_cbp_tmtimeline"]
-                [
-                    li [class "noResult"] [text "나의 게시물이 없습니다."]
-                ]
         ]
+        , deltelayer show
         ]
-appcontentsBody model infiniteloading loading=
+appcontentsBody model infiniteloading loading show=
     div [ class "myPost_searchbox" ]
         [  div [ class "m_myPost_mediabox", scrollEvent ScrollEvent ]
             [ 
-                if List.length(model) > 0 then
                 ul [ class "m_cbp_tmtimeline" ]
                 (List.map appcontentsLayout model)
-                else
-                ul [class "m_cbp_tmtimeline"]
-                [
-                    li [class "noResult"] [text "나의 게시물이 없습니다."]
-                ]
                 ,if infiniteloading then
                     div [class "loadingPosition"] [
                     infiniteSpinner
                     ]
                 else
                 span [] []
+               
+        ]
+        , appdeltelayer show
+        ]
+noappcontentsBody model infiniteloading loading show=
+    div [ class "myPost_searchbox" ]
+        [  div [ class "m_myPost_mediabox", scrollEvent ScrollEvent ]
+            [ 
+                ul [class "m_cbp_tmtimeline"]
+                [
+                    li [class "noResult"] [text "나의 게시물이 없습니다."]
+                ]
                
         ]
         ]
@@ -319,11 +368,11 @@ contentsLayout item=
                 i [ class "fas fa-video" ]
                 []
             ]
-        , div [ class "cbp_tmlabel" ]
-            [ h2 [onClick (GetId (String.fromInt(item.id)))]
+        , div [ class "cbp_tmlabel " ]
+            [ pre [onClick (GetId (String.fromInt(item.id))), class "descriptionBackground"]
                 [ text (justData item.content) ]
             , p []
-                [ div [ class "button", onClick (DeletePost item.id) ]
+                [ div [ class "button is-danger", onClick (DeleteConfirm (item.id)) ]
                     [ text "삭제" ]
                 ]
             ]
@@ -343,13 +392,42 @@ appcontentsLayout item=
                 []
             ]
         , div [ class "m_cbp_tmlabel" ]
-            [ h2 [onClick (GetId (String.fromInt(item.id)))]
+            [ pre [onClick (GetId (String.fromInt(item.id))), class "descriptionBackground"]
                 [ text (justData item.content) ]
             , p []
-                [ div [ class "button m_mypost_btn",
-                onClick (DeletePost item.id) ]
+                [ div [ class "button danger m_mypost_btn",
+                onClick (DeleteConfirm item.id) ]
                     [ text "삭제" ]
                 ]
             ]
         ]
     
+
+
+appdeltelayer show =
+    div [class ("m_delete_post " ++ show)] [
+         div [ class "yf_delete_popup" ]
+            [ h1 [ class "popup_yf" ]
+                [ text "게시물을 삭제하시겠습니까?" ]
+            , p [ class "yf_logout_butbox" ]
+                [ div [ class "button is-light logout_danger2", onClick (DeleteConfirm 0) ]
+                    [ text "취소" ]
+                , div [ class "button is-danger logout_cencel2", onClick DeletePost ]
+                    [ text "삭제" ]
+                ]
+            ]
+    ]
+
+deltelayer show =
+    div [class ("delete_post " ++ show)] [
+         div [ class "yf_delete_popup" ]
+            [ h1 [ class "popup_yf" ]
+                [ text "게시물을 삭제하시겠습니까?" ]
+            , p [ class "yf_logout_butbox" ]
+                [ div [ class "button is-light logout_danger2", onClick (DeleteConfirm 0) ]
+                    [ text "취소" ]
+                , div [ class "button is-danger logout_cencel2", onClick DeletePost ]
+                    [ text "삭제" ]
+                ]
+            ]
+    ]

@@ -73,15 +73,19 @@ init session mobile =
         [  
             Decoder.yourfitList YourFitList ListData ExerciseList
                 |> Api.get GetList Endpoint.yourfitVideoList (Session.cred session) 
-        
+            , Api.removeJw ()
+            , mydata session
         ]
     )
 
-
+mydata session = 
+    Decoder.sessionCheckMydata
+        |> Api.get MyInfoData Endpoint.myInfo (Session.cred session)
 type Msg 
     = CheckDevice Encode.Value
     | GetList (Result Http.Error YourFitList)
     | GoDetail String
+    | MyInfoData (Result Http.Error Decoder.DataWrap)
     | Success Encode.Value
     | GoContentsDetail Int
     | SuccessId Encode.Value
@@ -113,6 +117,14 @@ subscriptions model=
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        MyInfoData (Ok ok) ->
+            (model, Cmd.none) 
+        MyInfoData (Err err) ->
+           let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
         MoveLeft idx ->
             (model, Api.scrollL (Encode.string (String.fromInt idx)) )
         MoveMore idx ->
@@ -132,7 +144,8 @@ update msg model =
                 ( { model | menuOpen = swipedLeft, swipingState = newState, swipeCode = str , leftWidth = -200}, Cmd.none )
         GotSession session ->
             ({model | session = session}
-            , Cmd.none
+            ,Cmd.batch [ mydata session
+            ]
             )
         SuccessId str ->  
             (model, 
@@ -174,7 +187,11 @@ update msg model =
                 else
                     ({model | data = ok.data, sumCount = result, loading = False}, Cmd.none)
         GetList (Err err) ->
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
 
         CheckDevice str ->
            let 
@@ -196,36 +213,33 @@ update msg model =
     
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourfitExercise"
-    , content = 
-        webOrApp model
-    }
+    if model.check then
+       if model.loading then
+            { title = "유어핏 운동"
+            , content = 
+            div [class "appWrap container" ] [
+                            justappHeader "유어핏운동" "yourfitHeader",
+                            div [][
+                                div [class "spinnerBack"] [
+                                    spinner
+                                    ]
+                            ]
+                    ]
+            }
+       else
+            { title = "유어핏 운동"
+            , content = 
+            div [class "appWrap container" ] [
+                        justappHeader "유어핏운동" "yourfitHeader"
+                        , app model
+                    ]
+            }
+    else
+            { title = "유어핏 운동"
+            , content = 
+                div [] [ web model ]
+            }
 
-
-webOrApp model =
-        if model.check then
-        div [class "appWrap container" ] [
-                    justappHeader "유어핏운동" "yourfitHeader",
-                    if model.loading then
-                    div [class "spinnerBack"] [
-                        spinner
-                        ]
-                    else 
-                    div [] []
-                   , app model
-            ]
-        else
-            div [] [
-            if model.loading then
-                div [class "spinnerBackWeb"] [
-                spinner
-                ]
-            else 
-            div [] []
-            , web model
-            ]
             
 web model =
     div [ class "yourfitExercise_yf_workoutcontainerwrap" ]

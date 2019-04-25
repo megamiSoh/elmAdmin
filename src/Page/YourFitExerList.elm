@@ -97,9 +97,13 @@ init session mobile =
             |> Api.get GetLevel Endpoint.level (Session.cred session) 
             ,Decoder.yourfitList YfE.YourFitList YfE.ListData YfE.ExerciseList 
             |> Api.get GetPart Endpoint.yourfitVideoList (Session.cred session)
+            , Api.removeJw ()
+            , mydata session
             ]
     )
-
+mydata session = 
+    Decoder.sessionCheckMydata
+        |> Api.get MyInfoData Endpoint.myInfo (Session.cred session)
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
@@ -118,6 +122,7 @@ type Msg
     | BackPage
     | GetPart (Result Http.Error YfE.YourFitList)
     | ScrollEvent ScreenInfo
+    | MyInfoData (Result Http.Error Decoder.DataWrap)
     -- | ReceiveId Encode.Value
 
 
@@ -145,6 +150,20 @@ scrollInfoDecoder =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        MyInfoData (Ok ok) ->
+            (model, Cmd.none) 
+        MyInfoData (Err err) ->
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+        GotSession session ->
+            ({model | session = session}
+            , Cmd.batch[mydata session
+            , detailEncoder model.exercise_part_code model.difficulty_code model.session
+             ]
+            )
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
              if (scrollHeight - scrollTop) <= offsetHeight then
                     if model.takeList < model.resultLen then
@@ -169,10 +188,6 @@ update msg model =
             (model, 
             Route.pushUrl (Session.navKey model.session) Route.YourFitExer
             -- Api.historyUpdate (Encode.string "yourfitExercise")
-            )
-        GotSession session ->
-            ({model | session = session}
-            , Cmd.none
             )
         Success str ->
             (model, 
@@ -213,76 +228,122 @@ update msg model =
             ( {model | isActive = level}, detailEncoder model.exercise_part_code [] model.session )
             else
             ( {model | isActive = level}, detailEncoder model.exercise_part_code [level] model.session )
-        
+
+
+findFilterName model=
+    List.head (
+        List.filter (\x -> 
+            x.code == model.exercise_part_code
+        )model.partDataName
+    )
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
-    , content = 
-        if model.check then 
-         div [] [
-            let
-                f=
-                    List.head (
-                        List.filter (\x -> 
-                            x.code == model.exercise_part_code
-                        )model.partDataName
-                    )
-                
-            in
-            case f of
-                Just result ->
+    case findFilterName model of
+        Just result ->
+            if model.check then
+                if List.length(model.listData) > 0 then
+                { title = "유어핏 운동"
+                , content = 
+                    div [] [
                     appHeaderRDetailClick result.name "yourfitListDetail yourfitHeader" BackPage "fas fa-angle-left"
-                Nothing ->
-                    appHeaderRDetailClick "" "yourfitListDetail yourfitHeader" BackPage "fas fa-angle-left"
-            ,app model] 
+                    ,app model
+                    ]
+                } 
+                else
+                { title = "유어핏 운동"
+                , content = 
+                    div [] [
+                    appHeaderRDetailClick result.name "yourfitListDetail yourfitHeader" BackPage "fas fa-angle-left"
+                    ,nocontentsapp model
+                    ]
+                } 
             else
-            web model
-    } 
+                if List.length(model.listData) > 0 then
+                    { title = "유어핏 운동"
+                    , content = 
+                     div [ class "containerwrap" ]
+                    [ div [ class "container" ]
+                        [ div [ class "notification yf_workout" ]
+                            [
+                                commonHeader "/image/icon_workout.png" result.name,
+                                div [ class "yf_yfworkout_search_wrap" ]
+                                [
+                                    tapbox model,
+                                    div [ class "earchbox_wrap" ]
+                                        [ 
+                                            div [ class "yf_searchbox" ]
+                                            (List.map contentsLayout model.listData)
+                                        ]
+                                ]                                   
+                            ]
+                        ] 
+                    ]}
+                else
+                { title = "유어핏 운동"
+                , content = 
+                    div [ class "containerwrap" ]
+                    [ div [ class "container" ]
+                        [ div [ class "notification yf_workout" ]
+                            [
+                                commonHeader "/image/icon_workout.png" result.name,
+                                div [ class "yf_yfworkout_search_wrap" ]
+                                [
+                                    tapbox model,
+                                    div [ class "earchbox_wrap" ]
+                                        [ 
+                                            div [class "yf_noResult"] [
+                                                text "검색결과가 없습니다."
+                                            ]
+                                        ]
+                                ]                                   
+                            ]
+                        ] 
+                    ]
+                } 
+    
+        Nothing ->
+            if model.check then 
+                { title = "유어핏 운동"
+                , content = 
+                    div [][
+                    appHeaderRDetailClick "" "yourfitListDetail yourfitHeader" BackPage "fas fa-angle-left"
+                    , div [][text "컨텐츠를 불러올수 없습니다."]
+                    ]
+                }
+                
+            else
+                { title = "유어핏 운동"
+                , content = 
+                    div [][text "컨텐츠를 불러올수 없습니다."]
+                }
+                
+    
 app model =    
     div ([ class "container" ] ++ [style "max-height" "100%"])
-                [  div [class "heightFix"] [
-                    apptapbox model
-                ],     
-                    if List.length(model.listData) > 0 then
-                    div ([ class "searchbox" ] ++ [scrollEvent ScrollEvent])
-                    (List.indexedMap contentsLayout2 model.listData)
-                    else
-                    div [class "noResult"] [
-                        text "검색결과가 없습니다."
-                    ],
-                    if model.infiniteLoading then
-                    div [class "loadingPosition"] [
-                    spinner
-                    ]
-                    else
-                    span [] [] 
-                                                      
-                ]
-web model= 
-    div [ class "containerwrap" ]
-                [ div [ class "container" ]
-                    [ div [ class "notification yf_workout" ]
-                        [
-                            commonHeader "/image/icon_workout.png" "유어핏운동",
-                            div [ class "yf_yfworkout_search_wrap" ]
-                            [
-                                tapbox model,
-                                div [ class "earchbox_wrap" ]
-                                    [ 
-                                        if List.length(model.listData) > 0 then
-                                        div [ class "yf_searchbox" ]
-                                        (List.map contentsLayout model.listData)
-                                        else
-                                        div [class "yf_noResult"] [
-                                            text "검색결과가 없습니다."
-                                        ]
-                                    ]
-                            ]                                   
-                        ]
-                    ] 
-                ]
+    [  div [class "heightFix"] [
+        apptapbox model
+    ],     
+        div ([ class "searchbox" ] ++ [scrollEvent ScrollEvent])
+        (List.indexedMap contentsLayout2 model.listData)
+        , if model.infiniteLoading then
+        div [class "loadingPosition"] [
+        spinner
+        ]
+        else
+        span [] [] 
+                                            
+    ]
+
+nocontentsapp model =    
+    div ([ class "container" ] ++ [style "max-height" "100%"])
+    [  div [class "heightFix"] [
+        apptapbox model
+    ],  
+        div [class "noResult"] [
+            text "검색결과가 없습니다."
+        ]                       
+    ]
+
 tapbox model =
     div [ class "yf_tapbox" ]
         [ div [ class "tabs is-toggle is-fullwidth is-large" ]
@@ -359,7 +420,7 @@ contentsLayout2 idx item =
                 []
             ]
         , div [class "m_workout_title"] [
-            div []
+            div [class"m_list_title"]
             [ text item.title ]
             , div [ class "m_iconbox" ]
                 [ div [ class "m_partbox" ]
@@ -370,7 +431,7 @@ contentsLayout2 idx item =
             , div [class "m_timebox"]
                 [ i [ class "fas fa-clock" ]
                     []
-                        , div [ class "m_timebox" ]
+                        , div [ class "" ]
                     [ text item.duration ]
                 ]
         ]

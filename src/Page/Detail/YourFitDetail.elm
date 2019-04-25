@@ -81,7 +81,10 @@ init session mobile
             , thumbnail = ""
             , description = Nothing}
         }
-        , Api.getId ()
+        , Cmd.batch [
+            Api.getId ()
+            , mydata session
+        ]
     )
 subscriptions :Model -> Sub Msg
 subscriptions model =
@@ -90,8 +93,12 @@ subscriptions model =
         --     P.check CheckDevice
         -- , 
         Api.receiveId ReceiveId
+        , Session.changes GotSession (Session.navKey model.session)
         , Api.videoSuccess Loading
         ]
+mydata session = 
+    Decoder.sessionCheckMydata
+        |> Api.get MyInfoData Endpoint.myInfo (Session.cred session)
 type Msg 
     = BackPage
     -- | CheckDevice Encode.Value 
@@ -102,6 +109,8 @@ type Msg
     | Scrap
     | ScrapComplete (Result Http.Error Decoder.Success)
     | BackDetail
+    | GotSession Session
+    | MyInfoData (Result Http.Error Decoder.DataWrap)
     
 
 toSession : Model -> Session
@@ -116,6 +125,22 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        MyInfoData (Ok ok) ->
+            (model, Cmd.none) 
+        MyInfoData (Err err) ->
+           let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+        GotSession session ->
+            ({model | session = session}
+            , Cmd.batch[
+                (Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing)
+                |>Api.get GetListData (Endpoint.yfDetailDetail model.videoId ) (Session.cred session)
+            , mydata session
+            ]
+            )
         BackDetail ->
             ({model | need2login = False}, 
             (Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing)
@@ -157,7 +182,11 @@ update msg model =
         GetListData (Ok ok) -> 
              ({model | listData = ok.data, scrap = False, loading = False}, Cmd.none)
         GetListData (Err err) -> 
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
         Loading success ->
             let
                 d = Decode.decodeValue Decode.string success
@@ -200,42 +229,77 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
-    , content = 
-            if model.check then
-                app model
-            else
-                web BackPage model
-        
-    }
+    if model.check then
+        if model.loading then
+        { title = "유어핏 운동"
+        , content = 
+                    div [ class "container" ]
+                [
+                   appHeaderRDetailClick model.listData.title  "yourfitHeader" BackPage "fas fa-times"
+                   ,
+                    div [class "spinnerBack"] [
+                        spinner
+                        ]
+            ]   
+        }
+        else
+        { title = "유어핏 운동"
+        , content = 
+             div [ class "container" ]
+                [
+                   appHeaderRDetailClick model.listData.title  "yourfitHeader" BackPage "fas fa-times"
+                   ,
+                    div [] []
+                     , 
+                    div [][
+                        if model.need2login then
+                        need2loginAppDetail BackDetail
+                    else
+                    appcontentsItem model.listData model.loading Scrap model model.zindex
+                    ]
+                ]
+        }
+    else
+        { title = "유어핏 운동"
+        , content = 
+            div [] [
+                    web BackPage model
+            ]   
+        }
+
 app model= 
         div [ class "container" ]
                 [
                    appHeaderRDetailClick model.listData.title  "yourfitHeader" BackPage "fas fa-times"
                    ,
-                    if model.loading then
+                    div [] [
+                        if model.loading then
                     div [class "spinnerBack"] [
                         spinner
                         ]
                     else 
                     div [] []
-                     , if model.need2login then
+                    ]
+                     , 
+                    div [][
+                        if model.need2login then
                         need2loginAppDetail BackDetail
                     else
                     appcontentsItem model.listData model.loading Scrap model model.zindex
+                    ]
                 ]
 
 web msg model= 
     div [ class "container" ]
                 [
                     commonHeader2 "image/icon_workout.png" "유어핏운동"
-                    , if model.need2login then
+                    , div [] [
+                        if model.need2login then
                         need2loginAppDetail BackDetail
-                    else
-                    contentsBody model.listData model.loading Scrap model.scrap GoVideo "스크랩"model.zindex,
-                    goBtnBox msg
+                        else
+                        contentsBody model.listData model.loading Scrap model.scrap GoVideo "스크랩"model.zindex,
+                        goBtnBox msg
+                    ]
                 ]
 contentsBody item model scrap modelscrap goVideo scrapText zindex=
     
@@ -256,9 +320,10 @@ contentsItem item loading scrap modelscrap govideo scrapText zindex=
             [lazy2 div [ class "yf_notification" ]
                 [ p [ class "video_title " ]
                     [ 
-                        --  div [] [
-                            i [ class "fas fa-play-circle" , onClick (govideo item.pairing)][],
-                             img [class zindex, src item.thumbnail , onClick (govideo item.pairing)] []
+                            div [class ("imagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") ,onClick (govideo item.pairing)] []
+                        -- --  div [] [
+                        --     i [ class "fas fa-play-circle" , onClick (govideo item.pairing)][],
+                        --      img [class zindex, src item.thumbnail , onClick (govideo item.pairing)] []
                             , videoCall
                         --  ]
                     ]
@@ -288,7 +353,7 @@ contentsItem item loading scrap modelscrap govideo scrapText zindex=
             -- if loading then 
             -- div [] []
             -- else
-            div [class"yf_explanation"] [text (justok item.description)]
+            pre [class"yf_explanation descriptionBackground"] [text (justok item.description)]
             , div [ class "yf_text" ]
                (List.indexedMap description item.exercise_items)
             ]
@@ -307,15 +372,15 @@ appcontentsItem item loading scrap modelscrap zindex=
             [ div []
                 [ p [ class "m_yf_container" ]
                     [ 
-                        i [ class ("far fa-play-circle m_yf_container_circle " ++ zindex), onClick (GoVideo item.pairing) ][]
-                        , img [src item.thumbnail, onClick (GoVideo item.pairing)] []
+                        div [ class ("appimagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") , onClick (GoVideo item.pairing) ][]
+                        -- , img [src item.thumbnail, onClick (GoVideo item.pairing)] []
                         , videoCall
                     ]
                 ]
             , 
-            if loading then 
-            spinner
-            else
+            -- if loading then 
+            -- spinner
+            -- else
             div [ class "m_yf_work_textbox" ]
                 [ div [ class "m_yf_work_time" ]
                     [ span []
@@ -338,22 +403,22 @@ appcontentsItem item loading scrap modelscrap zindex=
                     ]
                 ]
             , 
-            if loading then 
-            div [] []
-            else
+            -- if loading then 
+            -- div [] []
+            -- else
             div [class"m_explanation"] [
-                div [] [text (justok item.description)]
-                , div [ class "m_work_script" ]
+                pre [class "descriptionBackground"] [text (justok item.description)]
+                , div [ class "m_yfwork_script" ]
                 (List.indexedMap description item.exercise_items)
             ]
             ]
 
 description idx item = 
-    ul [] [
+    ul [class "yf_text"] [
             if item.is_rest then    
-                li [] [text ((String.fromInt(item.sort)) ++ " . " ++  item.title ++ " " ++ String.fromInt(item.value) ++ "세트")]
+                li [] [text ((String.fromInt(item.sort)) ++ " . " ++  item.title ++ " " ++ String.fromInt(item.value) ++ "분")]
             else 
-                li [] [text ((String.fromInt(item.sort)) ++ " . " ++  item.title ++ " " ++ String.fromInt(item.value) ++ "분")] 
+                li [] [text ((String.fromInt(item.sort)) ++ " . " ++  item.title ++ " " ++ String.fromInt(item.value) ++ "세트")] 
                     
         -- li [] [text]
     ]

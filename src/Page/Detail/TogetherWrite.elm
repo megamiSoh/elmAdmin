@@ -97,7 +97,7 @@ type PreviewTab
 
 type Msg 
     = GetFile String
-    -- | CheckDevice E.Value
+    | GotSession Session
     | BackBtn
     | GetShare Encode.Value
     | GoShare
@@ -136,11 +136,18 @@ toCheck model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Api.receiveId GetShare
+    Sub.batch [
+        Api.receiveId GetShare
+        , Session.changes GotSession (Session.navKey model.session)
+    ]
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GotSession session ->
+            ({model | session = session}, 
+            Api.get GetList (Endpoint.makeDetail model.videoId) (Session.cred session)  (Decoder.yfDetailDetail YfD.GetData YfD.DetailData YfD.DetailDataItem YfD.Pairing)
+            )
         ListShow -> 
             ({model | listShow = not model.listShow}, Cmd.none)
         -- KeyDown key ->
@@ -151,14 +158,22 @@ update msg model =
         GetList(Ok ok) ->
             ({model | getData = ok.data}, Cmd.none)
         GetList(Err err) ->
-            (model,Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
         ShareComplete (Ok ok) -> 
             let
                 text = Encode.string "공유되었습니다."
             in
             (model, Cmd.batch[Route.pushUrl (Session.navKey model.session) Route.Together,  Api.showToast text])
         ShareComplete (Err err) -> 
-            (model, Cmd.none)
+             let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
         Content str ->
             ({model | content = str}, Cmd.none)
         GoRegist ->
@@ -173,8 +188,6 @@ update msg model =
         GetShare id -> 
             let
                 idDecoder = Decode.decodeValue Decode.string id
-                -- let _ = Debug.log "str" String.filter Char.isDigit str 
-                
             in
             case idDecoder of
                 Ok ok ->
@@ -190,14 +203,19 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
+    if model.check then
+    { title = "함께해요 글쓰기"
     , content =
-        if model.check then
-         app model
-        else
-         web model
+        div [] [
+            app model
+        ]
+    }
+    else
+    { title = "함께해요 글쓰기"
+    , content =
+        div [] [
+            web model
+        ]
     }
 
 web model = 
@@ -230,9 +248,9 @@ bodyContents model =
                 --     img [ src "/image/dummy_video_image3.png" ]
                 --     []
                 -- , text model.checkDevice]
-                videoContent2 model
-               , div [class "togethertextarea yf_textarea"] [
-                   editorView model.content Content False "운동, 다이어트, 식단, 일상에 대한 대화를 나눠요"
+                videoContent model
+               , div [class "togethertextarea to_yf_textarea"] [
+                   editorView model.content Content False "내가 만든 운동영상을 공유해요"
                ]
             ]
         , div [ class "file has-name is-fullwidth togetherWrite_yf_upload" ]
@@ -307,13 +325,15 @@ videoContent model =
                             
                         )
                         ,
-                        if List.length model.getData.exercise_items > 3 then
-                            if model.listShow then
-                                 div [onClick ListShow, class "button is-small"] [text "닫기"]
+                        div [] [
+                            if List.length model.getData.exercise_items > 3 then
+                                if model.listShow then
+                                    div [onClick ListShow, class "button is-small"] [text "닫기"]
+                                else
+                                    div [onClick ListShow, class "button is-small"] [text "자세히.."]
                             else
-                                 div [onClick ListShow, class "button is-small"] [text "자세히.."]
-                        else
-                        div [] []
+                            div [] []
+                        ]
                     ]
                     , li []
                         [ text (String.dropRight 10(model.getData.inserted_at)) ]
@@ -342,8 +362,10 @@ goBtn model =
                 div [ class "button is-dark togetherWrite_yf_dark", onClick GoRegist ]
                 [ text "등록하기" ] 
                 else
-                div [ class "button is-dark togetherWrite_yf_dark", onClick GoShare ]
-                [ text "공유하기"  ] 
+                div [ class "button is-link togetherWrite_yf_dark", onClick GoShare ]
+                       [ i [ class "fas fa-share-square" ]
+                            [] , text "공유하기" 
+                        ]
             ]
         , div [ class "yf_butbox" ]
             [ a [ class "button togetherWrite_yf_butbox", Route.href Route.Together ]
@@ -387,13 +409,15 @@ videoContent2 model =
                             
                         )
                         ,
-                        if List.length model.getData.exercise_items > 3 then
-                            if model.listShow then
-                                 div [onClick ListShow, class "button is-small"] [text "닫기"]
+                        div [] [
+                            if List.length model.getData.exercise_items > 3 then
+                                if model.listShow then
+                                    div [onClick ListShow, class "button is-small"] [text "닫기"]
+                                else
+                                    div [onClick ListShow, class "button is-small"] [text "자세히.."]
                             else
-                                 div [onClick ListShow, class "button is-small"] [text "자세히.."]
-                        else
-                        div [] []
+                            div [] []
+                        ]
                     ]
                     , li [class "m_wr_date"]
                         [ text (String.dropRight 10(model.getData.inserted_at)) ]

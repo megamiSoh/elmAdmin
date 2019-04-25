@@ -250,9 +250,7 @@ onKeyDown tagger =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
+    { title = "맞춤운동 검색"
     , content = div [] [
         div [ class "cus_topbox" ]
             [ a [ class "backbtn", Route.href Route.MakeExer ]
@@ -270,109 +268,8 @@ view model =
                     ]
                 ]
             ]
-        ,
-        div[](List.map appItemContent model.getlistData.data)
---         , if model.infiniteLoading then
---             div [class "loadingPosition"] [
---             infiniteSpinner
---             ]
---         else
---             span [] []
-        -- div [ class "container yf_container" ]
-        --     [ div [ class "result_textbox" ]
-        --         [ text "총 n건의 검색결과" ]
-        --     , div [ class "yf_box" ]
-        --         [ img [ src "../image/dummy_video_image.png" ]
-        --             []
-        --         , div [ class "text_wrap" ]
-        --             [ div [ class "yf_box_title" ]
-        --                 [ text "와이드 레그드 포워드 밴드 위드 핸즈 온 힙" ]
-        --             , div [ class "yf_ul" ]
-        --                 [ ul []
-        --                     [ li []
-        --                         [ text "2019-01-01" ]
-        --                     , li [ class "yf_il" ]
-        --                         [ i [ class "fas fa-share-square" ]
-        --                             []
-        --                         ]
-        --                     , li []
-        --                         [ text "공유하기" ]
-        --                     ]
-        --                 ]
-        --             ]
-        --         ]
-        --     ]
-
+        , div[](List.map appItemContent model.getlistData.data)
     ]}
--- webOrApp model= 
---     -- if model.check then
---          a [Route.href Route.MSearch] [appHeaderSearch "맞춤운동" "makeExerHeader",
---             if model.loading then
---             div [class "spinnerBack"] [
---                 spinner
---                 ]
---             else 
---             div [] []
---             , app model
---             ]  
---     -- else 
---     --     web model
-
--- web model = 
---     div [ class "customContainerwrap" ]
---             [ div [ class "container" ]
---                 [ div [ class "notification yf_workout" ]
---                     [
---                         commonHeader "/image/icon_customworkout.png" "맞춤운동",
---                         bodyContentTitle,
---                         div [ class "customyf_box2"] [
---                             div [ class "make_box_title" ]
---                                 [ h1 [ class "make_yf_h2" ]
---                                     [ text "맞춤운동 리스트" ]
---                                 ],
---                             if model.loading then
---                                 spinner
---                             else
---                                     if List.length model.getlistData.data > 0 then
---                                     div [ class "make_boxwrap" ]
---                                     (List.map bodyItem model.getlistData.data)
---                                 else
---                                     div [] [text "맞춤영상이 없습니다."]
-
---                         ]
---                     ]
---                 ]
---                 ,pagination 
---                 PageBtn
---                 model.getlistData.paginate
---             ]
--- app model =
---     div [ class "container", class "scroll", scrollEvent ScrollEvent, style "height" "85vh" ][
---          appStartBox
---         ,listTitle
---         ,div[](List.map appItemContent model.newList)
---         , if model.infiniteLoading then
---             div [class "loadingPosition"] [
---             infiniteSpinner
---             ]
---         else
---             span [] []
---     ]
-
--- appStartBox = 
---     div [ class "make_m_yf_box" ]
---         [ h1 [ class "m_make_yf_h1" ]
---             [ text "하나뿐인 나만의 운동을 만들어보세요!" ]
---         , a [ class "button is-dark m_make_yf_darkbut", Route.href Route.Filter ]
---             [ text "시작하기" ]
---         , br []
---             []
---         ]
--- listTitle = 
---     div [ class "m_make_box_title" ]
---         [ h1 [ class "m_make_yf_h2" ]
---             [ text "맞춤운동 리스트" ]
---         ]
 
 appItemContent item=
         div [ class "m_make_yf_box2" ]

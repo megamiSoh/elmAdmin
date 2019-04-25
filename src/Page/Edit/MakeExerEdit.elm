@@ -161,6 +161,7 @@ init session mobile
         Api.sendData ()
         , Api.getfilter ()
         , Api.getId ()
+        , Api.scrollControl ()
         ]
     )
 
@@ -459,10 +460,13 @@ update msg model =
                 if ok.data == [] then
                 ({model | filterData = ok.data , resultCount = count, loading = False, infiniteLoading = False},Cmd.none)
                 else
-                    if model.filterData /= before then
-                    ({model | filterData = before , resultCount = count, loading = False, infiniteLoading = False},Cmd.none)
-                    else 
-                    ({model | loading = False}, Cmd.none)
+                    if model.check then
+                        if model.filterData /= before then
+                        ({model | filterData = before , resultCount = count, loading = False, infiniteLoading = False},Cmd.none)
+                        else 
+                        ({model | loading = False}, Cmd.none)
+                    else
+                        ({model | loading = False, filterData = ok.data} , Cmd.none)
         GetFilterData (Err err)->
             let
                 serverErrors = 
@@ -542,14 +546,19 @@ justokData data =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "맞춤운동 필터 Step 1"
+    if model.check then
+    { title = "맞춤운동 필터 Step 1"
     , content = 
-            if model.check then
-            app model
-            else
-            web model
+            div [] [
+                app model
+            ]
+        }
+    else
+    { title = "맞춤운동 필터 Step 1"
+    , content = 
+            div [] [
+                web model
+            ]
         }
 
 app model = 
@@ -619,10 +628,10 @@ web model =
 itemContainer model = 
      div [class"filter_box"] [
             div[class "filterStep1_listbox"] [
-                stringresultCount model.resultCount "searchlistCount" "검색",
-                 div [class "filterStep1_listsrollbox"]
+                div [] [stringresultCount model.resultCount "searchlistCount" "검색",
+                 breakTime "fas fa-plus-circle" AddBreak]
+                , div [class "filterStep1_listsrollbox"]
                  [
-                    breakTime "fas fa-plus-circle" AddBreak,
                     if List.length model.filterData > 0 then
                     div [ class "loadlistbox" ]
                         (List.indexedMap (
@@ -684,26 +693,30 @@ appitemContainer model =
             
             ) [
                 stringresultCount model.resultCount "m_searchlistCount" "검색",
-                if List.length model.filterData > 0 then
-                div ([class "m_filterStep1_listsrollbox"]
-                ++ [scrollEvent ScrollEvent])
-                 [
-                    appbreakTime "fas fa-plus-circle" AddBreak,
-                    
-                        div [ class "m_loadlistbox" ]
-                            (List.indexedMap (
-                                \idx x ->
-                                appworkoutItem idx x "fas fa-plus-circle" BackItem 
-                                ) model.filterData)
+                div [] [
+                    if List.length model.filterData > 0 then
+                    div ([class "m_filterStep1_listsrollbox"]
+                    ++ [scrollEvent ScrollEvent])
+                    [
+                        appbreakTime "fas fa-plus-circle" AddBreak,
+                        
+                            div [ class "m_loadlistbox" ]
+                                (List.indexedMap (
+                                    \idx x ->
+                                    appworkoutItem idx x "fas fa-plus-circle" BackItem 
+                                    ) model.filterData)
+                    ]
+                    else 
+                        div [class "noResult"] [text "검색 된 운동이 없습니다."]
                 ]
-                 else 
-                    div [class "noResult"] [text "검색 된 운동이 없습니다."]
-                , if model.infiniteLoading then
+                , div [] [
+                    if model.infiniteLoading then
                     div [class "loadingPosition"] [
                     spinner
                     ]
                     else
                     span [] []
+                ]
             ]
             , 
             if List.length (model.addItem) == 0 then

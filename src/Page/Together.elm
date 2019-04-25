@@ -41,7 +41,9 @@ type alias Model
         , showDetail : Bool
         , pageNum : Int
         , height : String
+        , checkauth : Bool
         , oneOfdata : List TogetherData
+        , zindex : String
         , cnt : Int
     }
 type alias TogetherDataWrap = 
@@ -51,6 +53,7 @@ type alias TogetherDataWrap =
 
 type alias TogetherLikeWrap = 
     {data : TogetherData}
+
 type alias TogetherData = 
     { content : Maybe String
     , detail : Maybe (List DetailTogether)
@@ -112,7 +115,9 @@ init session mobile
         , likeList = []
         , idx = 0
         , pageNum = 1
+        , checkauth = False
         , height = ""
+        , zindex = ""
         , cnt = 0
         , oneOfdata = []
         , screenInfo = 
@@ -124,7 +129,7 @@ init session mobile
         , check = mobile
         , page = 1
         , videoStart = ""
-        , per_page = 10
+        , per_page = 9
         , loading = True
         , showAllText = 0
         , like = 0
@@ -138,9 +143,14 @@ init session mobile
             }
         }
         ,  Cmd.batch 
-        [  dataEncoder 1 10 session]
+        [  dataEncoder 1 9 session
+        , mydata session
+        , Cmd.batch [
+            Api.removeJw ()
+            , Api.scrollControl ()
+        ]]
     )
-
+dataEncoder : Int -> Int -> Session -> Cmd Msg
 dataEncoder page perpage session=
     let
         list = 
@@ -163,7 +173,7 @@ loadingEncoder page perpage session =
 
     in
     (Decoder.togetherdatawrap  TogetherDataWrap TogetherData DetailTogether Paginate TogetherItems Pairing)
-    |>Api.post Endpoint.togetherList (Session.cred session) LoadingGetData list 
+    |> Api.post Endpoint.togetherList (Session.cred session) LoadingGetData list 
 
 scrollEvent msg = 
     on "scroll" (Decode.map msg scrollInfoDecoder)
@@ -197,7 +207,12 @@ type Msg
     | TogetherDetail Int
     | NoOp
     | GetHeight Encode.Value
-    
+    | GotSession Session
+    | MyInfoData (Result Http.Error Decoder.DataWrap)
+
+mydata session = 
+    Decoder.sessionCheckMydata
+        |> Api.get MyInfoData Endpoint.myInfo (Session.cred session)    
 
 toSession : Model -> Session
 toSession model =
@@ -210,12 +225,27 @@ toCheck model =
 
 subscriptions :Model -> Sub Msg
 subscriptions model=
-    Api.getHeightValue GetHeight
+    Sub.batch[Api.getHeightValue GetHeight
+    , Session.changes GotSession (Session.navKey model.session)]
     -- Api.videoSuccess Loading
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        MyInfoData (Ok ok) ->
+            (model, Cmd.none) 
+        MyInfoData (Err err) ->
+           let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+        GotSession session ->
+            ({model | session = session},
+            Cmd.batch [
+                likeApi session (String.fromInt model.like)
+                , mydata session
+            ])
         GetHeight height ->
             let
                 heightDecoding =
@@ -236,9 +266,13 @@ update msg model =
                     )model.togetherData.data
             in
             if id == 0 then
-            ({model | showDetail = not model.showDetail}, Api.getscrollHeight (Encode.bool (not model.showDetail)))
+            ({model | showDetail = not model.showDetail, zindex = ""}, Cmd.batch[Api.getscrollHeight (Encode.bool (not model.showDetail))
+            , mydata model.session])
             else 
-            ({model | oneOfdata = getData, showDetail = not model.showDetail}, Api.getscrollHeight (Encode.bool (not model.showDetail)))
+            ({model | oneOfdata = getData, showDetail = not model.showDetail},Cmd.batch [
+                 Api.getscrollHeight (Encode.bool (not model.showDetail))
+                , mydata model.session
+            ])
         LikeUpdate (Ok ok) ->
             let
                 udtLike = 
@@ -265,14 +299,20 @@ update msg model =
             in
             ({model | appData = udtLike,oneOfdata = webLike, togetherData = result}, Cmd.none)
         LikeUpdate (Err err) ->
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+
         ShowAllText id->
             ({model | showAllText = id}, Cmd.none)
         OnLoad ->
-            if model.count >= List.length (model.togetherData.data) then
-            ({model | loading = False}, Cmd.none)
-            else
-            ({model | count = model.count + 1, loading = False}, Cmd.none)
+            (model, Cmd.none)
+            -- if model.count >= List.length (model.togetherData.data) then
+            -- ({model | loading = False}, Cmd.none)
+            -- else
+            -- ({model | count = model.count + 1, loading = False}, Cmd.none)
         VideoCall (p ,idx) ->  
             let 
                 stringint = String.fromInt(idx)
@@ -288,7 +328,7 @@ update msg model =
                 -- id = 
                 --     Encode.string (String.fromInt(idx))
             in
-            ({model | videoStart = stringint}, Api.togetherDataList pair)
+            ({model | videoStart = stringint, zindex = "zindex" ++ String.fromInt(idx)}, Api.togetherDataList pair)
         ScrapComplete (Ok ok) ->
             let
                 text = Encode.string "스크랩 되었습니다."
@@ -376,8 +416,11 @@ update msg model =
             let
                 serverErrors = Api.decodeErrors err
             in
-                if serverErrors == "401" then 
-                ({model | need2login = True}, Cmd.none )
+                if serverErrors == "401" then
+                    if model.checkauth then 
+                        ({model | need2login = True, checkauth = False}, Cmd.none )
+                    else
+                        ({model | checkauth = True}, (Session.changeInterCeptor (Just serverErrors) model.session))
             else
                 (model, Cmd.none)
         IsLike (id, idx )->
@@ -398,7 +441,7 @@ update msg model =
         GetData (Ok ok) ->
             ({model | togetherData = ok, appData = ok.data, loading = False} , (scrollToTop NoOp) )
         GetData (Err err) ->
-            ({model | loading = False}, Cmd.none)
+            ({model | loading = False}, Route.load ("#/together"))
         IsActive title ->
             ({model | isActive = title} , Cmd.none)
         CheckDevice str ->
@@ -416,26 +459,35 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "함께해요"
-    , content = 
-       
     if model.check then
-       div [] [
-           if model.loading then
-            div [class "spinnerBack"] [
-                spinner
-                ]
-            else 
-            div [] []
-            , 
-            app model
-       ]
-       else 
-            web model   
+    { title = "함께해요"
+    , content = 
+            div [] [
+                if model.loading then
+                    div [class "spinnerBack"] [
+                        spinner
+                        ]
+                else 
+                    div [] []
+                    , 
+                app model
+            ]
     }
-
+    else
+        if List.length model.togetherData.data > 0 then
+            { title = "함께해요"
+            , content = 
+                div [class "togetherWrap"] [
+                    web model contentsBody  
+                ]
+            }
+        else
+            { title = "함께해요"
+            , content = 
+                div [class "togetherWrap"] [
+                    web model nocontentsBody
+                ]
+            }
 justData item = 
     case item of
         Just val ->
@@ -444,9 +496,15 @@ justData item =
         Nothing ->
             "Guest"
 
+justDatadescription item = 
+    case item of
+        Just val ->
+            val
+    
+        Nothing ->
+            " - "
 
-
-web model = 
+web model contentsItem= 
     div [
         ] [
                 div [class "container",
@@ -459,7 +517,7 @@ web model =
                             commonHeader "../image/icon_together.png" "함께해요",
                         div [class "yf_yfworkout_search_wrap together"] [
                             -- tabbox model,
-                            lazy contentsBody model
+                            lazy contentsItem model
                         ]
                         
                             ]
@@ -603,14 +661,14 @@ appContentsItem idx item model=
                             Nothing ->
                                 []
                     ), idx))] [
-                        i [ class "far fa-play-circle m_to_video_circle",onClick (VideoCall ((
+                        div [class ("appimagethumb " ++ (model.zindex ++ String.fromInt(idx)) ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ thumb ++") ") ,onClick (VideoCall ((
                         case pairing of
                             Just a ->
                                 a
                             Nothing ->
                                 []
                     ), idx)) ][]
-                        , img [src thumb, onLoad OnLoad] []
+                        -- , img [src thumb, onLoad OnLoad] []
                 ],
                  div [id ("myElement" ++ String.fromInt(idx)) ]  [] ] 
             -- , div [ class "m_to_yf_more" ]
@@ -622,12 +680,12 @@ appContentsItem idx item model=
                 ]
             Nothing ->
                 div [][]
-            , if String.length (justData item.content) > 100 then
-                   div [class "togetherArticle"][
+            , if String.length (justDatadescription item.content) > 100 then
+                   pre [class "togetherArticle descriptionBackground"][
                         if model.showAllText == item.id then
-                            text (justData item.content)
+                            text (justDatadescription item.content)
                         else
-                            text (String.dropRight ((String.length(justData item.content) - 100)) (justData item.content) )
+                            text (String.dropRight ((String.length(justDatadescription item.content) - 100)) (justDatadescription item.content) )
                             
                    , div [] [
                     ul [] [
@@ -636,8 +694,8 @@ appContentsItem idx item model=
                 ]
                 ]
                 else
-                   div [class "togetherArticle"]
-                   [ text (justData item.content)
+                   pre [class "togetherArticle descriptionBackground"]
+                   [ text (justDatadescription item.content)
                    , div [] 
                     (List.map (\x-> detailData x model item.id) (justListData item.detail))
                 ]
@@ -714,7 +772,21 @@ tabbox model=
                 ]
             ]
         ]
-
+nocontentsBody model=
+    div [ class "together_searchbox_wrap" ]
+        [ div [ class "together_searchbox" ]
+            [ div [ class "together_mediabox" ]
+                [ div [ class "media-content together_yf_content"]
+                [ img [ src "image/takeimage.png", alt "takeimage" ]
+                []
+                ],
+                   h1 [ class "to_yf_h2" ]
+                   [ text "내가 만든 운동을 공유하는 공간입니다." ] ,
+                div [class "noResult"] [text "게시물이 없습니다."]
+            ]
+        
+        ]
+    ]
 
 contentsBody model=
     div [ class "together_searchbox_wrap" ]
@@ -725,17 +797,10 @@ contentsBody model=
                 []
                 ],
                    h1 [ class "to_yf_h2" ]
-                   [ text "내가 만든 운동을 공유하는 공간입니다." ,
-                     p []
-                        [ 
-                            -- a [ class "button is-dark together_edit_btn" , Route.href Route.TogetherW]
-                            -- [ i [ class "fas fa-edit" ]
-                            --     []
-                            -- ]
-                        ]
-                    ]
-                                 ]
-            , if model.showDetail then
+                   [ text "내가 만든 운동을 공유하는 공간입니다." ]
+                ]
+            , div [] [
+                if model.showDetail then
                 div [class "togetherdetail"] [
                        div [class "togetherdetailItem"] (
                             List.indexedMap (\idx x ->
@@ -745,8 +810,8 @@ contentsBody model=
                 ]
                 else
                 div [] []
-            ,if List.length model.togetherData.data > 0 then
-             div [] [
+            ]
+            , div [] [
                  div [](List.indexedMap (
                     \idx x -> userItem idx x model
                 ) model.togetherData.data)
@@ -755,11 +820,10 @@ contentsBody model=
                     model.togetherData.paginate
                     model.pageNum
              ]
-            else
-            div [class "noResult"] [text "게시물이 없습니다."]
-            ]
         
         ]
+    ]
+
 detailItem idx item model =
     let
         pairing = 
@@ -792,36 +856,38 @@ detailItem idx item model =
                                 Nothing ->
                                     []
                         ), item.id))] [
-                            i [ class "fas fa-play-circle",onClick (VideoCall ((
+                            div [ class ("appimagethumb " ++ model.zindex ),
+                            style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ (justData thumbnail) ++") ") ,onClick (VideoCall ((
                                 case pairing of
                                     Just a ->
                                         a
                                     Nothing ->
                                         []
                             ), item.id)) ][]
-                            , img [class "toImg2", src (justData thumbnail)] []
+                            -- , img [class "toImg2", src (justData thumbnail)] []
                         ],
                             div [id ("myElement" ++ String.fromInt(item.id)) ]  [] ]
                     Nothing ->
                         div [] [] 
                     , div [id ("together" ++ (String.fromInt(idx)))] [] 
-                    , if String.length (justData item.content) > 100 then
-                    div [][
-                            if model.showAllText == item.id then
-                                text (justData item.content)
-                            else
-                                text (String.dropRight ((String.length(justData item.content) - 100)) (justData item.content) )
+                    , 
+                    -- if String.length (justData item.content) > 100 then
+                    -- div [][
+                    --         if model.showAllText == item.id then
+                    --             text (justData item.content)
+                    --         else
+                    --             text (String.dropRight ((String.length(justData item.content) - 100)) (justData item.content) )
                                 
-                    , div [] [
-                        ul [] [
-                            li [] (List.map (\x-> detailData x model item.id) (justListData item.detail))
-                        ]
-                    ]
-                    ]
-                    else
-                    div [class"together_list"]
-                    [ text (justData item.content)
-                    , div [] 
+                    -- , div [] [
+                    --     ul [] [
+                    --         li [] (List.map (\x-> detailData x model item.id) (justListData item.detail))
+                    --     ]
+                    -- ]
+                    -- ]
+                    -- else
+                    pre [class"together_list descriptionBackground"]
+                    [ text (justDatadescription item.content)
+                    , div []  
                         (List.map (\x-> detailData x model item.id) (justListData item.detail))
                     ]
                     ]

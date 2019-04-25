@@ -70,17 +70,64 @@ webOrApp model =
         ]
     else 
          div [ class "yf_contentswarp" ]
-            [ 
-                div [ class "columns" ]
-                [ div [ class "column yf_col" ]
-                    [ img [ src "/image/home_main.png" ]
-                        []
+                 [div [ class "home_main_top" ]
+    [ div [ class "home_main_box_warp" ]
+        [ div [ class "home_main_box" ]
+            [ h1 [ class "home_main_title" ]
+                [ text "당신만을 위한 운동트레이닝" ]
+            , p [ class "home_main_title2" ]
+                [ text "YOUR FIT" ]
+            ]
+        ]
+    ]
+    ,
+    div [ class "home_main_middle" ]
+    [ div [ class "columns home_yf_columns" ]
+        [ div [ class "column1" ]
+            [ p [ class "main_middle_1" ]
+                [ i [ class "fas fa-arrow-circle-right" ]
+                    []
+                , text "D.I.Y"
+                ]
+            , h1 [ class "main_middle_2" ]
+                [ text "사용자 직접 만드는 운동 커리큘럼" ]
+            ]
+            
+        , div [ class "column2" ]
+            [ p [ class "main_middle_1" ]
+                [ i [ class "fas fa-arrow-circle-right" ]
+                    []
+                , text "743"
+                ]
+
+                ,
+                 h1 [ class "main_middle_2" ]
+                  [ text "743개의 다양한 운동영상" ]
+             ]
+
+          , div [ class "column3" ]
+                    [ p [ class "main_middle_1" ]
+                        [ i [ class "fas fa-arrow-circle-right" ]
+                            []
+                        , text "나,너,우리"
+                        ]
+                    , h1 [ class "main_middle_2" ]
+                        [ text "사용자 커뮤니티형 운동 시스템" ]
+
                     ]
-                , div [ class "column yf_col" ]
-                    [ img [ src "/image/home_pic.png" ]
+        ]
+    ,
+            div [ class "main_end" ]
+                    [ img [ src "image/login_logo.png", alt"logo"]
                         []
-                    ]
-                ],P.viewFooter
+
+                    , h1 [ class "home_last_title" ]
+                     [text "사용자 커스텀 D.I.Y 트레이닝 유어핏,PC, 모바일 어디서나 접속하세요!"]
+
+                    
+                    ]                       
+    ]   
+                ,P.viewFooter
             ]
     
         

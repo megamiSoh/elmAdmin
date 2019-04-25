@@ -124,9 +124,6 @@ update msg model =
                 Err _ ->
                     (model, Cmd.none)
         GotSession session ->
-            -- if model.deleteAuth == "scrap" then
-            --     update Scrap {model | session = session }
-            -- else
            ({model | session = session}, 
            (Decoder.yfDetailDetail GetData DetailData YfD.DetailDataItem YfD.Pairing)
            |> Api.get GetList (Endpoint.makeDetail model.videoId) (Session.cred session)  
@@ -209,15 +206,34 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
-    , content = 
-        if model.check then
-        app BackPage model
+    if model.check then
+        if model.loading then
+        { title = "맞춤운동"
+        , content = 
+            div [class "container"] [
+                appHeaderConfirmDetail model.getData.title "makeExerHeader" Route.MakeExer "fas fa-times"  Route.EditFilter "수정"
+                , div [class "spinnerBack"] [
+                        spinner
+                        ]
+            ]
+        }
+
         else
-        web BackPage model
-            }
+         { title = "맞춤운동"
+        , content = 
+            div [class "container"] [
+            appHeaderConfirmDetail model.getData.title "makeExerHeader" Route.MakeExer "fas fa-times"  Route.EditFilter "수정"
+            , appcontentsItem model.getData model GoVideo model.zindex
+            ]
+        }
+    else
+        { title = "맞춤운동"
+        , content = 
+            div [] [
+                web BackPage model
+            ]
+        }
+
 
 web msg model= 
     div [class "container"] [
@@ -229,13 +245,15 @@ web msg model=
 app msg model= 
     div [class "container"] [
         appHeaderConfirmDetail model.getData.title "makeExerHeader" Route.MakeExer "fas fa-times"  Route.EditFilter "수정"
-        ,if model.loading then
-        div [class "spinnerBack"] [
-            spinner
-            ]
-        else 
-        div [] []
-        , appcontentsItem model.getData model GoVideo
+        , div [] [
+            if model.loading then
+            div [class "spinnerBack"] [
+                spinner
+                ]
+            else 
+            div [] []
+        ]
+        , appcontentsItem model.getData model GoVideo model.zindex
     ]
 goBtn back  = 
     div [ class "make_yf_butbox" ]
@@ -251,15 +269,20 @@ goBtn back  =
 
 
 
-appcontentsItem item model goVideo= 
+appcontentsItem item model goVideo zindex= 
             div [ ]
             [ div []
                 [ p [ class "m_yf_container" ]
                      [ 
-                        i [ class "far fa-play-circle m_yf_container_circle" ][]
-                        , img [src item.thumbnail, onClick (GoVideo item.pairing)] []
-                        , videoCall
-                    ]
+                         div [] [
+                        div [class ("appimagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") , onClick (GoVideo item.pairing)] [] ,
+                             videoCall
+                         ]
+                        
+                        -- i [ class "far fa-play-circle m_yf_container_circle" ][]
+                        -- , img [src item.thumbnail, onClick (GoVideo item.pairing)] []
+                        -- , videoCall
+                    -- ]
                 ]
             , div [ class "m_yf_work_textbox" ]
                 [ div [ class "m_yf_work_time" ]
@@ -282,16 +305,16 @@ appcontentsItem item model goVideo=
          
         
             
-             , div [class"m_work_maketext"] [
+             , pre [class"m_work_maketext descriptionBackground"] [
                 text (justokData item.description)    
+                 ]
                 
-                
-                , div [ class "m_work_script" ]
+                , div [ class "m_yfwork_script" ]
                   (List.indexedMap YfD.description item.exercise_items)
-            ]
+           
                 
             ]
-
+            ]
 contentsBody item model scrap modelscrap goVideo scrapText zindex=
     
     div [ class "yf_yfworkout_search_wrap" ]
@@ -312,9 +335,8 @@ contentsItem item loading scrap modelscrap govideo scrapText zindex =
                 [ p [ class "video_title" ]
                     [ 
                          div [] [
-                            i [ class "fas fa-play-circle" ][],
-                             img [class zindex, src item.thumbnail , onClick (govideo item.pairing)] []
-                            , videoCall
+                        div [class ("imagethumb " ++ zindex), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") , onClick (govideo item.pairing)] [] ,
+                             videoCall
                          ]
                     ]
                 ], 
@@ -343,10 +365,10 @@ contentsItem item loading scrap modelscrap govideo scrapText zindex =
             -- div [] []
             -- else
             
-            , div [ class "yf_text" ]
+            , div [ class "yf_explanation" ]
             [
-                div [] [ text (justokData item.description)]
-                , div [] (List.indexedMap YfD.description item.exercise_items)
+                pre [class "descriptionBackground"] [ text (justokData item.description)]
+                , div [ class "yf_text" ] (List.indexedMap YfD.description item.exercise_items)
             ]
                
             ]

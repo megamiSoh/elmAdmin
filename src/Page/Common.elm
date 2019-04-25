@@ -287,7 +287,7 @@ appHeaderConfirmDetail title style back btnStyle confirm btnText =
                 ]
             , li [ class "" ]
                 [ text title ]
-            , li [ class "" ]
+            , li [ class "app_detail_text" ]
                 [ 
                     a [Route.href confirm] [text btnText]
                      ]
@@ -303,7 +303,7 @@ appHeaderConfirmDetailleft title style back confirm btnText =
                 ]
             , li [ class "" ]
                 [ text title ]
-            , li [ class "m_editt", onClick confirm ]
+            , li [ class "app_detail_text", onClick confirm ]
                 [ text btnText ]
             ]
     ]
@@ -317,7 +317,7 @@ appHeaderConfirmDetailR title style back confirm btnText =
             ]
         , li [ class "" ]
             [ text title ]
-        , li [ class "", onClick confirm ]
+        , li [ class "app_detail_text", onClick confirm ]
             [ text btnText ]
         ]
     ]
@@ -400,7 +400,7 @@ pagination btn page initNum=
             else
                 btn ( 0 , "" )
         ) ]
-            [ text "뒤로" ]
+            [ text "10페이지 뒤로" ]
         
         , ul [ class "pagination-list" ]
             (
@@ -428,7 +428,7 @@ pagination btn page initNum=
             else
                 btn ( 0 , "" )
         )]
-            [ text "앞으로" ]
+            [ text "10페이지 앞으로" ]
         ]
 
 

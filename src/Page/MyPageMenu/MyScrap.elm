@@ -85,7 +85,10 @@ init session mobile
                 , user_id = 0
             }
         }}
-        , scrapDataEncoder 1 10 session
+        , Cmd.batch [
+            scrapDataEncoder 1 10 session
+            , Api.removeJw ()
+        ]
     )
 
 
@@ -214,67 +217,95 @@ update msg model =
                 serverErrors = 
                     Api.decodeErrors err
             in
-            
+            if serverErrors == "401" then
             (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            else 
+            (model, Route.load ("#/myScrap"))
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
-    , content = 
-        if model.check then
-        div [][
-            appHeaderRDetail "나의 스크랩리스트" "myPageHeader  whiteColor" Route.MyPage "fas fa-angle-left", 
-            if model.loading then
-            div [class "spinnerBack"] [
-                spinner
-                ]
-            else 
-            div [] [] ,
-            -- contentsCount (List.length (model.data.data)),
-            
-            if model.data.data == [] then
-            div [class "noResult"] [
-                text "스크랩한 게시물이 없습니다."
-            ]
-            else
-            div [ class "scrollheight", scrollEvent ScrollEvent ] (
-                List.map listappDetail model.dataList
-            )
-            ,if model.infiniteLoading then
-                    div [class "loadingPosition"] [
-                    infiniteSpinner
-                    ]
-                else
-                span [] []
-        ]
-    else
-     div [ class "container" ]
-        [
-            commonJustHeader "/image/icon_list.png" "나의 스크랩",
-            div [ class "yf_yfworkout_search_wrap" ]
-            [
-                if model.data.data == [] then
-                div [class "noResult"] [
-                    text "스크랩한 게시물이 없습니다."
-                ]
-                else
-                -- contentsCount,
+    if model.check then
+        if model.loading then
+            { title = "나의 스크랩"
+            , content = 
                 div [] [
-                    div [class "myScrap_mediabox"] (
-                    List.map listwebDetail model.data.data
-                    -- scrapItem,
-                    
-                )
-                , pagination 
-                PageBtn
-                model.data.paginate
-                model.pageNum
+                        appHeaderRDetail "나의 스크랩리스트" "myPageHeader  whiteColor" Route.MyPage "fas fa-angle-left", 
+                        div [class "spinnerBack"] [
+                            spinner
+                            ]
                 ]
-            ]
-        ]
-    }
+            }
+        else
+            if model.data.data == [] then
+                { title = "나의 스크랩"
+                , content = 
+                        div [][
+                            appHeaderRDetail "나의 스크랩리스트" "myPageHeader  whiteColor" Route.MyPage "fas fa-angle-left",
+                            div [class "noResult"] [
+                                text "스크랩한 게시물이 없습니다."
+                            ]
+                    ]
+                }
+            else
+                if model.infiniteLoading then
+                { title = "나의 스크랩"
+                , content = 
+                        div [][
+                            appHeaderRDetail "나의 스크랩리스트" "myPageHeader  whiteColor" Route.MyPage "fas fa-angle-left" ,
+                            div [ class "scrollheight", scrollEvent ScrollEvent ] (
+                                List.map listappDetail model.dataList
+                            )
+                            , div [class "loadingPosition"] [
+                            infiniteSpinner
+                            ]
+                    ]
+                }
+                else
+                { title = "나의 스크랩"
+                , content = 
+                        div [][
+                            appHeaderRDetail "나의 스크랩리스트" "myPageHeader  whiteColor" Route.MyPage "fas fa-angle-left" ,
+                            div [ class "scrollheight", scrollEvent ScrollEvent ] (
+                                List.map listappDetail model.dataList
+                            )
+                    ]
+                }
+    else
+        if model.data.data == [] then
+        { title = "나의 스크랩"
+        , content = 
+            div [ class "container" ]
+                [
+                    commonJustHeader "/image/icon_list.png" "나의 스크랩",
+                    div [ class "yf_yfworkout_search_wrap" ]
+                    [
+                        div [class "noResult"] [
+                            text "스크랩한 게시물이 없습니다."
+                        ]
+                    ]
+                ]
+        }
+        else
+        { title = "나의 스크랩"
+        , content = 
+            div [ class "container" ]
+                [
+                    commonJustHeader "/image/icon_list.png" "나의 스크랩",
+                    div [ class "yf_yfworkout_search_wrap" ]
+                    [
+                        div [] [
+                            div [class "myScrap_mediabox"] (
+                            List.map listwebDetail model.data.data
+                        )
+                        , pagination 
+                        PageBtn
+                        model.data.paginate
+                        model.pageNum
+                        ]
+                    ]
+                ]
+        }
+
 listwebDetail item = 
    div [onClick (GetCodeId (item.scrap_code, item.scrap_id))] (
         List.map scrapItem item.detail
@@ -331,27 +362,3 @@ scrapItem item=
                 ]
             ]
         ]
-
--- pagenation=
---     div [ class "yf_Pagination" ]
---         [ nav [ class "pagination is-centered" ]
---             [ ul [ class "pagination-list" ]
---                 [ li [ class "" ]
---                     [ a [ class "pagination-link"]
---                         [ text "<" , text "<" ]
---                     ]
---                 , a [ class "pagination-link"]
---                     [ text "<" ]
---                 , li []
---                     [ a [ class "pagination-link is-current yf_cut" ]
---                         [ text "5" ]
---                     ]
---                 , li []
---                     [ a [ class "pagination-link"]
---                         [ text ">" ]
---                     ]
---                 , a [ class "pagination-link" ]
---                     [ text ">>" ]
---                 ]
---             ]
---         ]

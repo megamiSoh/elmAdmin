@@ -123,31 +123,34 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
-    , content = 
-        if model.check then 
-      div [] [ 
-                if model.nextStep == "" then 
-                div[][appHeaderRDetail  "비밀번호 찾기" "myPageHeader" Route.Home "fas fa-angle-left"
-                   ,layout model]
-                
-                else
-                div[][appHeaderRDetail  "비밀번호 찾기" "myPageHeader" Route.Home "fas fa-angle-left"
-                   ,appsecondStep model]
-
-               
-            ]
-        else 
-          div [] [
-                if model.nextStep == "" then
-                forgotpwdstep1 model
-                else
-                secondStep  model
-            ]
-    }
-
+    if model.check then
+        if model.nextStep == "" then
+        { title = "비밀번호 찾기"
+        , content = 
+                        div[][appHeaderRDetail  "비밀번호 찾기" "myPageHeader" Route.Home "fas fa-angle-left"
+                        ,layout model]
+        }
+        else
+        { title = "비밀번호 찾기"
+        , content = 
+                    div[][appHeaderRDetail  "비밀번호 찾기" "myPageHeader" Route.Home "fas fa-angle-left"
+                    ,appsecondStep model]
+        }
+    else
+        if model.nextStep == "" then
+        { title = "비밀번호 찾기"
+        , content = 
+        div [] [
+                    forgotpwdstep1 model
+        ]
+        }
+        else
+        { title = "비밀번호 찾기"
+        , content = 
+        div [] [
+                    secondStep  model
+                ]
+        }
 forgotpwdstep1 model =
    div [ class "containerwrap" ]
     [ div [ class "container is-fullhd" ]
@@ -236,7 +239,7 @@ secondStep model =
                         , p [ class "control has-icons-left yf_mail_send" ]
                             [ 
                                 input [class "input mail_send", type_ "email", placeholder "유어핏 계정을 입력해 주세요.", onInput (FindPwd "mail"), value model.yfEmail ][]
-                                , input [ class "input mail_send", type_ "text", placeholder "인증번호를 입력해주세요", onInput (FindPwd "auth") , value model.authNumber ]
+                                , input [ class "input mail_send2", type_"password", placeholder "인증번호를 입력해주세요", onInput (FindPwd "auth") , value model.authNumber ]
                                 []
                             , span [ class "icon is-small is-left" ]
                                 [ i [ class "fas fa-align-left" ]
@@ -303,8 +306,8 @@ appsecondStep model =
                             ]
                         , p [ class "control has-icons-left yf_m_mail_send" ]
                             [ 
-                                input [class "input mail_send2", type_ "email", placeholder "유어핏 계정을 입력해 주세요.", onInput (FindPwd "mail"), value model.yfEmail ][]
-                                , input [ class "input mail_send", type_ "text", placeholder "인증번호를 입력해주세요", onInput (FindPwd "auth") , value model.authNumber ]
+                                input [class "input mail_send", type_ "email", placeholder "유어핏 계정을 입력해 주세요.", onInput (FindPwd "mail"), value model.yfEmail ][]
+                                , input [ class "input mail_send2", type_"password", placeholder "인증번호를 입력해주세요", onInput (FindPwd "auth") , value model.authNumber ]
                                 []
                             , span [ class "icon is-small is-left" ]
                                 [ i [ class "fas fa-align-left" ]

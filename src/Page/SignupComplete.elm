@@ -41,7 +41,7 @@ view : Model -> {title : String , content : Html Msg}
 view model =
     {
     
-    title = "YourFitExer"
+    title = "회원가입 완료"
     , content = div [class "noResult"] [
         div [] [
 

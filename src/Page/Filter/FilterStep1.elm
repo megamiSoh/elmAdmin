@@ -123,6 +123,7 @@ init session mobile
         Cmd.batch[
         Api.sendData ()
         , Api.getfilter ()
+        , Api.scrollControl ()
         ]
     )
 
@@ -178,6 +179,7 @@ type Msg
     | Search
     | KeyDown Int
     | NoOp
+    | GoFilter
     -- | SearchExercise STring
 toSession : Model -> Session
 toSession model =
@@ -249,6 +251,12 @@ scrollInfoDecoder =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GoFilter ->
+            let
+                enc = sendDataEncoder model.addItem
+            in
+            (model, Cmd.batch[Route.pushUrl (Session.navKey model.session) Route.Filter
+            , Api.toJs enc])
         NoOp ->
             (model, Cmd.none)
         KeyDown key ->
@@ -361,10 +369,13 @@ update msg model =
                 if ok.data == [] then
                 ({model | filterData = ok.data , resultCount = count, loading = False, infiniteLoading = False},Cmd.none)
                 else
+                    if model.check then
                     if model.filterData /= before then
                     ({model | filterData = before , resultCount = count, loading = False, infiniteLoading = False},Cmd.none)
                     else 
                     ({model | loading = False}, Cmd.none)
+                    else
+                    ({model | filterData = ok.data , resultCount = count, loading = False, infiniteLoading = False},Cmd.none)
         GetFilterData (Err err)->
             let
                 serverErrors = Api.decodeErrors err
@@ -445,32 +456,50 @@ justokData data =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "맞춤운동 필터 Step 1"
+    if model.check then
+        if model.loading then
+        { title = "맞춤운동 필터 Step 1"
+        , content = 
+                div [] [
+                    div [class "spinnerBack"] [spinner]
+                ]
+            }
+        else
+        { title = "맞춤운동 필터 Step 1"
+        , content = 
+                div [] [
+                    appHeader model
+                    , appitemContainer model
+                ]
+            }
+    else
+    { title = "맞춤운동 필터 Step 1"
     , content = 
-            if model.check then
-            app model
-            else
-            web model
+            div [] [
+                web model
+            ]
         }
 
 app model = 
     div [] [
-        if model.loading then
-        div [class "spinnerBack"] [spinner]
-        else
-        div [] []
+        div [] [
+            if model.loading then
+            div [class "spinnerBack"] [spinner]
+            else
+            div [] []
+        ]
         , appHeader model , 
-        if model.loading then
-        div [] []
-        else
-        appitemContainer model
+        div [] [
+            if model.loading then
+            div [] []
+            else
+            appitemContainer model
+        ]
     ]
 
 appHeader model = 
-    div [] [
-         div [class "headerSpace"] [
+    div [class "appheadermakeExer"] [
+         div [class "togetherheaderSpace"] [
         ul [ class "commonHeaderBoth makeExerHeader"]
         [ li [ class "m_backbtn" ]
             [a [Route.href Route.Filter][ i [ class "fas fa-angle-left" ]
@@ -486,7 +515,6 @@ appHeader model =
                 li  [ class "m2_nextbtn", onClick SendData]
                 [ text "다음" ]
         ]
-         ]
         ,
         div [ class "control has-icons-left m_top_input  makeExerHeader" ]
             [ 
@@ -497,41 +525,48 @@ appHeader model =
                     [ i [ class "fas fa-search " ]
                         []
                     ]
-                , div [ class "filterbtn m_fa-filter" ]
+                , div [ class "filterbtn m_fa-filter", onClick GoFilter ]
                 [ i [ class "fas fa-filter" ]
                     []
                 ]
             ]
             
             ]
+         ]
+        
     ]
 
 -- 
 web model = 
-        div [ class "container" ]
+        div [ class "container con_filterStep1" ]
             [
                 commonHeader2 "/image/icon_customworkout.png" "맞춤운동"
                 ,search model,
-            if model.loading then
-                spinner
-            else
-             itemContainer model
+            div [] [
+                -- if model.loading then
+                --     spinner
+                -- else
+                itemContainer model
+            ]
             , goBtn model 
     ]
 
 itemContainer model = 
      div [class"filter_box"] [
             div[class "filterStep1_listbox"] [
-                stringresultCount model.resultCount "searchlistCount" "검색",
+                div [] [
+                    stringresultCount model.resultCount "searchlistCount" "검색"
+                    , breakTime "fas fa-plus-circle" AddBreak
+                ],
                  div [class "filterStep1_listsrollbox"]
-                 [
-                    breakTime "fas fa-plus-circle" AddBreak,
-                    if List.length model.filterData > 0 then
-                    div [ class "loadlistbox" ]
+                 [ if List.length model.filterData > 0 then
+                    div [][
+                        div [ class "loadlistbox", scrollEvent ScrollEvent ]
                         (List.indexedMap (
                             \idx x ->
                             workoutItem idx x "fas fa-plus-circle" 
                             ) model.filterData)
+                    ]
                     else 
                     div [] [text "검색 된 운동이 없습니다. "]
                 ]
@@ -592,7 +627,6 @@ appitemContainer model =
                 ++ [scrollEvent ScrollEvent])
                  [
                     appbreakTime "fas fa-plus-circle" AddBreak,
-                    
                         div [ class "m_loadlistbox" ]
                             (List.indexedMap (
                                 \idx x ->
@@ -626,11 +660,13 @@ appitemContainer model =
             ) [
                 resultCount model.addItem "m_select_listresult" "선택",
                  div [class "m_filterStep1_listsrollbox"] [
-                    div [ class "loadlistbox" ]
+                    div [] [
+                        div [ class "loadlistbox" ]
                         (List.indexedMap (
                             \idx x ->
                             appworkoutItem idx x "fas fa-minus-circle" BackItem 
                         )model.addItem )
+                    ]
                 ]
             ]
             
@@ -650,7 +686,7 @@ search model =
                             [ text "검색" ]
                         ]
                     , p [ class "control yf_con" ]
-                        [ a [ class "button yf_infor", Route.href Route.Filter ]
+                        [ div [ class "button yf_infor", onClick GoFilter ]
                             [ text "필터" ]
                         ]
                     ]

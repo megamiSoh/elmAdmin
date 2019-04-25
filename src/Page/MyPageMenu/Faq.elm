@@ -69,10 +69,12 @@ view model =
     
     title = "YourFitExer"
     , content = 
-        if model.checkDevice == "pc" then
-        web
-        else
-        app model
+        div [] [
+            if model.checkDevice == "pc" then
+            web
+            else
+            app model
+        ]
     }
 web = 
     div [ class "container" ]

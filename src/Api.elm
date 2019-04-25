@@ -136,6 +136,8 @@ port getscrollHeight : Value -> Cmd msg
 port backUrl : () -> Cmd msg
 port historyUpdate : Value -> Cmd msg
 port removeJw : () -> Cmd msg
+port logoutpop : () -> Cmd msg
+port scrollControl : () -> Cmd msg
 -- port logout : () -> Cmd msg
 -- application :
     -- Decoder (Cred -> viewer)

@@ -5,6 +5,20 @@ import Json.Decode.Pipeline exposing (custom, required, hardcoded, optional)
 type alias Success = 
    {result : String}
 
+type alias DataWrap = 
+    { data : MyData }
+
+type alias MyData =
+    { exercise : Int
+    , share : Int
+    , user : UserData }
+
+type alias UserData =
+    { id : Int
+    , nickname : Maybe String
+    , username : String
+    , profile : Maybe String}
+
 resultD = 
     Decode.succeed Success
         |> required "result" string
@@ -197,6 +211,23 @@ loginState login =
 dataWRap datawrap my user= 
     Decode.succeed datawrap 
         |> required "data" (mydata my user)
+        
+sessionCheckMydata  = 
+    Decode.succeed DataWrap
+        |> required "data" sessionMyData
+
+sessionMyData=    
+    Decode.succeed MyData
+        |> required "exercise" int
+        |> required "share" int
+        |> required "user" sessionuserdata
+
+sessionuserdata  = 
+    Decode.succeed UserData
+        |> required "id" int
+        |> optional "nickname" (Decode.map Just string) Nothing
+        |> required "username" string
+        |> optional "profile" (Decode.map Just string ) Nothing
 
 mydata my user=    
     Decode.succeed my

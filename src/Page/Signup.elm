@@ -33,6 +33,7 @@ type alias Model =
     , check : Bool
     , authNo : String
     , emailComplate : String
+    , pageChange : String
     }
 type alias Token =  {
     token : String
@@ -105,6 +106,7 @@ init session mobile
         , restyle = ""
         , repassword = ""
         , err = ""
+        , pageChange = "signup"
         , emailComplate = ""
         , check = mobile
         }
@@ -125,6 +127,7 @@ type Msg
     | AuthComplete (Result Http.Error AuthSendData)
     | EmailAuthInput String
     | CanUseUsername (Result Http.Error CheckOverlapUserName)
+    | GoPrivateTerm String
     
 
 toSession : Model -> Session
@@ -142,6 +145,11 @@ onKeyDown tagger =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GoPrivateTerm str ->
+            if str == "home" then
+            (model, Route.pushUrl (Session.navKey model.session) Route.Login)
+            else
+            ({model | pageChange = str }, Cmd.none)
         CanUseUsername (Ok ok) ->
             if ok.data then
             ({model | err = ""}, emailAuthEncode model.mail model.session)
@@ -229,21 +237,55 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitSignr"
-    , content = 
-        if model.check then
-           div [] [
-                appHeadermypage "회원가입" "myPageHeader" ,
-                mobileLayout model
-            ]
-        else
-            div [] [
-                pcLayout model
-            ]
-            
-    }
+    if model.check then
+        case model.pageChange of
+            "private" ->
+                { title = "회원가입"
+                , content = 
+                            appPrivate GoPrivateTerm
+                }
+        
+            "signup" ->
+                { title = "회원가입"
+                , content = 
+                div [] [
+                        singupAppHead "회원가입" "home",
+                        mobileLayout model
+                    ]
+                }
+            _ ->
+                { title = "회원가입"
+                , content = 
+                    div [] [
+                        text "페이지를 불러올 수 없습니다."
+                    ]
+                }
+    else
+        -- case model.pageChange of
+        --     "private" ->
+        --         { title = "회원가입"
+        --         , content = 
+        --                     div [] [
+        --                         webPrivate GoPrivateTerm
+        --                     ]
+                        
+        --         }
+        
+        --     "signup" ->
+                { title = "회원가입"
+                , content = 
+                            div [] [
+                                pcLayout model
+                            ]
+                        
+                }
+            -- _ ->
+            --     { title = "회원가입"
+            --     , content = 
+            --         div [] [
+            --             text "페이지를 불러올 수 없습니다."
+            --         ]
+            --     }
 pcLayout model= 
     div [ class "yourfitExercise_yf_workoutcontainerwrap" ]
             [ div [ class "container" ]
@@ -262,7 +304,7 @@ pcLayout model=
                 , div [class"sign_text"] [text model.err]
                 , div [ class "signup_yf_box2" ]
                     [ p [ class "control has-icons-left signup_yf_inputbox" ]
-                        [ input [ class ("input signup_yf_input" ++ model.borderMatch ), type_ "email", placeholder "이메일을 입력해주세요", onInput EmailCheck ]
+                        [ input [ class ("input signup_yf_input" ++ model.borderMatch ), type_ "email", placeholder "이메일을 입력해주세요", onInput EmailCheck, value model.mail ]
                             []
                             , div [class "button is-link emailButton", onClick EmailAuth] [text "인증번호 보내기"]
                         , span [ class "icon is-small is-left " ]
@@ -272,13 +314,13 @@ pcLayout model=
                         ]
                         , div [class "emailAuth"][
                             
-                            input [ class "input signup_yf_inputbox", type_ "number", placeholder "인증번호를 입력해 주세요.", onInput EmailAuthInput] []
+                            input [ class "input signup_yf_inputbox", type_ "password", placeholder "인증번호를 입력해 주세요.", onInput EmailAuthInput, value model.authNo] []
                           ]
                         , div [class "completeAuthEmail"] [text model.emailComplate]                        
 
                     , p [] [text model.errmsg]
                     , p [ class "control has-icons-left signup_yf_inputbox" ]
-                        [ input [ class ("input " ++ model.pwdborder ), type_ "password", placeholder "비밀번호를 입력해주세요", onInput PasswordCheck ]
+                        [ input [ class ("input " ++ model.pwdborder ), type_ "password", placeholder "비밀번호를 입력해주세요", onInput PasswordCheck, value model.password ]
                             []
                         , span [ class "icon is-small is-left "  ]
                             [ i [ class ("fas fa-lock "++  model.pwdstyle) ]
@@ -287,7 +329,7 @@ pcLayout model=
                         ]
                     , p [] [text model.pwdmsg]
                     , p [ class "control has-icons-left signup_yf_inputbox" ]
-                        [ input [ class ("input " ++ model.reborder ), type_ "password", placeholder "비밀번호를 한번 더 입력해주세요", onInput RePasswordCheck ]
+                        [ input [ class ("input " ++ model.reborder ), type_ "password", placeholder "비밀번호를 한번 더 입력해주세요", onInput RePasswordCheck , value model.repassword]
                             []
                         , span [ class "icon is-small is-left "  ]
                             [ i [ class ("fas fa-lock "++  model.restyle) ]
@@ -295,12 +337,15 @@ pcLayout model=
                             ]
                         ]
                     , p [] [text model.repwd]
-                    , p [ class "signup_yf_terms" ]
-                        [ a [Route.href Route.Private ]
-                            [ text "개인정보 보호 및 약관확인" ]
-                        ]
-                    , p []
+                    , p [class "privateTitle"]
                         [ text "개인정보 보호 및 이용약관을 확인해주세요" ]
+                    , p [  ]
+                        [ div []
+                            [ 
+                                webPrivate GoPrivateTerm
+                             ]
+                        ]
+                    
                     ]
                 ]
             ,div[ class "button is-dark signup_yf_darkbut", onClick Submit ]
@@ -326,7 +371,7 @@ mobileLayout model =
             , div [] [text model.err]
             , div [ class "m_signup_yf_box2" ]
                 [ p [ class "control has-icons-left m_signup_yf_inputbox" ]
-                 [ input [ class ("input " ++ model.borderMatch ), type_ "email", placeholder "이메일을 입력해주세요", onInput EmailCheck ]
+                 [ input [ class ("input " ++ model.borderMatch ), type_ "email", placeholder "이메일을 입력해주세요", onInput EmailCheck, value model.mail ]
                             []
                          , div [class "button is-link emailButton m_signup_yf_inputbox", onClick EmailAuth] [text "인증번호 보내기"]
                         , span [ class "icon is-small is-left" ]
@@ -335,7 +380,7 @@ mobileLayout model =
                             ]
                         ]
                     , p [ class "control has-icons-left m_signup_yf_inputbox" ]
-                        [ input [ class "input signup_yf_inputbox", type_ "number", placeholder "인증번호를 입력해 주세요.", onInput EmailAuthInput ]
+                        [ input [ class "input signup_yf_inputbox", type_ "number", placeholder "인증번호를 입력해 주세요.", onInput EmailAuthInput , value model.authNo]
                             []
                         , span [ class "icon is-small is-left" ]
                             [ i [ class "fas fa-envelope sign_icon" ]
@@ -345,7 +390,7 @@ mobileLayout model =
                         ]
                     , p [] [text model.errmsg]
                     , p [ class "control has-icons-left m_signup_yf_inputbox" ]
-                        [ input [onKeyDown KeyDown, class ("input " ++ model.pwdborder ), type_ "password", placeholder "비밀번호를 입력해주세요", onInput PasswordCheck ]
+                        [ input [onKeyDown KeyDown, class ("input " ++ model.pwdborder ), type_ "password", placeholder "비밀번호를 입력해주세요", onInput PasswordCheck, value model.password ]
                             []
                         , span [ class "icon is-small is-left" ]
                             [ i [ class ("fas fa-lock "++  model.pwdstyle) ]
@@ -353,7 +398,7 @@ mobileLayout model =
                             ]
                         ]
                      , p [ class "control has-icons-left m_signup_yf_inputbox" ]
-                        [ input [ onKeyDown KeyDown, class ("input " ++ model.reborder ), type_ "password", placeholder "비밀번호를 한번 더 입력해주세요", onInput RePasswordCheck ]
+                        [ input [ onKeyDown KeyDown, class ("input " ++ model.reborder ), type_ "password", placeholder "비밀번호를 한번 더 입력해주세요", onInput RePasswordCheck , value model.repassword]
                             []
                         , span [ class "icon is-small is-left" ]
                             [ i [ class ("fas fa-lock "++  model.restyle) ]
@@ -361,17 +406,49 @@ mobileLayout model =
                             ]
                         ]
                 , p [ class "m_signup_yf_terms" ]
-                    [ a [Route.href Route.Private]
+                    [ div [onClick (GoPrivateTerm "private")]
                         [ text "개인정보 보호 및 약관확인" ]
                     ]
-                , p []
-                    [ text "개인정보 보호 및 이용약관을 확인해주세요" ]
+                -- , p []
+                --     [ text "개인정보 보호 및 이용약관을 확인해주세요" ]
                 ]
             ]
         ,div [ class "button is-dark m_signup_yf_darkbut", onClick Submit ]
             [ text "약관동의 및 회원가입" ]
     ]
 
+appPrivate back = 
+            div [] [singupAppHead  "이용약관 및 개인정보 취급방침" "signup"
+                , termsArticle "m_yf_termstext"]
+            
+
+webPrivate back =
+         div []
+                    [
+                         termsArticle "yf_termstextx" 
+                        -- , goBtn back
+                    ]
+
+
+singupAppHead  title whretog = 
+    -- div [ class "containerwrap" ]
+    --         [ div [ class "container" ]
+    --             [ 
+                    div [class "headerSpace"] [
+                    ul [ class ("commonHeaderBack myPageHeader" ) ]
+                        [ li [] [
+                            div [ class "", onClick (GoPrivateTerm whretog)]
+                            [ i [ class "fas fa-angle-left" ]
+                                []
+                            ]
+                        ]
+                        , li [ class "toptitle_2" ]
+                            [ text title ]
+                
+                        ]
+                    ]
+                    
+                -- ]
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch[Session.changes GotSession (Session.navKey model.session)]

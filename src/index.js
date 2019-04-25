@@ -5,6 +5,7 @@ import './css/app.css'
 import { Elm } from './Main.elm';
 import registerServiceWorker from './registerServiceWorker';
 
+
 if(!!document.createRange) {
   document.getSelection().removeAllRanges();
 }
@@ -22,6 +23,8 @@ var flags =
         if (!executed) {
             executed = true;
             alert ("로그아웃되었습니다.")
+            // window.location.href="/#/Home"
+            location.reload();
         }
     };
 })();
@@ -217,7 +220,7 @@ var tokenInit =
             localStorage.setItem ("refresh", refresh)
           })
           .catch(error => alert(error))
-        }, 30000);
+        }, 600000);
     })
     .catch(error => console.log(error))
 
@@ -258,7 +261,7 @@ app.ports.refreshFetchData.subscribe(function() {
      alert(error)
      
       )
-  }, 30000)
+  }, 600000)
  
 })
 app.ports.toJs.subscribe(function(data) {
@@ -295,41 +298,39 @@ app.ports.getSomeFilter.subscribe(function() {
 
 
 app.ports.videoData.subscribe(function(data) {
-  if (data == null) {jwplayer('myElement').remove()
-
-}
-  else{
+ if (data == null) {
+   jwplayer("myElement").remove();
+ }
+ else {
   if (data.pairing == "undefined" || ! Array.isArray (data.pairing))
-  	{
-      jwplayer("myElement").setup(
-        {"playlist" : data 
-        , autostart : true }
-      ).on("ready")
-      app.ports.videoSuccess.send(true)
+  {
+    jwplayer("myElement").setup (
+      { "playlist" : data
+      , autostart : true 
+      })
     }
   else {
-    {
-      
-      jwplayer("myElement").setup(
-        {"playlist" : data.pairing
-        , autostart : true }
-      ).on("ready")
-      app.ports.videoSuccess.send(true)
-    }
+    jwplayer("myElement").setup (
+      { "playlist" : data.pairing
+      , autostart : true 
+      })
   }
-  return false;}
+ }
 });
 
 
 app.ports.togetherDataList.subscribe(function(data) {
   if (data == null)
   {
-    jwplayer("myElement" + data.id ).remove()
+    jwplayer("myElement" + data.id ).remove();
   }
   else { 
     jwplayer("myElement" + data.id ).setup (
     { "playlist" : data.pairing
-    , autostart : true 
+    , autostart : true
+    , "autoPause": {
+      "viewability": true
+    }
     }
   ).on("ready")
 
@@ -337,7 +338,8 @@ app.ports.togetherDataList.subscribe(function(data) {
 }
 })
 app.ports.removeJw.subscribe( function () {
-  // jwplayer('myElement').remove()
+  // jwplayer().remove()
+  jwplayer().lenght == undefined ? "" : jwplayer().remove()
   // alert (document.getElementById('myElement'))
 })
 app.ports.showToast.subscribe(function (text) {
@@ -354,37 +356,47 @@ app.ports.blur.subscribe(function() {
 
 })
 
-// app.ports.setCookie.subscribe (function (value) {
-//   var setCookie = function (name , val) {
-//     document.cookie = name + '=' + val +';expires =' + null + ';path =/';
-//   }
-//   setCookie ("pageId", value)
-//   app.ports.setCookieSuccess.send("success")
-// })
-
-// app.ports.getCookie.subscribe(function () {
-//   var value = document.cookie.match('(^|;) ?' + "pageId" + '=([^;]*)(;|$)');
-//   return  value ? app.ports.getPageId.send(parseInt(value[2])) : false 
-  
-  
-// })
-
 app.ports.getscrollHeight.subscribe(function(data) {
   var heightValue = document.documentElement.scrollTop
-  // console.log (heightValue)
-  // app.ports.getHeightValue.send (String(heightValue - 45))
   if (data){
-  document.documentElement.style.position = "fixed"
-  document.documentElement.style.top = '-' + String(heightValue) + 'px'
+    document.documentElement.style.position = "fixed"
+    document.documentElement.style.top = '-' + String(heightValue) + 'px'
+    // document.documentElement.style.overflow = "scroll"
   } else {
     document.documentElement.style.position = ""
-  document.documentElement.style.top = ''
+    document.documentElement.style.top = ''
+    // document.documentElement.style.overflow = ""
   }
 })
 
-// app.ports.historyUpdate.subscribe(function (data) {
-//   location.href = "/#/" + data
-// })
+app.ports.scrollControl.subscribe (function () {
+  if (window.location.hash == "#/filterStep1" || window.location.hash == "#/makeExerciseEdit") {
+    
+    document.body.style.overflow = ""
+  } else {
+    document.body.style.overflow = "scroll"
+  }
+})
+
+app.ports.logoutpop.subscribe(function() {
+var heightValue = document.documentElement.offsetHeight
+var checkDisplay = document.getElementById("logoutPop") || document.getElementById("mlogoutPop");
+if (checkDisplay.className == "logoutShow")  {
+  checkDisplay.class = checkDisplay.classList.remove("logoutShow");
+  checkDisplay.style.height = 0 +'px'
+}else {
+  if (filter.indexOf( navigator.platform.toLowerCase() ) < 0 )
+    {
+      checkDisplay.className = "logoutShow";
+      checkDisplay.style.height = heightValue +'px'
+      document.body.style.overflow = ""
+    } else {
+      checkDisplay.className = "logoutShow";
+      checkDisplay.style.height = heightValue +'px'
+      document.body.style.overflow = "scroll"
+    }
+}
+})
 
 window.addEventListener('hashchange', function() {
 }, false);

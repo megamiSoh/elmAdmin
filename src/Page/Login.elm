@@ -249,19 +249,19 @@ onKeyDown tagger =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
+    if model.check then
+    { title = "로그인"
     , content = 
-        if model.check then
-            div [] [
-                appHeaderRDetail  "로그인" "myPageHeader" Route.Home "fas fa-angle-left",
+        div [] [
+                    appHeaderRDetail  "로그인" "myPageHeader" Route.Home "fas fa-angle-left",
+                    layout model ]
+    }
+    else
+    { title = "로그인"
+    , content = 
+        div [] [
                 layout model
-            ]
-        else
-            layout model
-
-            
+        ]   
     }
 
 

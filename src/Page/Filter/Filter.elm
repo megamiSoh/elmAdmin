@@ -129,7 +129,16 @@ update msg model =
                         (model, Cmd.none)
         GotSession session ->
             ({model | session = session}
-            , Cmd.none
+            , Cmd.batch [
+                (Decoder.levelDecoder FilterCode CodeData)
+                |> Api.get GetPart Endpoint.partFilter (Session.cred session) ,
+                (Decoder.levelDecoder FilterCode CodeData)
+                |> Api.get GetLevel Endpoint.levelFilter (Session.cred session) ,
+                (Decoder.levelDecoder FilterCode CodeData)
+                |> Api.get GetTool Endpoint.toolFilter (Session.cred session) ,
+                (Decoder.levelDecoder FilterCode CodeData)
+                |> Api.get GetExer Endpoint.exerFilter (Session.cred session) 
+            ]
             )
         FilterSaveSuccess str ->
             (model,
@@ -198,24 +207,40 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
-    , content = 
-        if model.check then
+    if model.check then
+        if model.loading then
+        { title = "맞춤운동 필터"
+        , content = 
             div [] [
                 appHeaderConfirmDetailR "맞춤운동" "makeExerHeader" BackBtn GoNextPage "확인"
-                , app model
+                , div [] [
+        spinner
             ]
+            ]
+        }
         else
-        web model
-    }
+        { title = "맞춤운동 필터"
+        , content = 
+            div [] [
+                appHeaderConfirmDetailR "맞춤운동" "makeExerHeader" BackBtn GoNextPage "확인"
+                , div [] [
+        lazy5 filterbox2 model.part model.level model.exer model.tool model
+    ]
+            ]
+        }
+    else
+        { title = "맞춤운동 필터"
+        , content = 
+            div [] [
+                web model
+            ]
+        }
 web model = 
      div [ class "container" ]
             [
-                if model.loading then
-                spinner
-                else
+                -- if model.loading then
+                -- spinner
+                -- else
                 lazy5 filterbox model.part model.level model.exer model.tool model,
                 btnBox
             ]

@@ -100,9 +100,7 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
+    { title = "비밀번호 변경"
     , content = div [] [
         setPwdSetting model
     ]}

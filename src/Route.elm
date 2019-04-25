@@ -56,6 +56,8 @@ type Route
     | Private
     | SetPwd
     | FPwd
+    | LogoutConfirm
+    | TA
 
 parser : Parser (Route -> a) a
 parser =
@@ -100,6 +102,8 @@ parser =
         , Parser.map Private (s "privateTerms")
         , Parser.map SetPwd (s "setpassword")
         , Parser.map FPwd (s "forgotpassword")
+        , Parser.map LogoutConfirm (s "logoutcomplete")
+        , Parser.map TA (s "test")
         ]
 
 
@@ -215,5 +219,9 @@ routeToString page =
                     ["setpassword"]
                 FPwd ->
                     ["forgotpassword"]
+                LogoutConfirm ->
+                    ["logoutcomplete"]
+                TA ->
+                    ["test"]
     in
     "#/" ++ String.join "/" pages

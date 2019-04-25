@@ -207,32 +207,35 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
-    , content = 
-        if model.check then
+    if model.check then
+        { title = "YourFitExer"
+        , content = 
             div [] [
-                appHeaderConfirmDetailR "맞춤운동" "makeExerHeader" BackBtn GoNextPage "확인"
-                , app model
+                    appHeaderConfirmDetailR "맞춤운동" "makeExerHeader" BackBtn GoNextPage "확인"
+                    , app model
+                    ]
+        }
+    else
+        { title = "YourFitExer"
+        , content = 
+            div [] [
+                web model
             ]
-        else
-        web model
-    }
+        }
 web model = 
      div [ class "container" ]
             [
-                if model.loading then
-                spinner
-                else
+                -- if model.loading then
+                -- spinner
+                -- else
                 filterbox model.part model.level model.exer model.tool model,
                 btnBox
             ]
 app model =
     div [] [
-        if model.loading then
-        spinner
-        else
+        -- if model.loading then
+        -- spinner
+        -- else
         lazy5 filterbox2 model.part model.level model.exer model.tool model
     ]
 

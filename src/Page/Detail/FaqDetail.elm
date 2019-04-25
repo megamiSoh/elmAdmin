@@ -62,7 +62,10 @@ view model =
     {
     
     title = "YourFitExer"
-    , content = web}
+    , content = 
+        div [] [
+        web
+    ]}
 
 web =
     div [class "container"] [

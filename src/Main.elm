@@ -53,6 +53,8 @@ import Page.Private as Private
 import Page.SetPwd as SetPwd
 import Page.ForgotPwd as FPwd
 
+import TextApi as TA
+
 -- type alias Check = 
 --     String
 
@@ -95,6 +97,7 @@ type Model
      | PrivateModel Private.Model
      | SetPwdModel SetPwd.Model
      | FPwdModel FPwd.Model
+     | TAModel TA.Model
     --  | PageModel Page.Model
     --  | CheckDevice Check
     
@@ -143,6 +146,7 @@ type Msg
     | PrivateMsg Private.Msg
     | SetPwdMsg SetPwd.Msg
     | FPwdMsg FPwd.Msg
+    | TAMsg TA.Msg
 
 subscriptions model = 
     case model of
@@ -223,6 +227,8 @@ subscriptions model =
         SetPwdModel item ->
             Sub.none
         FPwdModel item ->
+            Sub.none
+        TAModel item ->
             Sub.none
 
 init : Maybe Cred -> Bool -> Url -> Key -> ( Model, Cmd Msg )
@@ -330,7 +336,7 @@ changeRouteTo maybeRoute model  =
             Empty.init session check
                 |> updateWith EmptyModel EmptyMsg model
         Just Route.Logout ->
-            (model, Cmd.batch[Api.logout, Route.load "#/home"])
+            (model, Cmd.batch[Api.logoutpop ()])
         Just Route.EditFilter ->
             EditFilter.init session check
                 |> updateWith EditFilterModel EditFilterMsg model
@@ -356,7 +362,11 @@ changeRouteTo maybeRoute model  =
         Just Route.FPwd ->
             FPwd.init session check
                 |> updateWith FPwdModel FPwdMsg model
-      
+        Just Route.LogoutConfirm ->
+            (model, Cmd.batch[Api.logout,Api.logoutpop (), Route.load "#/home"])
+        Just Route.TA ->
+            TA.init session check
+                |> updateWith TAModel TAMsg model
 
 
 toCheck page =  
@@ -437,6 +447,8 @@ toCheck page =
             SetPwd.toCheck item
         FPwdModel item ->
             FPwd.toCheck item
+        TAModel item ->
+            TA.toCheck item
 
 
 toSession : Model -> Session
@@ -518,6 +530,8 @@ toSession page =
             SetPwd.toSession item
         FPwdModel item ->
             FPwd.toSession item
+        TAModel item ->
+            TA.toSession item
         
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -665,6 +679,9 @@ update msg model =
         (FPwdMsg subMsg , FPwdModel fmodel) ->
             FPwd.update subMsg fmodel
                 |> updateWith FPwdModel FPwdMsg fmodel
+        (TAMsg subMsg, TAModel tmodel) ->
+            TA.update subMsg tmodel
+                |> updateWith TAModel TAMsg tmodel
         ( _, _ ) ->
             ( model, Cmd.none )  
         
@@ -778,7 +795,8 @@ view model =
             viewPage Page.SetPwd SetPwdMsg (SetPwd.view item)
         FPwdModel item ->
             viewPage Page.FPwd FPwdMsg (FPwd.view item)
-
+        TAModel item ->
+            viewPage Page.TA TAMsg (TA.view item)
 
 
 main : Program Value Model Msg

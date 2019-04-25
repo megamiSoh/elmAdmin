@@ -50,6 +50,7 @@ type Page
     | Private
     | SetPwd
     | FPwd
+    | TA
 
 
 -- view:Maybe Cred -> Api.Check  -> Page -> {check : String , title : String, content: Html msg} -> Browser.Document msg
@@ -102,7 +103,8 @@ webContents content page maybeViewer=
     case maybeViewer of
         Just _ ->
             div [ class "" ][ 
-                content, webtoastPop ]
+                content, webtoastPop
+                ,logoutlayer ]
         Nothing ->
             if page == MakeExer then
             need2login
@@ -115,7 +117,7 @@ webContents content page maybeViewer=
 appContents content page maybeViewer=
   case maybeViewer of
         Just _ ->
-            div [ class "appWrap" ][ content, apptoastPop ]
+            div [ class "appWrap" ][ content, apptoastPop,mlogoutlayer ]
         Nothing ->
             if page == MakeExer  then
             div [][ 
@@ -181,9 +183,12 @@ viewHeader page maybeViewer =
                             []
                         ]
                     ]
-                , div [ id "expandMenu", class "navbar-menu yf_menu" ]
+                , div [ id "expandMenu", class "navbar-menu yf_menu " ]
                     [ div [ class "navbar-start yf_start" ]
-                        [ a [ class "navbar-item yf_item", Route.href Route.Logout ]
+                        [ 
+                        a [ class "navbar-item yf_logoRight", Route.href Route.Home ]
+                        []
+                        ,a [ class "navbar-item yf_item", Route.href Route.Logout ]
                             [ text "로그아웃" ]
                         , a [ class "navbar-item yf_item", Route.href Route.YourFitExer ]
                             [ text "유어핏운동" ]
@@ -196,6 +201,8 @@ viewHeader page maybeViewer =
                         ]
                     ]
                 ]
+
+                
         Nothing ->
             nav [ class "navbar yf_navbar" ]
                 [ div [ class "navbar-brand yf_brand" ]
@@ -212,7 +219,9 @@ viewHeader page maybeViewer =
                     ]
                 , div [ id "expandMenu", class "navbar-menu yf_menu" ]
                     [ div [ class "navbar-start yf_start" ]
-                        [ a [ class "navbar-item yf_item", Route.href Route.Login ]
+                        [a [ class "navbar-item yf_logoRight", Route.href Route.Home ]
+                        []
+                        , a [ class "navbar-item yf_item", Route.href Route.Login ]
                             [ text "로그인/회원가입" ]
                         , a [ class "navbar-item yf_item", Route.href Route.YourFitExer ]
                             [ text "유어핏운동" ]
@@ -360,3 +369,36 @@ viewErrors dismissErrors errors =
         <|
             List.map (\error -> p [] [ text error ]) errors
                 ++ [ button [ onClick dismissErrors ] [ text "Ok" ] ]
+
+mlogoutlayer =
+    div [ id "logoutPop"] [
+        div [ class "myf_popup" ]
+    [ img [ src "/image/icon_logout.png" ]
+        []
+    , h1 [ class "popup_yf_h1" ]
+        [ text "로그아웃 하시겠습니까?" ]
+    , p [ class "yf_logoout_butbox" ]
+        [ a [ class "button is-danger logout_danger", Route.href Route.LogoutConfirm]
+            [ text "로그아웃" ]
+        , a [ class "button is-light logout_cencel", Route.href Route.Logout ]
+            [ text "취소" ]
+        ]
+    ]
+    ]
+
+logoutlayer =
+    div [ id "logoutPop"] [
+        div [ class "yf_popup" ]
+    [ img [ src "/image/icon_logout.png" ]
+        []
+    , h1 [ class "popup_yf_h1" ]
+        [ text "로그아웃 하시겠습니까?" ]
+    , p [ class "yf_logoout_butbox" ]
+        [ a [ class "button is-danger logout_danger", Route.href Route.LogoutConfirm]
+            [ text "로그아웃" ]
+        , a [ class "button is-light logout_cencel", Route.href Route.Logout ]
+            [ text "취소" ]
+        ]
+    ]
+    ]
+  

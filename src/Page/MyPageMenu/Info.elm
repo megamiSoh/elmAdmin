@@ -219,17 +219,20 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
-    , content = 
-       if model.check then
-       app model
-       else 
-       web model
-      
-    }
-
+    if model.check then
+        { title = "공지사항"
+        , content = 
+        div [] [
+                app model
+        ]
+        }
+    else
+        { title = "공지사항"
+        , content = 
+        div [] [
+                web model
+        ]
+        }
 editorView md textAreaInput readOnly=
         textarea
             [ onInput textAreaInput
@@ -266,7 +269,7 @@ app model =
                     td [colspan 3] [text "공지사항이 없습니다."]
                 ]
             ]
-        ,if model.infiniteLoading then
+        , if model.infiniteLoading then
                 div [class "loadingPosition"] [
                 spinner
                 ]

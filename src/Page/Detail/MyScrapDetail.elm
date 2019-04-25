@@ -11,6 +11,7 @@ import Port as P
 import Json.Decode as Decode
 import Api.Endpoint as Endpoint
 import Api as Api
+import Page.Detail.YourFitDetail as YfD
 import Http as Http
 import Api.Decoder as Decoder
 import Json.Encode as Encode
@@ -201,34 +202,40 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
-    , content = 
-            if model.check then
-                if model.loading then 
-                div [class "spinnerBack"] [spinner]
-                else
-                app model
-            else
-                web BackPage model
+    if model.check then
+        if model.loading then
+            { title = "내 스크랩"
+            , content = 
+                div [] [
+                        div [class "spinnerBack"] [spinner]
+                ]
+            
+            }
+        else
+            { title = "내 스크랩"
+            , content = 
+                div [] [app model
+                ]
+            
+            }
+    else
+        { title = "내 스크랩"
+        , content = 
+            div [] [
+                    web BackPage model
+            ]
         
-    }
+        }
 app model= 
         div [ class "container" ]
                 [
                    appHeaderRDetailClick model.listData.title  "myPageHeader whiteColor" BackPage "fas fa-times"
-                   ,
-                    if model.loading then
-                    div [class "spinnerBack"] [
-                        spinner
-                        ]
-                    else 
-                    div [] []
-                     , if model.need2login then
+                   , div [] [
+                         if model.need2login then
                         need2loginAppDetail BackDetail
                         else
-                        appcontentsItem model.listData model.loading
+                        appcontentsItem model.listData model.loading model.zindex
+                     ]
                 ]
 
 web msg model= 
@@ -256,9 +263,12 @@ contentsItem item loading zindex =
             [lazy2 div [ class "yf_notification" ]
                 [ p [ class "video_title" ]
                     [ 
-                       
-                         i [ class "fas fa-play-circle", onClick (VideoCall item.pairing) ][],
-                        img [class zindex, src item.thumbnail, onClick (VideoCall item.pairing)] []
+                    --    div [class ("imagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") , onClick (GoVideo item.pairing)] [] ,
+                    --          videoCall
+
+
+                         div [ class ("imagethumb " ++ zindex),style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") , onClick (VideoCall item.pairing) ][]
+                        -- img [class zindex, src item.thumbnail, onClick (VideoCall item.pairing)] []
                         , div [ id "myElement" ] [
                             ]
                     ]
@@ -273,7 +283,7 @@ contentsItem item loading zindex =
                 , div [ class "yf_part" ]
                     [ text ((justok item.exercise_part_name) ++ " - " ++  (justok item.difficulty_name)) ]
                 ]
-            , div [class"yf_explanation"] [text (justok item.description)]
+            , pre [class"yf_explanation descriptionBackground"] [text (justok item.description)]
             , div [ class "yf_text" ]
                (List.indexedMap description item.exercise_items)
             ]
@@ -287,13 +297,17 @@ justok casees =
         Nothing ->
             "-"
 
-appcontentsItem item loading = 
+appcontentsItem item loading zindex = 
             div []
             [ div []
                 [ p [ class "m_yf_container" ]
-                    [ i [ class "far fa-play-circle m_yf_container_circle", onClick (VideoCall item.pairing) ][],
-                        img [src item.thumbnail, onClick (VideoCall item.pairing)] []
-                        ,
+                    [ 
+                        -- div [class ("imagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") ,onClick (govideo item.pairing)] []
+
+
+                        div [ class ("appimagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") "), onClick (VideoCall item.pairing) ][],
+                        -- img [src item.thumbnail, onClick (VideoCall item.pairing)] []
+                        -- ,
                          div [ id "myElement" ] [
                             ]
                     ]
@@ -312,14 +326,18 @@ appcontentsItem item loading =
                 , div [ class "m_yf_work_text" ]
                     [ text ((justok item.exercise_part_name) ++ " - " ++  (justok item.difficulty_name)) ]
                 ]
-            , div [class"m_explanation"][text (justok item.description)]
+            , pre [class"wordBreak descriptionBackground"][text (justok item.description)]
             , div [ class "m_work_script" ]
-                (List.indexedMap description item.exercise_items)
+                (List.indexedMap YfD.description item.exercise_items)
             ]
 
 description idx item = 
     ul [] [
-        li [] [text ((String.fromInt(idx + 1)) ++ " . " ++  item.title)]
+            if item.is_rest then    
+                li [] [text ((String.fromInt(item.sort)) ++ " . " ++  item.title ++ " " ++ String.fromInt(item.value) ++ "분")]
+            else 
+                li [] [text ((String.fromInt(item.sort)) ++ " . " ++  item.title ++ " " ++ String.fromInt(item.value) ++ "세트")] 
+                    
         -- li [] [text]
     ]
     

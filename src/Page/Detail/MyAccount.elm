@@ -17,6 +17,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import File as Files
 import Task
+import Page.MyPageMenu.MyPageInfoLayout exposing(..)
 
 type alias Model 
     = {
@@ -41,6 +42,8 @@ type alias Model
         , cannotChange : String
         , profileFileName : Maybe String
         , preview : List String
+        , show : String
+        , deleteOrNot : String
         }
 
 type alias BodyData = 
@@ -86,11 +89,13 @@ init session mobile
         , check = mobile
         , currentPage = ""
         , nickname = ""
-        , sex = ""
+        , sex = "Male"
         , deleteAuth = ""
         , cannotChange = ""
         , notmatchPwd = ""
         , oldpwd = ""
+        , show = ""
+        , deleteOrNot = ""
         , newpwd = ""
         , profileFileName = Nothing
         , pwd = ""
@@ -100,7 +105,7 @@ init session mobile
         , height = 0
         , preview = []
         , birthday = ""
-        , is_male = False
+        , is_male = True
         , showbottomtoast = ""
         , mydata = 
             { exercise = 0
@@ -130,7 +135,7 @@ type Msg
     | SuccessNickname (Result Http.Error Decoder.Success)
     | ChangeGo
     | KeyDown Int
-    | AccountDelete
+    | AccountDelete String
     | DeleteSuccess (Result Http.Error Decoder.Success)
     | AllDeleteText
     | Sex String
@@ -150,6 +155,7 @@ type Msg
     | ChangeProfileImage (List Files.File)
     | GotPreviews (List String)
     | ChangeProfile
+    | DeleteConfirm
 
 toSession : Model -> Session
 toSession model =
@@ -224,6 +230,13 @@ update msg model =
                     |> Api.get MyInfoData Endpoint.myInfo (Session.cred model.session) 
             ])
         ChangeComplete (Err err) ->
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            else
             ({model | currentPage = "", showbottomtoast = "showbottomToast  lastShowToast"}, Api.showToast (Encode.string "프로필을 변경할 수 없습니다."))
         ResetComplete (Ok ok) ->
             ({model | showbottomtoast = "showbottomToast  lastShowToast"}, Cmd.batch [
@@ -233,6 +246,13 @@ update msg model =
                 |> Api.get MyInfoData Endpoint.myInfo (Session.cred model.session) 
             ])
         ResetComplete (Err err) ->
+            let
+                    serverErrors =
+                        Api.decodeErrors err
+            in  
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            else
             ({model | showbottomtoast = "showbottomToast  lastShowToast"}, Api.showToast (Encode.string "기본 이미지를 변경할 수 없습니다."))
         ResetProfileImg ->
             ({model | showbottomtoast = "showbottomToast  lastShowToast"}, 
@@ -249,13 +269,12 @@ update msg model =
             else if model.deleteAuth == "bodyInfo" then
             update SaveBody {model | session = session}
             else if model.deleteAuth == "accountDelete" then
-            update AccountDelete {model | session =session}
+            update (AccountDelete model.deleteOrNot) {model | session =session}
             else if model.deleteAuth == "nick" then
             update ChangeGo {model | session =session}
             else
             ({model | session = session},
-            Cmd.none
-            )
+            Cmd.none)
         PwdComplete (Ok ok) ->
             let
                 textEncode = Encode.string "변경되었습니다."
@@ -307,7 +326,11 @@ update msg model =
             , Route.pushUrl (Session.navKey model.session) Route.MyAccount
             ])
         SaveComplete (Err err) ->
-            (model, Cmd.none) 
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
         SaveBody ->
             (model, saveEncode model)
         BodyInfo info what ->
@@ -333,7 +356,7 @@ update msg model =
             , Cmd.none)
                     
         Sex sex ->
-            if sex == "Male" then
+            if sex == "male" then
             ({model | sex = sex, is_male = True} ,Cmd.none)
             else
             ({model | sex = sex, is_male = False}, Cmd.none)
@@ -346,17 +369,23 @@ update msg model =
             let
                 serverErrors = Api.decodeErrors err
             in
-            
+            if serverErrors == "401" then
             ({model | deleteAuth = "accountDelete"},(Session.changeInterCeptor (Just serverErrors) model.session))
-        AccountDelete ->
+            else 
+            (model , Api.showToast (Encode.string "삭제 할수 없습니다."))
+        AccountDelete str->
             let
                 body = Encode.object [("is_leave", Encode.bool True)]
                     |> Http.jsonBody
-            in
-            
-            (model, 
+            in            
+            if str == "go" then
+            ({model | deleteOrNot = str}, 
             Decoder.resultD
-            |> Api.post Endpoint.accountDelete (Session.cred model.session) DeleteSuccess body   )
+            |> Api.post Endpoint.accountDelete (Session.cred model.session) DeleteSuccess body )
+            else 
+            ({model | show = "", deleteOrNot = str}, Cmd.none)
+        DeleteConfirm ->
+            ({model | show = "logoutShow"}, Cmd.none)
         KeyDown key ->
             if key == 13 then
                 update ChangeGo model
@@ -370,8 +399,10 @@ update msg model =
             let
                 serverErrors = Api.decodeErrors err
             in
-            
+            if serverErrors == "401" then
             ({model | deleteAuth = "nick"},(Session.changeInterCeptor (Just serverErrors) model.session))
+            else 
+            (model, Api.showToast (Encode.string "변경 할 수 없습니다."))
         ChangeGo ->
             let
                 list = 
@@ -395,7 +426,11 @@ update msg model =
         MyInfoData (Ok ok) ->
             ({model | mydata = ok.data}, Cmd.none)
         MyInfoData (Err err) ->
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
         BackBtn ->
             ( model, 
             Route.pushUrl (Session.navKey model.session) Route.MyPage 
@@ -404,42 +439,57 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
-    , content = 
-        if model.currentPage == "nick" then
+    case model.currentPage of
+        "nick" ->
+            { title = "닉네임 변경"
+            , content =
                 div [] [
                     appHeaderConfirmDetailR "닉네임 변경" "myPageHeader whiteColor" (ChangePage "")  ChangeGo  "확인"
                     , nicknameContents model 
                 ]
-        else if  model.currentPage == "pwd" then
+            }
+        "pwd" ->
+            { title = "비밀번호 변경"
+            , content = 
                 div [] [
                         appHeaderConfirmDetailR "비밀번호 변경" "myPageHeader  whiteColor" (ChangePage "")  ChangePwd "변경"
                         , pwdContents model
                     ]
-        else if model.currentPage == "account" then
+            }
+        "account" ->
+            { title = "계정관리"
+            , content = 
                 div [] [
                     appHeaderRDetailClick "계정관리" "myPageHeader  whiteColor" (ChangePage "") "fas fa-angle-left"
                     , accountContents model
                 ]
-        else if model.currentPage == "body" then
+            }
+        "body" ->
+            { title = "신체정보관리"
+            , content = 
                 div [] [
                     appHeaderConfirmDetailR "신체정보관리" "myPageHeader whiteColor" (ChangePage "")  SaveBody  "저장"
                     , bodyRecord model 
                 ]
-        else if model.currentPage == "image" then
-            div [] [
+            }
+        "image" ->
+            { title =" 프로필 사진"
+            , content = 
+                div [] [
                 appHeaderConfirmDetailR "프로필 사진 변경" "myPageHeader whiteColor" (ChangePage "")  ChangeProfile  "저장"
                 , div [] (List.map previewLayout model.preview )
-            ]
-        else
-               div [] [
+                ]
+            }
+        _ ->
+            { title ="마이페이지"
+            , content = 
+                div [] [
                     appHeaderRDetailClick "마이페이지" "myPageHeader whiteColor" BackBtn "fas fa-angle-left"
                     , contents model
-                ]             
+                ]
+            }
+
     
-    }
 
 previewLayout item = 
     div [] [
@@ -470,8 +520,9 @@ accountContents model =
                 --     [ text "기록초기화" ], text "계정연결" 
                 ,  a [ class "button is-large is-fullwidth settingmenu", Route.href Route.Logout ]
                     [ text "로그아웃" ], text "계정관리" 
-                , div [ class "button is-large is-fullwidth settingmenu", onClick AccountDelete ]
+                , div [ class "button is-large is-fullwidth settingmenu", onClick DeleteConfirm ]
                     [ text "회원탈퇴" ]
+                , mremovelayer model.show AccountDelete
                 ]
             ]
     ]
@@ -641,3 +692,5 @@ pwdContents  model =
         -- , div [ class "button mypage_nickbtn", onClick ChangePwd ]
         --     [ text "적용" ]
         ]
+
+

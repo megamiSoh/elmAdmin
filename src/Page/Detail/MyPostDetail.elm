@@ -24,6 +24,7 @@ type alias Model
         , loading : Bool
         , scrap : Bool
         , postId : String
+        , zindex : String
     }
 
 type alias TogetherDataWrap = 
@@ -74,6 +75,7 @@ init session mobile
         , loading = True
         , scrap = False
         , postId = ""
+        , zindex =""
         , getData = 
             { content = Nothing
             , detail = Nothing
@@ -139,7 +141,7 @@ update msg model =
                     E.list encodePairing pairing
             in
             
-            (model, Api.videoData listPair)
+            ({model | zindex = "zindex"}, Api.videoData listPair)
         GoVideo ->
             let
                 head = List.head (justList model.getData.detail)
@@ -209,16 +211,20 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
-    , content = 
-        if model.check then
-        app BackPage model
-        else
-        web BackPage model
-            }
-
+    if model.check then
+        { title = "내 게시물 관리"
+        , content = 
+            div [] [
+                app BackPage model
+            ]
+        }
+    else
+        { title = "내 게시물 관리"
+        , content = 
+            div [] [
+                web BackPage model
+            ]
+        }
 web msg model= 
     div [class "container"] [
         div [ class "yf_yfworkout_search_wrap" ]
@@ -235,12 +241,14 @@ web msg model=
     ]
 app msg model= 
     div [class "container"] [
-        if model.loading then
-        div [class "spinnerBack"] [
-            spinner
-            ]
-        else 
-        div [] []
+        div [] [
+            if model.loading then
+            div [class "spinnerBack"] [
+                spinner
+                ]
+            else 
+            div [] []
+        ]
         , div []
         ( List.map( \x-> 
             appcontentsItem x model
@@ -279,7 +287,10 @@ contentsItem item model=
                         [ text item.title ]
                     ]
                 , div [class "postVideoWrap"] [
-                    img [class "postImg" ,src item.thembnail, onClick (VideoCall item.pairing) ] []
+                    div [ class ("imagethumb " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thembnail ++") ") , onClick (VideoCall item.pairing) ][]
+
+
+                    -- img [class "postImg" ,src item.thembnail, onClick (VideoCall item.pairing) ] []
                 , div [id "myElement"] []
 
                 ]
@@ -295,6 +306,11 @@ contentsItem item model=
                     [ text ((justokData item.exercise_part_name) ++ " - " ++  (justokData item.difficulty_name)) ]
                 ]
             , 
+            pre [class "wordBreak descriptionBackground"]
+                    [ 
+                    text (justokData model.getData.content)
+                    ]
+        ,
             div [ class "yf_text" ]
                (List.indexedMap YfD.description (List.sortBy .sort item.exercise_items))
             ]
@@ -304,11 +320,11 @@ contentsItem item model=
 appcontentsItem item model= 
             div [ ]
             [   appHeaderRDetail item.title "myPageHeader" Route.MyPost "fas fa-times" 
-                , div [class "appPostVideo"] [
-                    img [src item.thembnail, onClick (VideoCall item.pairing)] []
+                , div [class "PostVideo"] [
+                     div [ class ("appimagethumb " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thembnail ++") ") , onClick (VideoCall item.pairing) ][]
                     , div [id "myElement"][]
                 ], 
-                div [ class "m_yf_work_textbox" ]
+                div [ class "m_yf_post_textbox" ]
                 [ div [ class "m_yf_work_time" ]
                     [ span []
                         [ i [ class "fas fa-clock m_yf_timeicon" ]
@@ -321,7 +337,7 @@ appcontentsItem item model=
                     ,  text (justokData item.difficulty_name) ]
                 ]
             ,  div []
-                [ p [class "wordBreak"]
+                [ pre [class "wordBreak descriptionBackground"]
                     [ 
                     text (justokData model.getData.content)
                     ]

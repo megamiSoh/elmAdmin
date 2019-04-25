@@ -28,6 +28,8 @@ type alias Model =
     , infiniteLoading : Bool
     , newList : List ListData
     , pageNum : Int
+    , show : String
+    , contentsId : Int
     }
 
 type alias ScreenInfo = 
@@ -98,7 +100,9 @@ init session mobile =
         , saveCheckVal = ""
         , loading = True
         , newList = []
+        , contentsId = 0
         , pageNum = 1
+        , show = ""
         , screenInfo = 
             { scrollHeight = 0
             , scrollTop = 0
@@ -121,6 +125,7 @@ init session mobile =
         }, 
         Cmd.batch 
         [ bodyEncode 1 10 "" session
+        , Api.removeJw ()
         ]
     )
 
@@ -130,12 +135,14 @@ type Msg
     | SaveIdComplete Encode.Value
     | SessionCheck Encode.Value
     | GotSession Session
-    | Delete Int
+    | Delete
     | DeleteSuccess (Result Http.Error Decoder.Success)
     | PageBtn (Int, String)
     | OnLoad
     | ScrollEvent ScreenInfo
     | NoOp
+    | DeleteConfirm Int
+    
 
 
 toSession : Model -> Session
@@ -169,6 +176,11 @@ onLoad msg =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        DeleteConfirm id ->
+            if id == 0 then
+            ({model | show = ""}, Cmd.none)
+            else
+            ({model | contentsId = id, show = "logoutShow"}, Cmd.none)
         NoOp ->
             (model, Cmd.none)
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
@@ -193,13 +205,16 @@ update msg model =
                 _ ->
                     (model, Cmd.none)
         DeleteSuccess (Ok ok) ->
-            (model, bodyEncode model.page model.per_page model.title model.session)
+            ({model | show = ""}, Cmd.batch [
+                bodyEncode model.page model.per_page model.title model.session
+                , Api.showToast (Encode.string "삭제되었습니다.")
+            ])
         DeleteSuccess (Err err) ->
-            (model, Cmd.none)
-        Delete id ->
+            ({model | show = ""}, Api.showToast (Encode.string "삭제할 수 없는 게시물입니다."))
+        Delete ->
             (model, 
             Decoder.resultD
-            |> Api.get DeleteSuccess (Endpoint.makeDelete (String.fromInt (id)))(Session.cred model.session)  )
+            |> Api.get DeleteSuccess (Endpoint.makeDelete (String.fromInt (model.contentsId)))(Session.cred model.session)  )
         GotSession session ->
             ({model | session = session}
             , bodyEncode model.page model.per_page model.title session
@@ -242,33 +257,93 @@ update msg model =
                 serverErrors =
                     Api.decodeErrors err
             in  
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            (model, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
+            ])
+            
             
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
-    , content =
-        webOrApp model
+    case model.check of
+        True ->
+            case model.loading of
+                True ->
+                    { title = "맞춤운동"
+                    , content =
+                        div [] [
+                        a [Route.href Route.MSearch]
+                        [appHeaderSearch "맞춤운동" "makeExerHeader"],
+                        div [class "spinnerBack"] [
+                            spinner
+                            ]
+                        ] 
+                    }
+                False ->
+                    { title = "맞춤운동"
+                    , content =
+                        div [] [
+                        a [Route.href Route.MSearch]
+                        [appHeaderSearch "맞춤운동" "makeExerHeader"],
+                        app model
+                        , appdeltelayer model
+                        ]
 
-    }
-webOrApp model= 
-    if model.check then
-         div [] [
-             a [Route.href Route.MSearch]
-             [appHeaderSearch "맞춤운동" "makeExerHeader"],
-            if model.loading then
-            div [class "spinnerBack"] [
-                spinner
+                    }
+    
+        False ->
+            if List.length model.getlistData.data > 0  then 
+            { title = "맞춤운동"
+            , content =
+                div [ class "customContainerwrap" ]
+            [ div [ class "container" ]
+                [ div [ class "notification yf_workout" ]
+                    [
+                        commonHeader "/image/icon_customworkout.png" "맞춤운동",
+                        bodyContentTitle,deltelayer model,
+                        div [ class "customyf_box2"] [
+                            div [ class "make_box_title" ]
+                                [ h1 [ class "make_yf_h2" ]
+                                    [ text "맞춤운동 리스트" ]
+                                ],
+                            div [] [
+                                    div [ class "make_boxwrap" ]
+                                    (List.map bodyItem model.getlistData.data)
+                            ]
+
+                        ]
+                    ]
+                     ,pagination
+                    PageBtn
+                    model.getlistData.paginate
+                    model.pageNum
                 ]
-            else 
-            div [] []
-            , app model
-            ]  
-    else 
-        web model
+            ]
+            }
+            else
+                { title = "맞춤운동"
+                , content =
+                    div [ class "customContainerwrap" ]
+            [ div [ class "container" ]
+                [ div [ class "notification yf_workout" ]
+                    [
+                        commonHeader "/image/icon_customworkout.png" "맞춤운동",
+                        bodyContentTitle,deltelayer model,
+                        div [ class "customyf_box2"] [
+                            div [ class "make_box_title" ]
+                                [ h1 [ class "make_yf_h2" ]
+                                    [ text "맞춤운동 리스트" ]
+                                ],
+                            div [] [
+                                    div [class "noResult"] [text "맞춤영상이 없습니다."]
+                            ]
+
+                        ]
+                    ]
+                ]
+            ]
+                }
+        
+
 
 web model = 
     div [ class "customContainerwrap" ]
@@ -276,24 +351,23 @@ web model =
                 [ div [ class "notification yf_workout" ]
                     [
                         commonHeader "/image/icon_customworkout.png" "맞춤운동",
-                        bodyContentTitle,
+                        bodyContentTitle,deltelayer model,
                         div [ class "customyf_box2"] [
                             div [ class "make_box_title" ]
                                 [ h1 [ class "make_yf_h2" ]
                                     [ text "맞춤운동 리스트" ]
                                 ],
-                            if model.loading then
-                                spinner
-                            else
-                                if List.length model.getlistData.data > 0 then
+                            div [] [
+                                 if List.length model.getlistData.data > 0 then
                                     div [ class "make_boxwrap" ]
                                     (List.map bodyItem model.getlistData.data)
                                 else
                                     div [class "noResult"] [text "맞춤영상이 없습니다."]
+                            ]
 
                         ]
                     ]
-                     ,pagination 
+                     ,pagination
                     PageBtn
                     model.getlistData.paginate
                     model.pageNum
@@ -302,7 +376,7 @@ web model =
 app model =
     div [ class "container", class "scroll", scrollEvent ScrollEvent, style "height" "85vh" ][
          appStartBox
-        ,listTitle
+        , listTitle
         -- ,if List.length model.newList > 0 then
             ,div [] [
                 div[](List.map appItemContent model.newList) ,
@@ -372,7 +446,7 @@ appItemContent item=
                 [], text "공유하기" 
             ]
 
-                , div [ class "button m_makeExercise_dete",onClick (Delete item.id) ]
+                , div [ class "button m_makeExercise_dete",onClick (DeleteConfirm item.id) ]
                 [ i [ class "far fa-trash-alt" ]
                 [], text "삭제" 
             ]
@@ -415,7 +489,7 @@ bodyItem item=
                         [ i [ class "fas fa-share-square" ]
                             [] , text "공유" 
                         ]
-                    , div [ class "button" ,onClick (Delete item.id)]
+                    , div [ class "button" ,onClick (DeleteConfirm item.id)]
                         [ i [ class "far fa-trash-alt" ]
                             [] , text "삭제" 
                         ]
@@ -442,3 +516,31 @@ bodyContentTitle =
             , br []
                 []
             ]
+
+appdeltelayer model =
+    div [class ("m_delete_post " ++ model.show)] [
+         div [ class "yf_delete_popup" ]
+            [ h1 [ class "popup_yf" ]
+                [ text "게시물을 삭제하시겠습니까?" ]
+            , p [ class "yf_logout_butbox" ]
+                [ div [ class "button is-light logout_danger2", onClick (DeleteConfirm 0) ]
+                    [ text "취소" ]
+                , div [ class "button is-danger logout_cencel2", onClick Delete ]
+                    [ text "삭제" ]
+                ]
+            ]
+    ]
+
+deltelayer model =
+    div [class ("delete_post " ++ model.show)] [
+         div [ class "yf_delete_popup" ]
+            [ h1 [ class "popup_yf" ]
+                [ text "게시물을 삭제하시겠습니까?" ]
+            , p [ class "yf_logout_butbox" ]
+                [ div [ class "button is-light logout_danger2", onClick (DeleteConfirm 0) ]
+                    [ text "취소" ]
+                , div [ class "button is-danger logout_cencel2", onClick Delete ]
+                    [ text "삭제" ]
+                ]
+            ]
+    ]

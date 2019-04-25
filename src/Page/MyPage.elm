@@ -31,10 +31,12 @@ type alias Model =
     , pwd : String
     , notMatchPwd : String
     , oldPwd : String
+    , show : String
     , is_male : Bool
-    , weight : Int
-    , goalWeight : Int
-    , height : Int
+    , weight : String
+    , accountDeleteGo : String
+    , goalWeight : String
+    , height : String
     , birth : String
     , profileImg : List Files.File
     , cannotChange : String
@@ -90,15 +92,17 @@ init session mobile =
         , currentPage = ""
         , pwd = ""
         , deleteAuth = ""
+        , show = ""
         , cannotChange = ""
         , notMatchPwd = ""
-        , is_male = False
+        , accountDeleteGo = ""
+        , is_male = True
         , wantChangeNickname = ""
         , rePwd = ""
-        , weight = 0
+        , weight = ""
         , profileImg = []
-        , goalWeight = 0
-        , height = 0
+        , goalWeight = ""
+        , height = ""
         , birth = ""
         , profileFileName = Nothing
         , mydata = 
@@ -147,7 +151,7 @@ type Msg
     | ChangeGo
     | SuccessNickname (Result Http.Error Decoder.Success)
     | WantChangeNickname String
-    | AccountDelete
+    | AccountDelete String
     | PwdInput String
     | ChangePwd
     | RePwdInput String
@@ -166,6 +170,7 @@ type Msg
     | ChangeComplete (Result Http.Error FileData)
     | ResetProfileImg
     | ResetComplete (Result Http.Error Decoder.Success)
+    | AccountDeleteConfirm 
 
 subscriptions :Model -> Sub Msg
 subscriptions model=
@@ -181,16 +186,22 @@ toSession model =
 toCheck : Model -> Bool
 toCheck model =
     model.check
-
+justInt int = 
+    case String.toInt int of
+        Just num ->
+            num
+    
+        Nothing ->
+            0
 bodyInfoEncode model = 
     let
         body = 
             E.object 
-                [ ("weight", E.int model.weight)
-                , ("goal_weight", E.int model.goalWeight)
-                , ("height", E.int model.height)
+                [ ("weight", E.int (justInt (model.weight)))
+                , ("goal_weight", E.int (justInt (model.goalWeight)))
+                , ("height", E.int (justInt (model.height)))
                 , ("birthday", E.string model.birth)   
-                , ("is_male", E.bool model.is_male)]
+                , ("is_male", E.bool model.is_male) ]
                     |> Http.jsonBody
     in
     Decoder.resultD
@@ -198,6 +209,8 @@ bodyInfoEncode model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        AccountDeleteConfirm ->
+            ({model | show = "logoutShow"}, Cmd.none)
         ResetComplete (Ok ok) ->
             (model, Cmd.batch [
                 Api.showToast (E.string "기본이미지로 변경되었습니다.")
@@ -205,6 +218,13 @@ update msg model =
                 |> Api.get MyInfoData Endpoint.myInfo (Session.cred model.session) 
             ])
         ResetComplete (Err err) ->
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            else
             (model, Api.showToast (E.string "기본 이미지를 변경할 수 없습니다."))
         ResetProfileImg ->
             (model,
@@ -218,6 +238,13 @@ update msg model =
                 |> Api.get MyInfoData Endpoint.myInfo (Session.cred model.session) 
             ])
         ChangeComplete (Err err) ->
+            let
+                    serverErrors =
+                        Api.decodeErrors err
+            in  
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            else
             (model, Api.showToast (E.string "이미지를 변경할 수 없습니다."))
         GoProfileImage ->
             if model.profileFileName == Nothing then
@@ -270,30 +297,31 @@ update msg model =
         BodySave ->
             (model, bodyInfoEncode model)
         BodyInfoComplete (Ok ok)->
-            ({model | weight = ok.data.weight, goalWeight = ok.data.goal_weight, height = ok.data.height, is_male = ok.data.is_male, birth = ok.data.birthday}, Cmd.none)
+            ({model | weight = String.fromInt (ok.data.weight), goalWeight = String.fromInt (ok.data.goal_weight), height = String.fromInt(ok.data.height), is_male = ok.data.is_male, birth = ok.data.birthday}, Cmd.none)
         BodyInfoComplete (Err err)->
-            (model, Cmd.none)
-        BodyRecordsInput category str ->
             let
-                toInt = String.toInt str
-            in
-            (case toInt of
-                Just int ->
-                   case category of
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+        BodyRecordsInput category str ->
+                  ( case category of
                         "weight" ->
-                            {model | weight = int}
+                            {model | weight = str}
                         "goalWeight" ->
-                            {model | goalWeight = int}
+                            {model | goalWeight = str}
                         "height" ->
-                            {model | height = int}
+                            {model | height = str}
                         "birth" ->
                             {model | birth = str}
                         _ ->
                             model
+                            
+                    , Cmd.none)
             
-                Nothing ->
-                    {model | birth = str}
-                , Cmd.none)
+                -- Nothing ->
+                --     {model | birth = str, weight = str}
+                -- , Cmd.none)
                     
             
         PwdComplete (Ok ok) ->
@@ -326,23 +354,35 @@ update msg model =
             ({model | notMatchPwd = ""}, Cmd.batch[ pwdEncode model model.session ])
 
         DeleteSuccess (Ok ok) ->
-            (model,
-            Route.replaceUrl (Session.navKey model.session) Route.Logout)
+            ({model| show = ""},
+            Cmd.batch [
+                Route.replaceUrl (Session.navKey model.session) Route.LogoutConfirm
+                , Api.showToast (E.string "탈퇴되었습니다.")
+            ])
         DeleteSuccess (Err err) ->
             let
                 serverErrors = 
                     Api.decodeErrors err    
             in
-            ({model | deleteAuth = "delete"},(Session.changeInterCeptor (Just serverErrors) model.session))
-        AccountDelete ->
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            else
+            ({model | deleteAuth = "delete"},
+            Cmd.batch [
+                (Session.changeInterCeptor (Just serverErrors) model.session)
+                , Api.showToast (E.string "탈퇴를 진행 할 수 없습니다.")
+            ])
+        AccountDelete how->
             let
                 body = E.object [("is_leave", E.bool True)]
                     |> Http.jsonBody
             in
-            
-            (model, 
+            if how == "go" then
+            ({model | accountDeleteGo = how}, 
             Decoder.resultD
            |> Api.post Endpoint.accountDelete (Session.cred model.session) DeleteSuccess body   )
+           else
+            ({model | show = ""}, Cmd.none)
         WantChangeNickname str->
             ({model | wantChangeNickname = str} , Cmd.none)
         SuccessNickname (Ok ok) ->
@@ -361,7 +401,10 @@ update msg model =
                 serverErrors = 
                     Api.decodeErrors err
             in
+            if serverErrors == "401" then
             ({model | deleteAuth = "nick"}, (Session.changeInterCeptor (Just serverErrors) model.session))
+            else 
+            (model, Cmd.none)
         ChangeGo ->
             let
                 list = 
@@ -391,7 +434,6 @@ update msg model =
         ClickLeft ->
             (model , Api.scrollLeft ())
         SelectTab tab->
-            
             if tab == "bodyInfo" then
             ({model | selecTab = tab}, 
             (Decoder.bodyInfo BodyData BodyInfoData)
@@ -401,7 +443,7 @@ update msg model =
             ({model | selecTab = tab} , Cmd.none)
         GotSession session ->
             if model.deleteAuth =="delete" then
-            update AccountDelete {model | session = session}
+            update (AccountDelete model.accountDeleteGo) {model | session = session}
             else if model.deleteAuth == "nick" then
             update ChangeGo {model | session =session}
             else if model.deleteAuth == "pwd" then
@@ -416,17 +458,75 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    { title = "YourFitExer"
-    , content =       
-        if model.check then
-        div [] [
-            justappHeader "마이페이지" "myPageHeader" ,
-            app model
-        ]
-        else 
-        web model
-        
-    }
+    case model.check of
+        True ->
+            { title = "마이페이지"
+            , content =       
+                div [] [
+                        justappHeader "마이페이지" "myPageHeader" ,
+                        app model
+                    ]
+                
+            }
+    
+        False ->
+            case model.selecTab of
+                "myInfo" ->
+                    { title = "마이페이지"
+                    , content =       
+                        div [] [
+                            web model
+                            , div [class "container"][
+                            div [ class "myPage_mediabox" ]
+                            [ myInfo model.mydata.user ChangeNick WantChangeNickname model.wantChangeNickname ChangeGo  PwdInput ChangePwd model.notMatchPwd RePwdInput OldPwd model.nickname ChangeProfileImage 
+                             (case model.profileFileName  of
+                                Just a ->
+                                    a
+                            
+                                Nothing ->
+                                    "")
+                            model.cannotChange GoProfileImage
+                            ResetProfileImg
+                                        ]
+                        ]
+                        ]
+                                        
+                        }
+                    
+                "bodyInfo" ->
+                    { title = ""
+                    , content = div [] [web model 
+                    , div [class "container"][
+                    div [class "myPage_mediabox"] [
+                        bodyInfo model BodyRecordsInput BodySave IsMale
+                    ]]
+                    ]
+                    } 
+
+                "accountInfo" ->
+                    { title = ""
+                    , content = div [] [web model , 
+                    div [class "container"]
+                    [ div [class "myPage_mediabox"] [
+                        accountInfo AccountDelete AccountDeleteConfirm model.show
+                    ] 
+                    ]
+                    ]
+                    }
+                    
+
+                _ ->
+                    { title = "마이페이지"
+                    , content =       
+                        div [] [
+                            web model
+                            ,div [] [text "컨텐츠를 불러올 수 없습니다."]
+                        ]
+                        
+                    }
+            
+                    
+    
 app model = 
      div [class "container"] [
          appTopMenu model,
@@ -477,7 +577,7 @@ justData cases =
     
         Nothing ->
             "닉네임 등록"
-web model = 
+web model= 
     div [] [
             myPageCommonHeader ClickRight ClickLeft GoAnotherPage
             ,
@@ -491,7 +591,31 @@ web model =
                 ]
             ]
         ]
-tabPanner model = 
+-- ,
+--             div [ class "myPage_mediabox" ]
+--             [
+--                     case model.selecTab of
+--                         "myInfo" ->
+--                             myInfo model.mydata.user ChangeNick WantChangeNickname model.wantChangeNickname ChangeGo  PwdInput ChangePwd model.notMatchPwd RePwdInput OldPwd model.nickname ChangeProfileImage 
+--                             (case model.profileFileName  of
+--                                 Just a ->
+--                                     a
+                            
+--                                 Nothing ->
+--                                     "")
+--                             model.cannotChange GoProfileImage
+--                             ResetProfileImg
+                    
+--                         "bodyInfo" ->
+--                             bodyInfo model BodyRecordsInput BodySave IsMale 
+
+--                         "accountInfo" ->
+--                             accountInfo AccountDelete AccountDeleteConfirm model.show
+
+--                         _ ->
+--                             div [] [text "컨텐츠를 불러올 수 없습니다."]
+--             ]
+tabPanner model= 
         div [ class "yf_yfworkout_search_wrap" ]
         [ div [ class "tapbox" ]
             [ div [ class "tabs is-toggle is-fullwidth is-large " ]
@@ -528,25 +652,6 @@ tabPanner model =
                         ]
                     ]
                 ]
-            ]
-            ,
-            div [ class "myPage_mediabox" ]
-            [
-                if model.selecTab == "myInfo" then
-                    myInfo model.mydata.user ChangeNick WantChangeNickname model.wantChangeNickname ChangeGo  PwdInput ChangePwd model.notMatchPwd RePwdInput OldPwd model.nickname ChangeProfileImage 
-                    (case model.profileFileName  of
-                        Just a ->
-                            a
-                    
-                        Nothing ->
-                            "")
-                    model.cannotChange GoProfileImage
-                    ResetProfileImg
-                else 
-                    if model.selecTab == "bodyInfo" then
-                    bodyInfo model BodyRecordsInput BodySave IsMale 
-                    else
-                    accountInfo AccountDelete
             ]
         ]
 

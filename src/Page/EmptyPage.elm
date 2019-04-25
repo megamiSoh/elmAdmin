@@ -40,16 +40,20 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
+    if model.check then
+        { title = "empty"
+        , content = 
+            div [] [
+                    app
+            ]
+        }
+    else
+    { title = "empty"
     , content = 
-        if model.check then
-            app
-        else
-           web
+        div [] [
+            web
+        ]
     }
-
 
 app = 
     div [] [

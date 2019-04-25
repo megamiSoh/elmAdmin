@@ -110,14 +110,19 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
-    , content = 
     if model.check then
-    app model.data model
+    { title = "공지사항 상세페이지"
+    , content = 
+        div [][
+            app model.data model
+        ]
+    }
     else
-    web model.data model
+    { title ="공지사항 상세페이지"
+    , content =
+        div [] [
+        web model.data model
+        ]
     }
 
 web data model= 

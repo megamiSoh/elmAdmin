@@ -37,6 +37,7 @@ type alias Model
         , selectedPreviewTab : PreviewTab
         , showToC : Bool
         , validation : String
+        , validation2 : String
         , errTitle : String
         , loading : Bool
         , cannotSave : String
@@ -158,6 +159,7 @@ init session mobile
         , checkDevice = ""
         , title = ""
         , validation = ""
+        , validation2 = ""
         , cannotSave = ""
         , errTitle = ""
         , sbuttonHidden = ""
@@ -303,12 +305,14 @@ update msg model =
             in
             if model.title == "" then
             ({model|validation = "vaidColor", errTitle = "제목을 입력 해 주세요."}, Cmd.none)
+            
             else if List.length model.addData == 0 then
             (model, Cmd.none)
             else if model.workoutDescription == "" then
             ({model |  errTitle = "운동 설명을 입력 해 주세요."}, Cmd.none)
             else
             ({model | loading = True, saveItem = item}, registVideo model item model.session)
+            
         UpdateTitle title ->
             let 
                 newTitle = 
@@ -397,31 +401,29 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
-    , content = 
-        div [] [
-        if model.check then
-            div [] [
-                if model.loading then
-                div [class "spinnerBack"] [spinner]
-                else
-                div [] [],
-                    app model
-            ]
+    if model.check then
+        if model.loading then
+            { title = "맞춤운동 필터"
+            , content = div [class "spinnerBack"] [spinner]
+            }
         else
-        div [] [
-            if model.loading then
-            div [class "spinnerBackWeb"] [spinner]
-            else
-            div [] [],
-                web model
-            ] 
-            
-       ]
-    }
-
+            { title = "맞춤운동 필터"
+            , content = 
+                div [] [ app model ]   
+        }
+    else
+        if model.loading then
+            { title = "맞춤운동 필터"
+            , content = div [class "spinnerBackWeb"] [spinner]
+            }
+        else
+            { title = "맞춤운동 필터"
+            , content = 
+                div [] [
+                        web model
+                    ] 
+            }
+        
 
 justokData data = 
     case data of
@@ -481,33 +483,42 @@ appcontentsItem model =
 
 thumbSetting model= 
     div [ class "yf_box_top" ]
-        [ div [ class "yf_thumbnail" ]
-            [ img [ src "/image/thumbnail.png" ]
-                [], text "대표썸네일지정" 
-            ]
-        , div [ class "yf_titleinput" ]
+        -- [ div [ class "yf_thumbnail" ]
+        --     [ img [ src "/image/thumbnail.png" ]
+        --         [], text "대표썸네일지정" 
+        --     ]
+        -- , 
+        
+        [div [ class "yf_titleinput" ]
+        
             [ 
             div [class model.validation] [
                 -- editorViewInput model.title UpdateTitle False "운동제목을 입력하세요." model.validation
                 input [ class ( "input " ++ model.validation ), type_ "text", placeholder "운동제목을 입력해 주세요.", onInput UpdateTitle ]
                 []
-                , textarea [ placeholder "운동 설명을 입력 해 주세요.", onInput Description] []
             ]
+           , 
+           div [class model.validation2] [
+                 textarea [ placeholder "운동 설명을 입력 해 주세요.", onInput Description] []
+           ]
+            
             , div [] [text model.errTitle]
             ]
         ]
 
 appthumbSetting model = 
     div [ class "m_yf_box_top" ]
-        [ div [ class "m_yf_thumbnail" ]
-            [ img [ src "/image/thumbnail.png" ]
-                []
-            ]
-        , div [ class "m_yf_titleinputbox" ]
+        -- [ div [ class "m_yf_thumbnail" ]
+        --     [ img [ src "/image/thumbnail.png" ]
+        --         []
+        --     ]
+        -- ,
+        [ div [ class "m_yf_titleinputbox" ]
             [ input [ class ( "input m_yf_titleinput " ++ model.validation ), type_ "text", placeholder "운동제목을 입력해 주세요.",  onInput UpdateTitle ]
                 []
             , textarea [placeholder "운동 설명을 입력 해 주세요.",  onInput Description] []
             ]
+                      , div [class"m_filterStep2_text"] [text model.errTitle]
         -- , div [class "thubmTitle"] [text "썸네일지정" ]
         ]
 

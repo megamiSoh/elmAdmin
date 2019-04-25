@@ -60,15 +60,21 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
-    , content = 
-        if model.checkDevice =="pc" then
-        web
-        else 
-        app
-    }
+    if model.check then
+        { title = "1:1문의"
+        , content = 
+            div [] [
+                app
+            ]
+        }
+    else
+        { title = "1:1문의"
+        , content = 
+            div [] [
+                web
+            ]
+        }
+
 app =
     div [class "container"] [
         appHeaderBothBtn "문의하기" "myPageHeader" Route.Faq "fas fa-angle-left" "등록" Route.Faq

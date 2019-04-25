@@ -62,6 +62,9 @@ changeInterCeptor error sessionHere=
         Nothing ->
                 Cmd.none
 
+
+
+
 navKey : Session -> Nav.Key
 navKey session =
     case session of

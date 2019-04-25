@@ -387,31 +387,25 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
-    , content = 
-        div [] [
-        if model.check then
-            div [] [
-                if model.loading then
-            div [class "spinnerBack"] [spinner]
-            else
-            div [] []
-            , app model
-            ]
-        else 
-           div[][
-                if model.loading then
-                div [class "spinnerBackWeb"] [spinner]
-                else
-                div [] []
-                , web model
-           ]
-       ]
-    }
-
-
+    if model.check then
+        if model.loading then
+            { title = "맞춤운동 필터"
+            , content =  div [class "spinnerBack"] [spinner]
+            }
+        else
+            { title = "맞춤운동 필터"
+            , content = div [] [app model ]
+            }
+    else
+        if model.loading then
+            { title = "맞춤운동 필터"
+            , content = div [class "spinnerBackWeb"] [spinner]
+            }
+        else
+            { title = "맞춤운동 필터"
+            , content = 
+                div [] [ web model ]
+            }
 justokData result = 
     case result of
         Just ok ->
