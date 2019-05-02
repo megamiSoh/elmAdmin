@@ -288,65 +288,6 @@ isActive page route =
     case ( page, route ) of
         (Home, Route.Home) -> 
             True
-        -- (UserManage, Route.UserManage) -> 
-        --     True
-        -- (AdminManage, Route.AdminManage) ->
-        --     True
-        -- (VideoUnit, Route.VideoUnit) ->
-        --     True
-        -- (Video, Route.Video) ->
-        --     True
-        -- (ApiVideo, Route.ApiVideo) ->
-        --     True
-        -- (FoodCalorie, Route.FoodCalorie)->
-        --     True
-        -- (UserPost, Route.UserPost)->
-        --     True
-        -- (Info, Route.Info)->
-        --     True
-        -- (Faq, Route.Faq)->
-        --     True
-        -- (UserInfo, Route.UserInfo)->
-        --     True
-        -- (UserDetail, Route.UserMDetail)->
-        --     True
-        -- (AdminRegist, Route.AdminRegist)->
-        --     True
-        -- (AdminDetail, Route.AdminDetail) ->
-        --     True
-        -- (AdminEdit, Route.AdminEdit)->
-        --     True
-        -- (UnitVideoEdit, Route.UvideoEdit)->
-        --     True
-        -- (UnitVideoDetail, Route.UvideoDetail)->
-        --     True
-        -- (UnitVideoRegist, Route.UvideoRegist)->
-        --     True
-        -- (VideoRegist, Route.VideoRegist)->
-        --     True
-        -- (VideoEdit, Route.VideoEdit)->
-        --     True
-        -- (VideoDetail, Route.VideoDetail)->
-        --     True
-        -- (ApiVideoRegist, Route.ApiVideoRegist)->    
-        --     True
-        -- (ApiVideoDetail, Route.ApiDetail)->
-        --     True
-        -- (ApiVideoEdit, Route.ApiEdit)->
-        --     True
-        -- (InfoRegist, Route.InfoRegist )->
-        --     True
-        -- (InfoDetail, Route.InfoDetail)->
-        --     True
-        -- (InfoEdit, Route.InfoEdit)->
-        --     True
-        -- (FaqDetail, Route.FaqDetail)->
-        --     True
-        -- (FaqRegist, Route.FaqRegist)->
-        --     True
-        -- (FaqEdit,Route.FaqEdit)->
-        --     True
-
         _ ->
             False
 

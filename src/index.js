@@ -10,7 +10,7 @@ if(!!document.createRange) {
   document.getSelection().removeAllRanges();
 }
 
-const url ='http://13.209.49.169:4000/'
+const url ='http://13.209.49.169:4000/api/v1/'
 var filter = "win16|win32|win64|mac|macintel"; 
 var flags = 
   { token : 
@@ -23,7 +23,6 @@ var flags =
         if (!executed) {
             executed = true;
             alert ("로그아웃되었습니다.")
-            // window.location.href="/#/Home"
             location.reload();
         }
     };
@@ -38,6 +37,52 @@ var app = Elm.Main.init({
   
 });
 
+
+
+setInterval(async function() {
+  if (localStorage.getItem ("refresh") ==  undefined && localStorage.getItem ("token") !== null && localStorage.getItem("token") !== "undefined")
+    {
+      var fetchSuccess = function () {
+        var parse = JSON.parse(localStorage.getItem("token"))
+        var myHeaders =  new Headers({
+          "Content-Type": "application/json",
+          "authorization": ("bearer " + parse.token)
+        });
+        var myInit = 
+          { method: 'GET',
+          headers: myHeaders,
+          mode: 'cors',
+          cache: 'default' };
+          fetch(url + 'auth/front/refresh',myInit)
+          .then(response => {
+            if(response.status == 401) {
+              localStorage.removeItem("token")
+              localStorage.removeItem("refresh")
+              return location.reload()
+            } else  {
+            return  response.json()}
+          })
+          .then(data => {
+            parse = data.token
+            var refresh = JSON.stringify(data)
+            localStorage.setItem ("refresh", refresh)
+          })
+          .catch(error => 
+          console.log(error)
+          
+            )
+        }
+        if(localStorage.getItem("refresh") == null) {
+          console.log(3)
+          return await fetchSuccess();
+        } else {
+        }
+      
+        
+    } else {
+      return;
+    }
+}, 10000)
 
 
 
@@ -145,18 +190,11 @@ app.ports.onStoreChange.send(token);
 
 app.ports.secRefreshFetch.subscribe(function() {
   var retoken = localStorage.getItem ("refresh")
-    var freshParse = JSON.parse(retoken)
-  // var getUrl = "auth/front/show"
-if (retoken == null) {
-  localStorage.removeItem("token")
-  localStorage.removeItem("refresh")
-  window.location.href = "/"
-  location.reload()
-} else {
-
-  var retoken = localStorage.getItem ("refresh")
-    var freshParse = JSON.parse(retoken)
-  // var getUrl = "auth/front/show"
+  if (retoken ==undefined) {
+    localStorage.removeItem("token")
+    location.reload()
+  }    
+  var freshParse = JSON.parse(retoken)
     var refreshTokenHeader =  new Headers({
     "Content-Type": "application/json",
     "authorization": ("bearer " + freshParse.token)
@@ -168,15 +206,12 @@ var tokenInit =
   mode: 'cors',
   cache: 'default' };
 
-
-
   fetch(url + 'auth/front/refresh',tokenInit)
     .then(response => {
       if(response.status == 401) {
         localStorage.removeItem("token")
         localStorage.removeItem("refresh")
         something();
-        window.location.href = "/"
         return location.reload()
       } else {
       return  response.json()
@@ -184,84 +219,56 @@ var tokenInit =
     })
     .then(data => {
       var token = JSON.stringify(data)
-      
       localStorage.setItem ("token", token)
-      // alert("tokenSaveSuccess")
-      var tokenHeader = new Headers ({
-        "Content-Type": "application/json",
-        "authorization": ("bearer " + data.token)
-      })
-
-      var refreshInit = 
-      { method: 'GET',
-      headers: tokenHeader,
-      mode: 'cors',
-      cache: 'default' };    
-      app.ports.onStoreChange.send(data);
-      // fetch(url + getUrl, refreshInit)
-      //   .then(response => 
-      //     console.log(response))
-      //   .then(() => {
-      //       // console.log(data.status)
-      //         var tokenReceive = localStorage.getItem ("token")
-      //         app.ports.onStoreChange.send(JSON.parse(tokenReceive)); 
-      //         app.ports.onSucceesSession.send("complete")
-      //         // location.reload()
-      //   })
-      //   .catch(error => alert( "showerror" + error))
-        
-        setTimeout(() => {
-          fetch(url + 'auth/front/refresh',refreshInit)
-          .then(response => response.json()
-          )
-          .then(refreshT => {
-            // alert("refreshToken succeess")
-            var refresh = JSON.stringify(refreshT)
-            localStorage.setItem ("refresh", refresh)
-          })
-          .catch(error => alert(error))
-        }, 600000);
+      app.ports.onStoreChange.send(data); 
+      app.ports.onSucceesSession.send("complete")
+      localStorage.removeItem("refresh")
+    
     })
-    .catch(error => console.log(error))
-
-  }
-
     
 })
 
 
+
 app.ports.refreshFetchData.subscribe(function() {
-  var token = localStorage.getItem("token")
-  var parse = JSON.parse(token)
-   
-    var myHeaders =  new Headers({
-      "Content-Type": "application/json",
-      "authorization": ("bearer " + parse.token)
-    });
   
-  var myInit = 
-    { method: 'GET',
-    headers: myHeaders,
-    mode: 'cors',
-    cache: 'default' };
-    app.ports.onStoreChange.send(parse);
- setTimeout(function() {
-    fetch(url + 'auth/front/refresh',myInit)
+  var retoken = localStorage.getItem ("refresh")
+  if (retoken ==undefined) {
+    localStorage.removeItem("token")
+    location.reload()
+  }  
+  var freshParse = JSON.parse(retoken)
+    var refreshTokenHeader =  new Headers({
+    "Content-Type": "application/json",
+    "authorization": ("bearer " + freshParse.token)
+  });
+
+var tokenInit = 
+  { method: 'GET',
+  headers: refreshTokenHeader,
+  mode: 'cors',
+  cache: 'default' };
+
+  fetch(url + 'auth/front/refresh',tokenInit)
     .then(response => {
-     
+      if(response.status == 401) {
+        localStorage.removeItem("token")
+        localStorage.removeItem("refresh")
+        something();
+        return location.reload()
+      } else {
       return  response.json()
+    }
     })
     .then(data => {
-      // alert(JSON.stringify(data))
-      var refresh = JSON.stringify(data)
-     localStorage.setItem ("refresh", refresh)
-    
+      var token = JSON.stringify(data)
+      localStorage.setItem ("token", token)
+      app.ports.onfourChange.send(data); 
+      app.ports.onSucceesSession.send("complete")
+      localStorage.removeItem("refresh")
+
+
     })
-    .catch(error => 
-     alert(error)
-     
-      )
-  }, 600000)
  
 })
 app.ports.toJs.subscribe(function(data) {
