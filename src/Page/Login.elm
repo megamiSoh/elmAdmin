@@ -127,7 +127,9 @@ update msg model =
         GotSession session ->
             ( { model | session = session }
             , 
-            Cmd.batch[Api.refreshFetchData (),  Route.replaceUrl (Session.navKey model.session) Route.Home]
+            Cmd.batch[Api.refreshFetchData ()
+            ,  Route.replaceUrl (Session.navKey model.session) Route.Home
+            ]
             )
 
 updateForm : (Form -> Form) -> Model -> ( Model, Cmd Msg )

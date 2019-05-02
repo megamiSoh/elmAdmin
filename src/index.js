@@ -23,7 +23,7 @@ var flags =
         if (!executed) {
             executed = true;
             alert ("로그아웃되었습니다.")
-            location.reload();
+            // location.reload();
         }
     };
 })();
@@ -228,49 +228,10 @@ var tokenInit =
     
 })
 
-
-
 app.ports.refreshFetchData.subscribe(function() {
-  
-  var retoken = localStorage.getItem ("refresh")
-  if (retoken ==undefined) {
-    localStorage.removeItem("token")
-    location.reload()
-  }  
-  var freshParse = JSON.parse(retoken)
-    var refreshTokenHeader =  new Headers({
-    "Content-Type": "application/json",
-    "authorization": ("bearer " + freshParse.token)
-  });
-
-var tokenInit = 
-  { method: 'GET',
-  headers: refreshTokenHeader,
-  mode: 'cors',
-  cache: 'default' };
-
-  fetch(url + 'auth/front/refresh',tokenInit)
-    .then(response => {
-      if(response.status == 401) {
-        localStorage.removeItem("token")
-        localStorage.removeItem("refresh")
-        something();
-        return location.reload()
-      } else {
-      return  response.json()
-    }
-    })
-    .then(data => {
-      var token = JSON.stringify(data)
-      localStorage.setItem ("token", token)
-      app.ports.onfourChange.send(data); 
-      app.ports.onSucceesSession.send("complete")
-      localStorage.removeItem("refresh")
-
-
-    })
- 
+  // not yet
 })
+
 app.ports.toJs.subscribe(function(data) {
   console.log(data)
   var post = JSON.stringify(data);
