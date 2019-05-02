@@ -129,10 +129,22 @@ makeExerPage page=
         |> required "total_count" int
 
 -- filter
-filterResult filterdata filterList =
+filterResult filterdata filterList page=
     Decode.succeed filterdata
         |> required "data" (Decode.list (filterStep2 filterList))
+        |> required "paginate" (filterPagenate page)
 
+
+filterPagenate page = 
+    Decode.succeed page
+        |> required "difficulty_code" (Decode.list string)
+        |> required "exercise_code" (Decode.list string)
+        |> required "instrument_code" (Decode.list string)
+        |> required "page" int
+        |> required "part_detail_code" (Decode.list string)
+        |> required "per_page" int
+        |> required "title" string
+        |> required "total_count" int
 
 filter filterList = 
     Decode.succeed filterList
@@ -160,11 +172,15 @@ filterStep2 filterList =
 
 getFilterDecoder getFilter= 
     Decode.succeed getFilter
+        |> required "page" int
+        |> required "per_page" int
         |> required "difficulty_code" (Decode.list string)
         |> required "exercise_code" (Decode.list string)
         |> required "instrument_code" (Decode.list string)
         |> required "part_detail_code" (Decode.list string)
         |> required "title" string
+
+
 -- difficultyApi
 levelDecoder levelData item = 
     Decode.succeed levelData
@@ -249,6 +265,30 @@ scrInfo info =
         |> required "scrHeight" int 
 
 -- together
+webtogetherdatawrap datawrap togetherdata detail page =
+    Decode.succeed datawrap
+        |> required "data" (Decode.list (webtogetherdata togetherdata detail ))
+        |> required "paginate" (paginate page)
+
+webtogetherdata togetherdata detail = 
+    Decode.succeed togetherdata
+        |> optional "content" (Decode.map Just string)Nothing
+        |> optional "detail" (Decode.map Just (Decode.list (webdetailtogether detail))) Nothing
+        |> required "id" int
+        |> required "inserted_at" string 
+        |> required "is_delete" bool
+        |> required "link_code" string
+        |> required "recommend_cnt" int
+        |> optional "nickname" (Decode.map Just string) Nothing
+        |> optional "profile" (Decode.map Just string) Nothing
+        
+
+webdetailtogether detail = 
+    Decode.succeed detail
+        |> required "id" int
+        |> required "title" string
+        |> required "thembnail" string
+
 togetherdatawrap datawrap ogetherdata detail page item pair= 
     Decode.succeed datawrap
         |> required "data" (Decode.list (tdata ogetherdata detail item pair))

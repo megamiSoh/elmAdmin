@@ -185,7 +185,7 @@ update msg model =
                 if ok.data == [] then
                     ({model | data = ok.data, sumCount = result, loading = False}, Cmd.none)
                 else
-                    ({model | data = ok.data, sumCount = result, loading = False}, Cmd.none)
+                    ({model | data = ok.data, sumCount = result, loading = True}, Cmd.none)
         GetList (Err err) ->
             let
                 serverErrors =
@@ -235,11 +235,21 @@ view model =
                     ]
             }
     else
+        if model.loading then
+            { title = "유어핏 운동"
+            , content = 
+               div [] [ div [class "spinnerBackWeb"] [
+                    spinner
+                ]
+                , div [] [ web model ]
+                ]
+                
+            }
+        else
             { title = "유어핏 운동"
             , content = 
                 div [] [ web model ]
             }
-
             
 web model =
     div [ class "yourfitExercise_yf_workoutcontainerwrap" ]

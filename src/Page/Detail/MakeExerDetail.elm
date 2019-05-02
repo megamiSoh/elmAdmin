@@ -77,7 +77,7 @@ init session mobile
         
     )
     
--- 
+
 type Msg 
     = CheckDevice E.Value
     | BackPage
@@ -89,6 +89,9 @@ type Msg
     | ScrapComplete (Result Http.Error Decoder.Success)
     | GotSession Session
     | SaveIdComplete E.Value
+    | RecordComplete E.Value
+    | VideoRecordComplete (Result Http.Error Decoder.Success)
+
 
 toSession : Model -> Session
 toSession model =
@@ -105,11 +108,26 @@ subscriptions model =
     [ Api.receiveId GetId
     , Api.videoSuccess Loading
     , Session.changes GotSession (Session.navKey model.session)
-    , Api.successId SaveIdComplete ]
+    , Api.successId SaveIdComplete
+    , Api.videoWatchComplete RecordComplete ]
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        VideoRecordComplete (Ok ok) ->
+            (model, Cmd.none)
+        VideoRecordComplete (Err err) ->
+            (model, Cmd.none)
+        RecordComplete str ->
+            let
+                decodestr = Decode.decodeValue Decode.string str
+            in
+                case decodestr of
+                    Ok ok ->
+                        (model, Api.get VideoRecordComplete  (Endpoint.videoCompleteRecord model.videoId)  (Session.cred model.session) Decoder.resultD)
+                
+                    Err err ->
+                        (model, Cmd.none)
         SaveIdComplete str ->
             let
                 decodestr = Decode.decodeValue Decode.string str

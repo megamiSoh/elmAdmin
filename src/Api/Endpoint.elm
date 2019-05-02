@@ -43,7 +43,9 @@ module Api.Endpoint exposing
     , temporaryPwd
     , profileImg
     , resetprofileImg
-    , checkoverlapId)
+    , checkoverlapId
+    , webtogetherList
+    , videoCompleteRecord)
 
 import Http
 import Url.Builder exposing (QueryParameter)
@@ -155,7 +157,10 @@ accountDelete =
 togetherList = 
     url ["front", "together"] []
 
-    
+
+webtogetherList = 
+    url ["front", "together", "list"] []
+
 togetherShare id = 
     url ["front", "fit", id, "share"] []
 
@@ -231,3 +236,6 @@ resetprofileImg =
 
 checkoverlapId = 
     url ["auth", "id" ,"posible"] []
+
+videoCompleteRecord id =
+    url ["front", "my", "exercises", id][]

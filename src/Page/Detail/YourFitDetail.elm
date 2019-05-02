@@ -95,6 +95,7 @@ subscriptions model =
         Api.receiveId ReceiveId
         , Session.changes GotSession (Session.navKey model.session)
         , Api.videoSuccess Loading
+        , Api.videoWatchComplete VideoEnd
         ]
 mydata session = 
     Decoder.sessionCheckMydata
@@ -111,6 +112,8 @@ type Msg
     | BackDetail
     | GotSession Session
     | MyInfoData (Result Http.Error Decoder.DataWrap)
+    | VideoEnd Encode.Value
+    | VideoRecordComplete (Result Http.Error Decoder.Success)
     
 
 toSession : Model -> Session
@@ -124,7 +127,21 @@ toCheck model =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
+    case msg of 
+        VideoRecordComplete (Ok ok) ->
+            (model, Cmd.none)
+        VideoRecordComplete (Err err) ->
+            (model, Cmd.none)
+        VideoEnd complete ->
+            let
+                decodestr = Decode.decodeValue Decode.string complete
+            in
+                case decodestr of
+                    Ok ok ->
+                        (model, Api.get VideoRecordComplete  (Endpoint.videoCompleteRecord model.videoId)  (Session.cred model.session) Decoder.resultD)
+                
+                    Err err ->
+                        (model, Cmd.none)
         MyInfoData (Ok ok) ->
             (model, Cmd.none) 
         MyInfoData (Err err) ->

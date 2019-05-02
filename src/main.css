@@ -469,7 +469,9 @@ text-align: left;
   padding: 1rem;
   margin-top: 3rem;
 }
-
+.signup_yf_box img {
+  width: 200px;
+}
 .signup_yf_h1
 {
   display: block;
@@ -1390,6 +1392,7 @@ margin:  0 0 2.8rem 0;
   margin-top:6px;
   text-align: center;
   border-bottom: .5px solid;
+  padding: 1rem;
 }
 
 .filterstep2_save_btn,.filterstep2_del_btn
@@ -2693,11 +2696,11 @@ input.vaidColor2:focus {
   width: 657px;
 }
 
-.m_filterStep1_listbox::before {
+/* .m_filterStep1_listbox::before {
   content: '';
   position: fixed;
   height: 100%;
-}
+} */
 
 /* .yf_workoutadd { */
   /* float: right !important; */
@@ -2852,6 +2855,9 @@ input.vaidColor2:focus {
 .iconFixed {
   position: relative;
   margin-left: 1rem;
+  display: flex;
+  /* align-items: flex-end; */
+  width: 100%;
 }
 
 .cus_topbox
@@ -3385,7 +3391,7 @@ float: left;
     color: #fff;
     justify-content: center;
     display: none;
-    z-index: 999;
+    z-index: 9;
     font-size: 1.5rem;
     margin: 30px 0px 0px 0px;
 }
@@ -3969,14 +3975,7 @@ width: 100px;
 }
 
 
-.home_main_top
-{
-  width: 100%;
-  height: 30rem;
-  background: url("/image/bg_back.png") no-repeat center center fixed;
-  background-size: cover;
-  background-position: 0 -20rem; 
-}
+
 
 
 .home_main_box_warp
@@ -4531,7 +4530,7 @@ overflow: hidden;
 transition: height .5s;
 }
 .expandOn {
-height: 150px;
+height: 200px;
 -webkit-transition: height .5s;
 transition: height .5s;
 overflow: hidden;
@@ -5335,7 +5334,7 @@ margin-top: 1rem;
   margin: auto;
   margin-top: 1rem;
   font-size: 1.5em;
-  height: 50rem;
+  height: 797px;
   width: 1340px;
   overflow: scroll;
   overflow-x: hidden;
@@ -5681,7 +5680,15 @@ margin:  0 0 2.8rem 0;
   flex-direction: column;
 
 }
-
+.together_mediabox2:hover {
+  box-shadow: 2px 2px #ede9e9;
+  /* transition: 0.3s; */
+  background: url(/image/play-solid.svg) no-repeat center center #f4f2f2;
+  background-size: 3rem;
+}
+.together_mediabox2:hover img {
+  opacity: .6;
+}
 .together_yf_content
 {
   text-align: center;
@@ -6913,11 +6920,29 @@ input.vaidColor2:focus {
 .togetherVideo {
   width: 657px;
 }
-
-.m_filterStep1_listbox::before {
-  content: '';
-  position: fixed;
+.m_filterStep1_listsrollboxAdd {
   height: 100%;
+  overflow: scroll;
+}
+.m_filterStep1_listsrollboxAdd::after {
+  content: '';
+    /* position: fixed; */
+    height: 250px;
+    /* top: 0; */
+    width: 100%;
+    display: block;
+    /* left: 0; */
+    clear: both;
+}
+.m_filterStep1_listsrollbox::after {
+  content: '';
+    /* position: fixed; */
+    height: 250px;
+    /* top: 0; */
+    width: 100%;
+    display: block;
+    /* left: 0; */
+    clear: both;
 }
 
 /* .yf_workoutadd { */
@@ -7074,7 +7099,10 @@ input.vaidColor2:focus {
   position: relative;
   margin-left: 1rem;
 }
-
+/* .makeExerHeader::before {
+  content: '';
+  height: 55px;
+} */
 .cus_topbox
 {
   width: 100%;
@@ -8195,14 +8223,14 @@ width: 100px;
 }
 
 
-.home_main_top
+/* .home_main_top
 {
   width: 100%;
   height: 30rem;
   background: url("/image/bg_back.png") no-repeat center center fixed;
   background-size: cover;
   background-position: 0 -20rem; 
-}
+} */
 
 
 .home_main_box_warp
@@ -8403,7 +8431,8 @@ width: 100px;
 }
 
 .circlePlay {
-background: url(/image/play-circle-solid.svg) no-repeat center center;     width: 100%;
+background: url(/image/play-circle-solid.svg) no-repeat center center;     
+width: 100%;
  height: 100%;
  position: absolute;
  top: 0;
@@ -8444,7 +8473,7 @@ background: url(/image/play-circle-solid.svg) no-repeat center center;     width
   margin: auto;
   margin-top: 1rem;
   font-size: 1.5em;
-  height: 50rem;
+  /* height: 50rem; */
   width: 1340px;
   /* overflow: scroll; */
   /* overflow-x: hidden; */
@@ -8458,10 +8487,9 @@ background: url(/image/play-circle-solid.svg) no-repeat center center;     width
 .filterStep1_listbox, .filterStep1_listbox2
 {
   float: left;
-  height: 50rem;
-  width: 50%;
-  overflow: hidden;
-  padding-bottom: 10rem;
+  height: 797px;
+  width: 50%;overflow: hidden;
+  /* padding-bottom: 9rem; */
   /* border-bottom: 3px solid #ccc; */
 }
 .filterStep1_listbox {
@@ -8489,9 +8517,14 @@ background: url(/image/play-circle-solid.svg) no-repeat center center;     width
 .filterStep1_listsrollbox
 {
   overflow: scroll;
-  height: 100%; 
+  height: 646px;
   /* border-right: .1rem solid #ccc; */
   /* border-right: .1rem solid #CCCCCC; */
+}
+.filterStep1_listsrollboxAdd {
+  overflow: scroll;
+  height: 100%;
+  padding-bottom: 2rem;
 }
 
 .descriptionBackground {
@@ -8524,7 +8557,8 @@ background: url(/image/play-circle-solid.svg) no-repeat center center;     width
 }
 
 .togetherheaderSpace {
-  height: 115px;
+  position: relative;
+  height: 114px;
 }
 .yf_termstextx {
   width: 100%;
@@ -8547,3 +8581,48 @@ background: url(/image/play-circle-solid.svg) no-repeat center center;     width
 
 .column1 i, .column2 i,.column3 i
 {margin-right:.5rem; }
+
+.home_main_top
+{
+  width: 100%;
+  height: 30rem;
+  /* background: url("/image/bg_back.png" ) no-repeat center center fixed; */
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: 0 -20rem; 
+}
+.sechome_main_top
+{
+  width: 100%;
+  height: 30rem;
+  background: blue;
+  background-size: cover;
+  background-position: 0 -20rem; 
+}
+.lazyimage {
+  width: 100%;
+  background-size: cover;
+}
+.shut {
+  display: none;
+}
+.loadlistbox {
+  /* height: 2200px;;
+  overflow: scroll; */
+}
+.worklistbox:last-child {
+  /* height: 100%; */
+}
+
+.warnText {
+font-size: 12px;
+font-weight: bold;
+color: red;  
+}
+
+.moreStyle {
+  font-size: 12px;
+  padding: .5rem;
+  font-weight: bold;
+}

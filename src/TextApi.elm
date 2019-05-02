@@ -195,7 +195,7 @@ update msg model =
         GoDevPost ->
             (model, post model.page model.per_page "http://13.209.49.169:4000/api/v1/front/together/test")
         GoPost ->
-            (model, post model.page model.per_page "http://13.209.49.169:4000/api/v1/front/together/test")
+            (model, post model.page model.per_page "https://api.yfit.co.kr/api/v1/front/together/test")
             
 
 

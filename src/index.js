@@ -10,7 +10,7 @@ if(!!document.createRange) {
   document.getSelection().removeAllRanges();
 }
 
-const url ='http://13.209.49.169:4000/api/v1/'
+const url ='http://13.209.49.169:4000/'
 var filter = "win16|win32|win64|mac|macintel"; 
 var flags = 
   { token : 
@@ -307,12 +307,16 @@ app.ports.videoData.subscribe(function(data) {
     jwplayer("myElement").setup (
       { "playlist" : data
       , autostart : true 
+      }).on("playlistComplete", function () {
+        app.ports.videoWatchComplete.send("complete")
       })
     }
   else {
     jwplayer("myElement").setup (
       { "playlist" : data.pairing
       , autostart : true 
+      }).on("playlistComplete", function () {
+        app.ports.videoWatchComplete.send("complete")
       })
   }
  }
@@ -332,7 +336,9 @@ app.ports.togetherDataList.subscribe(function(data) {
       "viewability": true
     }
     }
-  ).on("ready")
+  ).on("playlistComplete", function () {
+    app.ports.videoWatchComplete.send("complete")
+  })
 
   return false;
 }
@@ -361,11 +367,9 @@ app.ports.getscrollHeight.subscribe(function(data) {
   if (data){
     document.documentElement.style.position = "fixed"
     document.documentElement.style.top = '-' + String(heightValue) + 'px'
-    // document.documentElement.style.overflow = "scroll"
   } else {
     document.documentElement.style.position = ""
     document.documentElement.style.top = ''
-    // document.documentElement.style.overflow = ""
   }
 })
 
@@ -374,7 +378,7 @@ app.ports.scrollControl.subscribe (function () {
     
     document.body.style.overflow = ""
   } else {
-    document.body.style.overflow = "scroll"
+    document.body.style.overflow = ("hidden", "auto")
   }
 })
 

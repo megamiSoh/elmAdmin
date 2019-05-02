@@ -9,11 +9,13 @@ import Json.Decode as Decode
 import Route exposing(..)
 import Api as Api
 import Page as P
+import Html.Lazy exposing (lazy)
 type alias Model 
     = {
         session : Session,
         title : String
          , check : Bool
+         , image : String
     }
 
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
@@ -21,11 +23,13 @@ init session mobile=
     (
         { session = session
         , title = "" 
-        , check = mobile}
+        , check = mobile
+        , image = "/image/lazy_bg_back.jpg"}
        , Cmd.none
     )
-type Msg = 
-    NoOp 
+type Msg 
+    = NoOp 
+    | LoadImg
     -- | GotSession Session
 
 toSession : Model -> Session
@@ -42,9 +46,14 @@ subscriptions model=
     Sub.none
     -- Session.changes GotSession (Session.navKey model.session)
 
+onLoad msg =
+    on "load" (Decode.succeed msg)
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        LoadImg ->
+            ({model | image = "/image/bg_back.png"}, Cmd.none)
         NoOp ->
             (model, Cmd.none)
         -- GotSession session ->
@@ -58,7 +67,7 @@ view model =
     
     title = "YourFit"
     , content = 
-        webOrApp model
+       webOrApp model
     }
 
 webOrApp model =
@@ -70,17 +79,12 @@ webOrApp model =
         ]
     else 
          div [ class "yf_contentswarp" ]
-                 [div [ class "home_main_top" ]
-    [ div [ class "home_main_box_warp" ]
-        [ div [ class "home_main_box" ]
-            [ h1 [ class "home_main_title" ]
-                [ text "당신만을 위한 운동트레이닝" ]
-            , p [ class "home_main_title2" ]
-                [ text "YOUR FIT" ]
-            ]
-        ]
-    ]
-    ,
+                 [
+                     lazy lazyview model.image 
+                     
+        , 
+        -- 
+        -- ,
     div [ class "home_main_middle" ]
     [ div [ class "columns home_yf_columns" ]
         [ div [ class "column1" ]
@@ -129,7 +133,28 @@ webOrApp model =
     ]   
                 ,P.viewFooter
             ]
-    
+  
+
+
+lazyview image= 
+    div [ class "home_main_top lazyimage", 
+                     style "background-size" "cover" ,
+                     style "background" ("0px -20rem / cover no-repeat url(" ++ image ++") fixed") 
+                    --  , style "filter" "blur(4px)"
+                    --  , style onLoad LoadImg 
+                   
+                    
+                     ]
+        [ div [ class "home_main_box_warp" ]
+            [ div [ class "home_main_box" ]
+                [ h1 [ class "home_main_title" ]
+                    [ text "당신만을 위한 운동트레이닝" ]
+                , p [ class "home_main_title2" ]
+                    [ text "YOUR FIT" ]
+                ]
+            ]
+            , img [src "image/bg_back.png", onLoad LoadImg, class "shut"] []
+        ] 
         
 home =
     div [ class "m_home_topbox" ]

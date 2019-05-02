@@ -28,6 +28,8 @@ type alias Model =
     , check : Bool
     , loading : Bool
     , title : String
+    , page : Int
+    , per_page : Int
     }
 
 type alias FilterCode =
@@ -45,6 +47,8 @@ filterEncoder model =
         , ("instrument_code", (Encode.list Encode.string) model.isActiveTool)
         , ("part_detail_code", (Encode.list Encode.string) model.isActivePart)
         , ("title", Encode.string model.title)
+        , ("per_page", Encode.int model.per_page)
+        , ("page", Encode.int model.page)
         ]
 
 
@@ -60,6 +64,8 @@ init session mobile
         , part = []
         , level = []
         , exer = []
+        , page = 1
+        , per_page = 20
         , tool = []
         , loading = True
         , check= mobile}

@@ -72,7 +72,7 @@ port screenInfo : (Value -> msg) -> Sub msg
 port getPageId : (Value -> msg) -> Sub msg
 port setCookieSuccess : (Value -> msg) -> Sub msg
 port getHeightValue : (Value -> msg) -> Sub msg
-
+port videoWatchComplete : (Value -> msg) -> Sub msg
 viewerChanges toMsg decoder =
     onStoreChange (\value -> toMsg (decodeFromChange decoder value))
 

@@ -351,7 +351,10 @@ update msg model =
                     ({model | style = String.fromInt(idx), sbuttonHidden = "sbuttonHidden", setData = set, cannotSave = ""}, Cmd.none)
 
         Plus idx ->
+            if model.setData < 5 then
             ( {model | setData = model.setData + 1 },  Cmd.none)
+            else
+            (model, Cmd.none)
         Minus idx ->
             if (model.setData - 1) <= 0 then
                 ( {model | setData = 0 },  Cmd.none)
@@ -378,6 +381,8 @@ update msg model =
             in
                 if model.setData == 0 then
                 ({model | cannotSave = "0 이하의 값은 저장할 수 없습니다."}, Cmd.none)
+                else if model.setData > 5 then
+                ({model | cannotSave = "6 이상의 값은 저장 할 수 없습니다."}, Cmd.none)
                 else
                 ( {model | addData = result, cannotSave  ="", style = "" },  Cmd.none)
         UpdateSet str->
@@ -388,6 +393,8 @@ update msg model =
                 Just ok ->
                     if ok == 0 then
                     ({model | cannotSave = "0 이하의 값은 저장할 수 없습니다."}, Cmd.none)
+                    else if ok > 5 then
+                    ({model | cannotSave = "6 이상의 값은 저장 할 수 없습니다."}, Cmd.none)
                     else
                     ({model | setData = ok}, Cmd.none)
             
@@ -666,7 +673,7 @@ expandPanel idx model rest=
                 if justokData rest == "" then text "분"  else text "회"
             , button [ class "button filterstep2_fbtn", onClick (Plus idx) ]
                 [ text "+" ]
-            , div [] [text model.cannotSave]
+            , div [class "warnText"] [text model.cannotSave]
             , button [ class "button is-dark filterstep2_save_btn", onClick (Save idx) ]
                 [ text "저장" ]
             ,button [ class "button is-danger filterstep2_del_btn", onClick (Delete idx) ]

@@ -16,43 +16,66 @@ import Html.Lazy exposing (lazy, lazy2)
 import Page as Page
 import Task
 
-type alias Model 
-    = {
-        session : Session,
-        isActive : String,
-        checkDevice : String
-        , check : Bool
-        , page : Int
-        , per_page : Int
-        , like : Int
-        , scrap : Bool
-        , count : Int
-        , togetherData : TogetherDataWrap
-        , screenInfo : ScreenInfo
-        , loading : Bool
-        , infiniteLoading : Bool
-        , appData : List TogetherData
-        , ofheight : Int
-        , need2login : Bool
-        , videoStart : String
-        , showAllText : Int
-        , likeList : List Int
-        , idx : Int
-        , showDetail : Bool
-        , pageNum : Int
-        , height : String
-        , checkauth : Bool
-        , oneOfdata : List TogetherData
-        , zindex : String
-        , cnt : Int
+type alias Model =
+    { session : Session
+    , isActive : String
+    , checkDevice : String
+    , check : Bool
+    , page : Int
+    , per_page : Int
+    , like : Int
+    , scrap : Bool
+    , count : Int
+    , togetherData : TogetherDataWrap
+    , screenInfo : ScreenInfo
+    , loading : Bool
+    , infiniteLoading : Bool
+    , appData : List TogetherData
+    , ofheight : Int
+    , need2login : Bool
+    , videoStart : String
+    , showAllText : Bool
+    , likeList : List Int
+    , idx : Int
+    , showDetail : Bool
+    , pageNum : Int
+    , height : String
+    , checkauth : Bool
+    , oneOfdata : TogetherData
+    , zindex : String
+    , cnt : Int
+    , webtogetherData : WebToghtherDataWrap
     }
+
+type alias WebToghtherDataWrap =
+    { data : List WebTogetherData 
+    , paginate : Paginate }
+
+type alias WebTogetherData = 
+    { content : Maybe String
+    , detail : Maybe (List WebDetailTogether)
+    , id : Int
+    , inserted_at : String
+    , is_delete : Bool
+    , link_code : String
+    , recommend_cnt : Int
+    , nickname : Maybe String
+    , profile : Maybe String
+    }
+
+type alias WebDetailTogether = 
+    { id : Int
+    , title : String
+    , thembnail : String
+    }
+
 type alias TogetherDataWrap = 
     { data : List TogetherData 
     , paginate : Paginate
     }
 
 type alias TogetherLikeWrap = 
-    {data : TogetherData}
+    { data : TogetherData }
 
 type alias TogetherData = 
     { content : Maybe String
@@ -65,6 +88,9 @@ type alias TogetherData =
     , nickname : Maybe String
     , profile : Maybe String
     }
+
+
+
 type alias DetailTogether = 
     { thembnail : String
     , difficulty_name : Maybe String
@@ -119,7 +145,16 @@ init session mobile
         , height = ""
         , zindex = ""
         , cnt = 0
-        , oneOfdata = []
+        , oneOfdata = 
+            {content = Nothing
+            , detail = Nothing
+            , id = 0
+            , inserted_at = ""
+            , is_delete = False
+            , link_code = ""
+            , recommend_cnt = 0
+            , nickname = Nothing
+            , profile = Nothing}
         , screenInfo = 
             { scrollHeight = 0
             , scrollTop = 0
@@ -131,9 +166,17 @@ init session mobile
         , videoStart = ""
         , per_page = 9
         , loading = True
-        , showAllText = 0
+        , showAllText = False
         , like = 0
         , scrap = False
+        , webtogetherData = 
+            { data = []
+            , paginate =
+                { page = 0 
+                , per_page = 0
+                , total_count = 0
+                }
+            }
         , togetherData = 
             { data = []
             , paginate = 
@@ -143,13 +186,31 @@ init session mobile
             }
         }
         ,  Cmd.batch 
-        [  dataEncoder 1 9 session
+        [ (if mobile then
+            dataEncoder 1 9 session
+            else
+            webDataEncoder 1 9 session
+        )
         , mydata session
         , Cmd.batch [
             Api.removeJw ()
             , Api.scrollControl ()
         ]]
     )
+webDataEncoder : Int -> Int -> Session -> Cmd Msg
+webDataEncoder page perpage session = 
+    let
+        list = 
+            Encode.object 
+                [ ("page" , Encode.int page)
+                , ("per_page", Encode.int perpage)]
+                |> Http.jsonBody
+
+    in
+    (Decoder.webtogetherdatawrap WebToghtherDataWrap WebTogetherData WebDetailTogether Paginate)
+    |> Api.post Endpoint.webtogetherList (Session.cred session) WebGetData list
+    
+
 dataEncoder : Int -> Int -> Session -> Cmd Msg
 dataEncoder page perpage session=
     let
@@ -202,13 +263,17 @@ type Msg
     | Scrap Int
     | VideoCall ((List Pairing) ,Int)
     | OnLoad
-    | ShowAllText Int
+    | ShowAllText
     | LikeUpdate (Result Http.Error TogetherLikeWrap)
     | TogetherDetail Int
     | NoOp
     | GetHeight Encode.Value
     | GotSession Session
     | MyInfoData (Result Http.Error Decoder.DataWrap)
+    | WebGetData (Result Http.Error WebToghtherDataWrap)
+    | ShowAllTextApp Int
+    | VideoEnd Encode.Value
+    | VideoRecordComplete (Result Http.Error Decoder.Success)
 
 mydata session = 
     Decoder.sessionCheckMydata
@@ -226,12 +291,34 @@ toCheck model =
 subscriptions :Model -> Sub Msg
 subscriptions model=
     Sub.batch[Api.getHeightValue GetHeight
-    , Session.changes GotSession (Session.navKey model.session)]
+    , Session.changes GotSession (Session.navKey model.session)
+    , Api.videoWatchComplete VideoEnd]
     -- Api.videoSuccess Loading
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        VideoRecordComplete (Ok ok) ->
+            (model, Cmd.none)
+        VideoRecordComplete (Err err) ->
+            (model, Cmd.none)
+        VideoEnd complete ->
+            let
+                decodestr = Decode.decodeValue Decode.string complete
+            in
+                case decodestr of
+                    Ok ok ->
+                        (model, Api.get VideoRecordComplete  (Endpoint.videoCompleteRecord model.videoStart)(Session.cred model.session) Decoder.resultD)
+                
+                    Err err ->
+                        (model, Cmd.none)
+        ShowAllTextApp id ->
+            ({model | idx = id, showAllText = not model.showAllText}, Cmd.none)
+
+        WebGetData (Ok ok) ->
+            ({model | webtogetherData = ok}, Cmd.batch[scrollToTop NoOp])
+        WebGetData (Err err) ->
+            (model, Cmd.none)
         MyInfoData (Ok ok) ->
             (model, Cmd.none) 
         MyInfoData (Err err) ->
@@ -259,20 +346,10 @@ update msg model =
         NoOp ->
             (model, Cmd.none)
         TogetherDetail id ->
-            let
-                getData = 
-                    List.filter (\x -> 
-                        x.id == id
-                    )model.togetherData.data
-            in
             if id == 0 then
-            ({model | showDetail = not model.showDetail, zindex = ""}, Cmd.batch[Api.getscrollHeight (Encode.bool (not model.showDetail))
-            , mydata model.session])
-            else 
-            ({model | oneOfdata = getData, showDetail = not model.showDetail},Cmd.batch [
-                 Api.getscrollHeight (Encode.bool (not model.showDetail))
-                , mydata model.session
-            ])
+            ({model | showDetail = not model.showDetail, showAllText = False}, Cmd.batch[ Api.getscrollHeight (Encode.bool (not model.showDetail))])
+            else
+             ({model | showDetail = not model.showDetail, showAllText = False}, Cmd.batch[likeApi model.session (String.fromInt id), Api.getscrollHeight (Encode.bool (not model.showDetail))])
         LikeUpdate (Ok ok) ->
             let
                 udtLike = 
@@ -282,10 +359,10 @@ update msg model =
                         else
                             x
                     )model.appData 
-                webLike = 
-                    List.map (\x ->
-                            {x | recommend_cnt = ok.data.recommend_cnt}
-                    )model.oneOfdata
+                -- webLike = 
+                --     List.map (\x ->
+                --             {x | recommend_cnt = ok.data.recommend_cnt}
+                --     )model.oneOfdata
                 webAllupdate = 
                     List.map (\x ->
                         if x.id == model.like then
@@ -297,7 +374,7 @@ update msg model =
                 webR = model.togetherData
                 result = {webR | data = webAllupdate} 
             in
-            ({model | appData = udtLike,oneOfdata = webLike, togetherData = result}, Cmd.none)
+            ({model | appData = udtLike,oneOfdata = ok.data, togetherData = result}, Api.getscrollHeight (Encode.bool True))
         LikeUpdate (Err err) ->
             let
                 serverErrors =
@@ -305,8 +382,8 @@ update msg model =
             in  
             (model, (Session.changeInterCeptor (Just serverErrors) model.session))
 
-        ShowAllText id->
-            ({model | showAllText = id}, Cmd.none)
+        ShowAllText ->
+            ({model | showAllText = not model.showAllText}, Cmd.none)
         OnLoad ->
             (model, Cmd.none)
             -- if model.count >= List.length (model.togetherData.data) then
@@ -368,11 +445,11 @@ update msg model =
         PageBtn (idx, str) ->
             case str of
                 "prev" ->
-                    ({model | page = idx, pageNum = model.pageNum - 1}, Cmd.batch[dataEncoder idx model.per_page model.session])
+                    ({model | page = idx, pageNum = model.pageNum - 1}, Cmd.batch[webDataEncoder idx model.per_page model.session , Api.getscrollHeight (Encode.bool False)])
                 "next" ->
-                    ({model | page = idx, pageNum = model.pageNum + 1}, Cmd.batch[dataEncoder idx model.per_page model.session])
+                    ({model | page = idx, pageNum = model.pageNum + 1}, Cmd.batch[webDataEncoder idx model.per_page model.session , Api.getscrollHeight (Encode.bool False)])
                 "go" -> 
-                    ({model | page = idx}, Cmd.batch[dataEncoder idx model.per_page model.session])
+                    ({model | page = idx}, Cmd.batch[webDataEncoder idx model.per_page model.session , Api.getscrollHeight (Encode.bool False)])
                 _ ->
                     (model, Cmd.none)
         LikeComplete (Ok ok) ->
@@ -474,7 +551,7 @@ view model =
             ]
     }
     else
-        if List.length model.togetherData.data > 0 then
+        if List.length model.webtogetherData.data > 0 then
             { title = "함께해요"
             , content = 
                 div [class "togetherWrap"] [
@@ -668,41 +745,22 @@ appContentsItem idx item model=
                             Nothing ->
                                 []
                     ), idx)) ][]
-                        -- , img [src thumb, onLoad OnLoad] []
                 ],
                  div [id ("myElement" ++ String.fromInt(idx)) ]  [] ] 
-            -- , div [ class "m_to_yf_more" ]
-            --     [ div [ ]
-            --         [ strong []
-            --             [ text "자세히보기" ]
-            --         ]
-            --     ]
                 ]
             Nothing ->
-                div [][]
-            , if String.length (justDatadescription item.content) > 100 then
-                   pre [class "togetherArticle descriptionBackground"][
-                        if model.showAllText == item.id then
-                            text (justDatadescription item.content)
-                        else
-                            text (String.dropRight ((String.length(justDatadescription item.content) - 100)) (justDatadescription item.content) )
-                            
-                   , div [] [
-                    ul [] [
-                        li [] (List.map (\x-> detailData x model item.id) (justListData item.detail))
-                    ]
-                ]
-                ]
-                else
-                   pre [class "togetherArticle descriptionBackground"]
-                   [ text (justDatadescription item.content)
-                   , div [] 
+                pre [class "togetherArticle descriptionBackground"]
+                    [ text (justDatadescription item.content)
+                    , div [] 
                     (List.map (\x-> detailData x model item.id) (justListData item.detail))
                 ]
-                -- ]
-        -- , div [ class "m_to_yf_text" ]
-        --     [ text (justData item.content )]
-        --  , text (String.fromInt(String.length (justData item.content)))
+        , pre [class "togetherArticle descriptionBackground"]
+                   [ text (justDatadescription item.content)
+                   , div [] [
+                       div [] 
+                    (List.map (\x-> detailData x model item.id) (justListData item.detail))
+                   ]
+                ]
         , div [ class "level-left m_to_yf_like", onClick (IsLike (item.id, item.recommend_cnt)) ]
             [ text( "좋아요" ++ String.fromInt (item.recommend_cnt) ++"개" ) 
             , 
@@ -721,7 +779,7 @@ appContentsItem idx item model=
         --     -- , 
         --     -- i [ class "fas fa-bookmark together_bookmark" ]
         --     --     []
-        --     ]
+        --     ] 
         
         ]
    
@@ -802,11 +860,9 @@ contentsBody model=
             , div [] [
                 if model.showDetail then
                 div [class "togetherdetail"] [
-                       div [class "togetherdetailItem"] (
-                            List.indexedMap (\idx x ->
-                            detailItem idx x model
-                            ) model.oneOfdata
-                       )
+                       div [class "togetherdetailItem"] [
+                           detailItem model.oneOfdata model
+                       ]
                 ]
                 else
                 div [] []
@@ -814,17 +870,17 @@ contentsBody model=
             , div [] [
                  div [](List.indexedMap (
                     \idx x -> userItem idx x model
-                ) model.togetherData.data)
+                ) model.webtogetherData.data)
                 ,pagination 
                     PageBtn
-                    model.togetherData.paginate
+                    model.webtogetherData.paginate
                     model.pageNum
              ]
         
         ]
     ]
 
-detailItem idx item model =
+detailItem item model =
     let
         pairing = 
             List.head
@@ -840,13 +896,18 @@ detailItem idx item model =
                         x.thembnail   
                     )(justListData item.detail)
                 ) 
+        detail = 
+            List.head (
+                List.map (\x ->
+                    x.exercise_items
+                ) (justListData item.detail)
+            )
     in
     div [] [
         div [ class "together_yf_text togetherVideo" ]
-                 
                 [    div [class "button is-danger together_closebtn", onClick (TogetherDetail 0)] [text "닫기"],
-                case thumbnail of
-                    Just thumb ->
+                -- case thumbnail of
+                --     Just thumb ->
                         div ([class "thumbTest"]
                         )[  
                             div [class "clickThis",onClick (VideoCall ((
@@ -864,39 +925,34 @@ detailItem idx item model =
                                     Nothing ->
                                         []
                             ), item.id)) ][]
-                            -- , img [class "toImg2", src (justData thumbnail)] []
                         ],
                             div [id ("myElement" ++ String.fromInt(item.id)) ]  [] ]
-                    Nothing ->
-                        div [] [] 
-                    , div [id ("together" ++ (String.fromInt(idx)))] [] 
                     , 
-                    -- if String.length (justData item.content) > 100 then
-                    -- div [][
-                    --         if model.showAllText == item.id then
-                    --             text (justData item.content)
-                    --         else
-                    --             text (String.dropRight ((String.length(justData item.content) - 100)) (justData item.content) )
-                                
-                    -- , div [] [
-                    --     ul [] [
-                    --         li [] (List.map (\x-> detailData x model item.id) (justListData item.detail))
-                    --     ]
-                    -- ]
-                    -- ]
-                    -- else
                     pre [class"together_list descriptionBackground"]
-                    [ text (justDatadescription item.content)
-                    , div []  
-                        (List.map (\x-> detailData x model item.id) (justListData item.detail))
-                    ]
-                    ]
+                    [ text (justDatadescription item.content)]
+                    , if List.length (justListData detail) < 5 then
+                    div [class "detailData"]  
+                        (List.indexedMap (\idx x ->
+                            webdetailData idx x model.showAllText
+                        ) (List.sortBy .sort (justListData detail)))
                     
-                
-                    -- , text (String.fromInt(String.length (justData item.content)))
-                    
-                    -- , div [] [text "더보기"]
-                    --  ]
+                    else
+                        if model.showAllText then
+                        div [][
+                        div [class "detailData"]  
+                        (List.indexedMap (\idx x ->
+                            webdetailData idx x model.showAllText
+                        )  (List.sortBy .sort (justListData detail)))
+                        , div [class "cursor moreStyle", onClick ShowAllText] [text "닫기.."]
+                        ]
+                        else
+                        div [][
+                        div [class "detailData"]  
+                        (List.indexedMap (\idx x ->
+                            webdetailData idx x model.showAllText
+                        ) (List.take 4 (List.sortBy .sort (justListData detail))))
+                        , div [class "cursor moreStyle", onClick ShowAllText] [text "더보기.."]
+                        ]
             , div [class"together_nav"]
                 [
                     div [class "level-left together_yf_like", onClick (IsLike (item.id, item.recommend_cnt))] [
@@ -909,18 +965,20 @@ detailItem idx item model =
                     []
                     
                     ]
-                -- ,div [ class "level-left together_yf_scrap", onClick (Scrap item.id) ]
-                -- [ 
-                --     -- text( "스크랩"++ String.fromInt (item.isLike) ++"개")  , br []
-                --     -- []
-                -- -- ,
-                -- i [ class "far fa-bookmark together_bookmark" ]
-                --     []
-                -- ]
                 ]
-                -- , div [class "button is-dark together_close", onClick (TogetherDetail 0)] [text "닫기"]
             ]
-    
+        ]
+webdetailData idx item len = 
+    div [] [
+        ul [] [
+        li [][text ((String.fromInt (item.sort)) ++ ". " ++ item.title ++ " x " ++ (
+            if item.is_rest == False then
+            String.fromInt (item.value) ++ "세트"
+            else 
+            String.fromInt (item.value) ++ "분"
+        ))]
+    ]
+    ]
 userItem idx item model =
     let
          thumbnail = 
@@ -961,23 +1019,30 @@ userItem idx item model =
    
 
 detailData item model id= 
-    div[class "detailData"] [
-   
-        -- if List.length item.exercise_items > 3 then
-        --  ul[] [
-        --     li [] (List.indexedMap (\idx x->  exerciseItems idx x model id) (List.sortBy .sort item.exercise_items))
-        --     , li [] [
-        --         if model.showAllText == id then
-        --             div [onClick (ShowAllText id), class "moreText cursor" ][text "닫기"] 
-        --         else
-        --             div [onClick (ShowAllText id), class "moreText cursor" ][text " ...자세히보기"] 
-        --         ]
-        --     ]
-        -- else 
+    if List.length item.exercise_items < 5 then
+        div[class "detailData"] [
         ul [] [
          li [] 
          (List.indexedMap (\idx x->  exerciseItems idx x model id) (List.sortBy .sort item.exercise_items))]
      ]
+    else
+    if model.idx == item.id then
+            div[class "detailData"] [
+                ul [] [
+                li [] 
+                (List.indexedMap (\idx x->  exerciseItems idx x model id) (List.sortBy .sort item.exercise_items))
+            ]
+            , div [onClick (ShowAllTextApp 0)] [text "닫기"]
+            ]
+        else
+            div[class "detailData"] [
+                ul [] [
+                li [] 
+                (List.take 4 (List.indexedMap (\idx x->  exerciseItems idx x model id) (List.sortBy .sort item.exercise_items)))
+            ]
+            , div [onClick (ShowAllTextApp item.id)] [text "더보기 .."]
+            ]
+     
    
 exerciseItems idx item model id=
     li [

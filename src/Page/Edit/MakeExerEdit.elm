@@ -81,7 +81,8 @@ type alias Pair =
     , title : String }
 
 type alias FilterResult = 
-    {data : List FilterData }
+    { data : List FilterData 
+    , paginate : FilterPaginate}
 
 type alias FilterData =
     { difficulty_name: Maybe String
@@ -94,9 +95,20 @@ type alias FilterData =
     , duration: Maybe String
     , thembnail : Maybe String}
 
+type alias FilterPaginate = 
+    { difficulty_code : List String
+    , exercise_code : List String
+    , instrument_code : List String
+    , page : Int
+    , part_detail_code : List String
+    , per_page : Int
+    , title : String
+    , total_count : Int}
 
 type alias GetFilter = 
-    { difficulty_code: List String
+    { page : Int
+    , per_page : Int
+    , difficulty_code: List String
     , exercise_code : List String
     , instrument_code : List String
     , part_detail_code : List String
@@ -140,6 +152,8 @@ init session mobile
             , instrument_code = []
             , part_detail_code = []
             , title = ""
+            , page = 1
+            , per_page = 1
             }
         , break= 
             { difficulty_name = Nothing
@@ -168,7 +182,7 @@ init session mobile
 
     
 
-filterEncoder model session= 
+filterEncoder model session page per_page= 
     let
         list =  
             Encode.object
@@ -177,12 +191,14 @@ filterEncoder model session=
             , ("instrument_code", (Encode.list Encode.string) model.instrument_code)
             , ("part_detail_code", (Encode.list Encode.string) model.part_detail_code)
             , ("title", Encode.string  model.title)
+            , ("page", Encode.int page)
+            , ("per_page", Encode.int per_page)
             ]
         body = 
             list
                 |> Http.jsonBody
     in
-    (Decoder.filterResult FilterResult FilterData)
+    (Decoder.filterResult FilterResult FilterData FilterPaginate)
     |> Api.post Endpoint.filter (Session.cred session) GetFilterData body 
 
 subscriptions : Model -> Sub Msg
@@ -219,6 +235,7 @@ type Msg
     | GetId Encode.Value
     | KeyDown Int
     | GetList (Result Http.Error DetailData)
+    | GoFilter
 
     -- | SearchExercise STring
 toSession : Model -> Session
@@ -308,6 +325,12 @@ scrollInfoDecoder =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GoFilter ->
+            let
+                enc = sendDataEncoder model.addItem
+            in
+            (model, Cmd.batch[Route.pushUrl (Session.navKey model.session) Route.EditFilter
+            , Api.toJs enc])
         GetList(Ok ok) ->  
             let
                 old = model.break
@@ -353,23 +376,21 @@ update msg model =
             else
                 (model, Cmd.none)
         Search ->
-            (model , Cmd.batch[filterEncoder model.getFilter model.session, Api.blur () ])
+            (model , Cmd.batch[filterEncoder model.getFilter model.session model.page model.per_page, Api.blur () ])
         ScrInfo ->
              (model, Cmd.none)
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
-            let
+            let 
                 toInt = String.toInt(model.resultCount)
+                resultpage = 
+                    justIntData (String.toInt model.resultCount)
+                endOfPage =  resultpage // model.per_page 
             in
              if (scrollHeight - scrollTop) <= offsetHeight then
-                case toInt of
-                    Just val ->
-                        if (val  < (model.takeList + 10)) then
-                            ({model | takeList = val, infiniteLoading = False},Cmd.none)
-                        else 
-                            ({model | takeList = model.takeList + 10, infiniteLoading = True}, filterEncoder model.getFilter model.session)
-                    Nothing ->
-                        (model, Cmd.none)
-                
+                if model.page < (endOfPage + 1) then
+                ({model | page = model.page + 1, infiniteLoading = True}, filterEncoder model.getFilter model.session (model.page + 1) model.per_page)
+                else
+                (model, Cmd.none)
             else
                 (model, Cmd.none)
         AddItem idx->
@@ -381,7 +402,10 @@ update msg model =
                     ) model.filterData
             in
            
-          ( {model | addItem = model.addItem ++ add}, Cmd.none)
+            if List.length model.addItem < 20 then
+            ( {model | addItem = model.addItem ++ add}, Cmd.none)
+            else
+            (model, Cmd.none)
         SwipedLeft evt ->
             let
                 ( oldState, swipedLeft ) =
@@ -408,12 +432,12 @@ update msg model =
             in
                 case decodeCheck of
                     Ok continue ->
-                        (model, filterEncoder model.getFilter model.session)
+                        (model, filterEncoder model.getFilter model.session model.page model.per_page)
                     Err _ ->
                         (model, Cmd.none)
         GotSession session ->
             ({model | session = session}
-            , filterEncoder model.getFilter session
+            , filterEncoder model.getFilter session model.page model.per_page
             )
         SearchExercise str ->
             let
@@ -444,29 +468,20 @@ update msg model =
             case valdecode of
                 Ok ok ->
                     ({model | getFilter = ok}, Cmd.batch[
-                        filterEncoder ok model.session
+                        filterEncoder ok model.session model.page model.per_page
                     ])
             
                 Err err -> 
                     (model, Cmd.none)
                     
         GetFilterData (Ok ok)->
-            let
-                before = List.take model.takeList ok.data
-                after = List.drop (model.takeList - 50) before
-                result = before ++ after
+            let 
                 count = String.fromInt(List.length (ok.data))
             in
                 if ok.data == [] then
                 ({model | filterData = ok.data , resultCount = count, loading = False, infiniteLoading = False},Cmd.none)
                 else
-                    if model.check then
-                        if model.filterData /= before then
-                        ({model | filterData = before , resultCount = count, loading = False, infiniteLoading = False},Cmd.none)
-                        else 
-                        ({model | loading = False}, Cmd.none)
-                    else
-                        ({model | loading = False, filterData = ok.data} , Cmd.none)
+                    ({model | filterData = model.filterData ++ ok.data  , resultCount = (String.fromInt ok.paginate.total_count), loading = False, infiniteLoading = False},Cmd.none)
         GetFilterData (Err err)->
             let
                 serverErrors = 
@@ -474,7 +489,10 @@ update msg model =
             in
             (model,(Session.changeInterCeptor (Just serverErrors) model.session))
         AddBreak ->
+            if List.length model.addItem < 20 then
             ({model | addItem = model.addItem ++ [model.break]}, Cmd.none)
+            else 
+            (model, Cmd.none)
         
         StartEvent ->
             ({model | stopEvent = False}, Cmd.none)
@@ -544,15 +562,32 @@ justokData data =
         Nothing ->
             ""
 
+justIntData data = 
+    case data of
+        Just ok ->
+            ok
+    
+        Nothing ->
+            0
+
 view : Model -> {title : String , content : Html Msg}
 view model =
     if model.check then
-    { title = "맞춤운동 필터 Step 1"
-    , content = 
-            div [] [
-                app model
-            ]
-        }
+        if model.loading then
+        { title = "맞춤운동 필터 Step 1"
+        , content = 
+                div [] [
+                    div [class "spinnerBack"] [spinner]
+                ]
+            }
+        else
+        { title = "맞춤운동 필터 Step 1"
+        , content = 
+                div [] [
+                    appHeader model
+                    , appitemContainer model
+                ]
+            }
     else
     { title = "맞춤운동 필터 Step 1"
     , content = 
@@ -575,8 +610,7 @@ app model =
     ]
 
 appHeader model = 
-    div [] [
-         div [class "headerSpace"] [
+    div [class "appheadermakeExer"] [
         ul [ class "commonHeaderBoth makeExerHeader"]
         [ li [ class "m_backbtn" ]
             [a [Route.href Route.Filter][ i [ class "fas fa-angle-left" ]
@@ -584,7 +618,7 @@ appHeader model =
             ]
             ]
         , li [ class "m3_topboxtitle" ]
-            [ text "운동수정" ]
+            [ text "운동추가" ]
         ,   if List.length (model.addItem) == 0 then
                 li  [ class "m2_nextbtn"]
                 [ text "다음" ]
@@ -592,24 +626,8 @@ appHeader model =
                 li  [ class "m2_nextbtn", onClick SendData]
                 [ text "다음" ]
         ]
-         ]
-        ,
-        div [ class "control has-icons-left m_top_input  makeExerHeader" ]
-            [ 
-            p [ class "iconFixed"] [
-                input [id "keyboardBlur",onKeyDown KeyDown, class "input m_filterinput", type_ "text", onInput SearchExercise, placeholder "운동을 직접 검색하세요", value model.getFilter.title]
-                []
-                , span [ class "icon is-small is-left m_filtersearch" ]
-                    [ i [ class "fas fa-search " ]
-                        []
-                    ]
-                , div [ class "filterbtn m_fa-filter" ]
-                [ i [ class "fas fa-filter" ]
-                    []
-                ]
-            ]
-            
-            ]
+        
+        
     ]
 
 -- 
@@ -630,10 +648,10 @@ itemContainer model =
             div[class "filterStep1_listbox"] [
                 div [] [stringresultCount model.resultCount "searchlistCount" "검색",
                  breakTime "fas fa-plus-circle" AddBreak]
-                , div [class "filterStep1_listsrollbox"]
+                , div [class "filterStep1_listsrollbox", scrollEvent ScrollEvent]
                  [
                     if List.length model.filterData > 0 then
-                    div [ class "loadlistbox" ]
+                    div [ class "loadlistbox" , scrollEvent ScrollEvent]
                         (List.indexedMap (
                             \idx x ->
                             workoutItem idx x "fas fa-plus-circle" 
@@ -653,14 +671,15 @@ itemContainer model =
             else
             div [class "filterStep1_listbox2"] [
                 resultCount model.addItem "select_listresult" "선택",
-                div [class "filterStep1_listsrollbox"] [
+                div [class "filterStep1_listsrollboxAdd"] [
                     div [ class "loadlistbox" ]
                         (List.indexedMap (
                             \idx x ->
                             workoutItem idx x "fas fa-minus-circle"  
                         )model.addItem )
-                ]
+                ] 
             ]
+            
             -- , text model.what
         ]
 
@@ -692,14 +711,30 @@ appitemContainer model =
             ++ Swiper.onSwipeEvents SwipedLeft
             
             ) [
-                stringresultCount model.resultCount "m_searchlistCount" "검색",
-                div [] [
+                div [class "togetherheaderSpace"] [
+            div [ class "control has-icons-left m_top_input  makeExerHeader" ]
+                [ 
+                p [ class "iconFixed"] [
+                    input [id "keyboardBlur",onKeyDown KeyDown, class "input m_filterinput", type_ "text", onInput SearchExercise, placeholder "운동을 직접 검색하세요", value model.getFilter.title, style "width" "100%"]
+                    []
+                    , span [ class "icon is-small is-left m_filtersearch" ]
+                        [ i [ class "fas fa-search " ]
+                            []
+                        ]
+                    , div [ class "filterbtn m_fa-filter", onClick GoFilter ]
+                    [ i [ class "fas fa-filter" ]
+                        []
+                    ]
+                ]
+                
+                ]
+                ]
+                , div [style "height" "118px"][stringresultCount model.resultCount "m_searchlistCount" "검색",
+                appbreakTime "fas fa-plus-circle" AddBreak],
                     if List.length model.filterData > 0 then
                     div ([class "m_filterStep1_listsrollbox"]
                     ++ [scrollEvent ScrollEvent])
                     [
-                        appbreakTime "fas fa-plus-circle" AddBreak,
-                        
                             div [ class "m_loadlistbox" ]
                                 (List.indexedMap (
                                     \idx x ->
@@ -708,23 +743,26 @@ appitemContainer model =
                     ]
                     else 
                         div [class "noResult"] [text "검색 된 운동이 없습니다."]
-                ]
-                , div [] [
+                , 
                     if model.infiniteLoading then
                     div [class "loadingPosition"] [
                     spinner
                     ]
                     else
                     span [] []
-                ]
+                
             ]
             , 
             if List.length (model.addItem) == 0 then
             div ([class "m_filterStep1_listbox2"]
              ++ Swiper.onSwipeEvents (Swiped -1)
-              ++ [ style "height" "85vh"] 
+              ++ [ style "height" "100vh"] 
             ) [
-                resultCount model.addItem "m_select_listresult" "선택",
+                div [class "togetherheaderSpace"] [
+                div [ class "control has-icons-left m_top_input  makeExerHeader" ]
+                    []
+                    ]
+                , resultCount model.addItem "m_select_listresult" "선택",
                 div [class "filterStep1_listsrollbox2 m_warningText"] [
                             text "운동을 선택 해 주세요."
                 ]
@@ -732,10 +770,13 @@ appitemContainer model =
             else
             div ([class "m_filterStep1_listbox2"]
              ++ Swiper.onSwipeEvents (Swiped -1)
-             ++ [ style "height" "85vh"] 
+             ++ [ style "height" "100vh"] 
             ) [
-                resultCount model.addItem "m_select_listresult" "선택",
-                 div [class "m_filterStep1_listsrollbox"] [
+                div [class "togetherheaderSpace"] [
+                div [ class "control has-icons-left m_top_input  makeExerHeader" ]
+                    [  ] ]
+                , resultCount model.addItem "m_select_listresult" "선택",
+                 div [class "m_filterStep1_listsrollboxAdd"] [
                     div [ class "loadlistbox" ]
                         (List.indexedMap (
                             \idx x ->

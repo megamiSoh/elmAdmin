@@ -913,7 +913,7 @@ font-size: .9rem;
 .m_fa-filter
 {
   float: right;
-  margin-right: 1rem;
+  margin: 0 1rem;
   font-size: 1.3rem;
 }
 
@@ -932,10 +932,13 @@ font-size: .9rem;
 .m_filterStep1_listbox,.m_filterStep1_listbox2,.m_select_listresult
 {
   width: 85vw;
+  overflow: hidden;
   /* font-size: 3rem; */
   /* min-width: 52rem; */
 }
-
+.m_filterStep1_listbox,.m_filterStep1_listbox2 {
+  height: 100vh;
+}
 .m_searchlistCount
 {
 background-color: #ECECEC;
@@ -947,8 +950,8 @@ padding: 10px;
 .m_filterStep1_listsrollbox
 {
   overflow: scroll;
-  /* height: 100%;  */
-  height:68vh;
+  height: 98vh; 
+  /* height:100%; */
   border-right: .1rem solid #CCCCCC;
 }
 
@@ -959,7 +962,9 @@ padding: 10px;
   padding: 10px;
   /* font-size: 3rem; */
 }
-
+.appheadermakeExer {
+  /* height: 65px; */
+}
 /* appbreakTime */
 .m_breaktimetbox,.m_worklistbox
 {
@@ -972,7 +977,7 @@ padding: 10px;
   display: flex;
   justify-content: left;
   align-items: center;
-
+  height: 100px;
   padding: .5rem 0 .5rem .5rem;
 }
 
@@ -2195,6 +2200,7 @@ margin: 3rem 0 3rem 0;
     align-items: center;
     flex-direction: column;
     height: 50vh;
+    width: 100%;
 }
 .appfiltertextbox_area {
   width: 100%;
@@ -2224,8 +2230,14 @@ ul.commonHeaderBoth li.m_backbtnD {
   color: #fff;
 }
 .m_top_input {
-  padding: 1rem 0;
-  padding-top: 70px;
+  top: 0;
+  height: 100%;
+  /* padding-top: 70px; */
+  position: absolute;
+  width: 100%;
+  display: flex;
+    align-items: flex-end;
+    padding: 10px;
 }
 
 .m_cbp_tmtimeline > li .m_cbp_tmlabel:after {
@@ -2487,4 +2499,8 @@ font-size: .9rem;
 
 .m_yf_mypage_setting {
   overflow: hidden;
+}
+
+.m_breaktimetbox {
+  border-right: 1px solid #ccc;
 }

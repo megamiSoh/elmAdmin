@@ -338,7 +338,10 @@ update msg model =
                     ({model | style = String.fromInt(idx), setData = set, cannotSave = ""}, Cmd.none)
 
         Plus idx ->
+            if model.setData < 5 then
             ( {model | setData = model.setData + 1 },  Cmd.none)
+            else
+            (model, Cmd.none)
         Minus idx ->
             if (model.setData - 1) <= 0 then
                 ( {model | setData = 0 },  Cmd.none)
@@ -364,6 +367,8 @@ update msg model =
             in
                 if model.setData == 0 then
                 ({model | cannotSave = "0 이하의 값은 저장할 수 없습니다."}, Cmd.none)
+                else if model.setData > 5 then
+                ({model | cannotSave = "6 이상의 값은 저장 할 수 없습니다."}, Cmd.none)
                 else
                 ( {model | addData = result, cannotSave  ="", style = "" },  Cmd.none)
         UpdateSet str->
@@ -374,6 +379,8 @@ update msg model =
                 Just ok ->
                     if ok == 0 then
                     ({model | cannotSave = "0 이하의 값은 저장할 수 없습니다."}, Cmd.none)
+                    else if ok > 5 then
+                    ({model | cannotSave = "6 이상의 값은 저장 할 수 없습니다."}, Cmd.none)
                     else
                     ({model | setData = ok}, Cmd.none)
             

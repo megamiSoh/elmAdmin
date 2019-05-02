@@ -85,14 +85,14 @@ init session mobile =
     let
         listmodel = 
             { page = 1
-            , per_page = 10
+            , per_page = 12
             , title = ""}
     in
     (
         { session = session
         , checkDevice = ""
         , page = 1
-        , per_page = 10
+        , per_page = 12
         , infiniteLoading = False
         , sumCount = 1
         , title = ""
@@ -124,7 +124,7 @@ init session mobile =
             }
         }, 
         Cmd.batch 
-        [ bodyEncode 1 10 "" session
+        [ bodyEncode 1 12 "" session
         , Api.removeJw ()
         ]
     )
