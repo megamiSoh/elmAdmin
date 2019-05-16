@@ -58,6 +58,9 @@ import TextApi as TA
 -- type alias Check = 
 --     String
 
+type alias MainModel = 
+    { mypageMenu : String }
+
 type Model 
      = Redirect Session Bool
      | Home Home.Model
@@ -181,7 +184,7 @@ subscriptions model =
         InfoModel item ->
             Sub.map InfoMsg (Info.subscriptions item)
         MealRModel item ->
-            Sub.none
+            Sub.map MealRMsg (MealR.subscriptions item)
         MyCModel item ->
             Sub.map MyCMsg (MyC.subscriptions item)
         MyPostModel item ->
@@ -236,7 +239,7 @@ init maybeViewer check url navKey =
         changeRouteTo (Route.fromUrl url) (Redirect (Session.fromViewer navKey maybeViewer) check)
 
 -- changeRouteTo : Maybe Route ->  Model  -> (Model , Cmd Msg)
-changeRouteTo maybeRoute model  =
+changeRouteTo maybeRoute model =
     let
         session = toSession model
         check = toCheck model
@@ -337,6 +340,7 @@ changeRouteTo maybeRoute model  =
                 |> updateWith EmptyModel EmptyMsg model
         Just Route.Logout ->
             (model, Cmd.batch[Api.logoutpop ()])
+            
         Just Route.EditFilter ->
             EditFilter.init session check
                 |> updateWith EditFilterModel EditFilterMsg model
@@ -367,6 +371,9 @@ changeRouteTo maybeRoute model  =
         Just Route.TA ->
             TA.init session check
                 |> updateWith TAModel TAMsg model
+        Just Route.MyPageBottomMenu ->
+            (model, Api.mypageMenu () )
+            
 
 
 toCheck page =  

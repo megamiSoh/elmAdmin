@@ -323,7 +323,7 @@ appcontentsItem item model goVideo zindex=
          
         
             
-             , pre [class"m_work_maketext descriptionBackground"] [
+             , pre [class"m_work_maketext descriptionBackground wordBreak"] [
                 text (justokData item.description)    
                  ]
                 
@@ -385,7 +385,7 @@ contentsItem item loading scrap modelscrap govideo scrapText zindex =
             
             , div [ class "yf_explanation" ]
             [
-                pre [class "descriptionBackground"] [ text (justokData item.description)]
+                pre [class "descriptionBackground wordBreak"] [ text (justokData item.description)]
                 , div [ class "yf_text" ] (List.indexedMap YfD.description item.exercise_items)
             ]
                

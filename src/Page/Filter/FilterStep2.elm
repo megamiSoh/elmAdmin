@@ -500,13 +500,12 @@ thumbSetting model=
         
             [ 
             div [class model.validation] [
-                -- editorViewInput model.title UpdateTitle False "운동제목을 입력하세요." model.validation
-                input [ class ( "input " ++ model.validation ), type_ "text", placeholder "운동제목을 입력해 주세요.", onInput UpdateTitle ]
+                input [ class ( "input " ++ model.validation ), type_ "text", placeholder "운동제목을 입력해 주세요.", onInput UpdateTitle , maxlength 50]
                 []
             ]
            , 
            div [class model.validation2] [
-                 textarea [ placeholder "운동 설명을 입력 해 주세요.", onInput Description] []
+                 textarea [ placeholder "운동 설명을 입력 해 주세요.", onInput Description, maxlength 200] []
            ]
             
             , div [] [text model.errTitle]
@@ -521,9 +520,9 @@ appthumbSetting model =
         --     ]
         -- ,
         [ div [ class "m_yf_titleinputbox" ]
-            [ input [ class ( "input m_yf_titleinput " ++ model.validation ), type_ "text", placeholder "운동제목을 입력해 주세요.",  onInput UpdateTitle ]
+            [ input [ class ( "input m_yf_titleinput " ++ model.validation ), type_ "text", placeholder "운동제목을 입력해 주세요.",  onInput UpdateTitle , maxlength 50]
                 []
-            , textarea [placeholder "운동 설명을 입력 해 주세요.",  onInput Description] []
+            , textarea [placeholder "운동 설명을 입력 해 주세요.",  onInput Description, maxlength 200] []
             ]
                       , div [class"m_filterStep2_text"] [text model.errTitle]
         -- , div [class "thubmTitle"] [text "썸네일지정" ]

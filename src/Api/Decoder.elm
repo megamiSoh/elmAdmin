@@ -439,10 +439,10 @@ bodyInfoList list =
     Decode.succeed list
         |> required "birthday" string
         |> required "body_no" int
-        |> required "goal_weight" int
-        |> required "height" int
+        |> required "goal_weight" string
+        |> required "height" string
         |> required "is_male" bool
-        |> required "weight" int
+        |> required "weight" string
 
 myscrapData data list item page=
     Decode.succeed data
@@ -531,3 +531,135 @@ profileImage img =
 checkOverlapmail data =
     Decode.succeed data
         |> required "data" bool
+
+faqList faq data page = 
+    Decode.succeed faq
+        |> required "data" (Decode.list (faqdata data)) 
+        |> required "paginate" (faqpage page)
+
+faqdata data = 
+    Decode.succeed data
+        |> required "id" int
+        |> required "inserted_at" string
+        |> required "is_answer" bool
+        |> required "title" string
+
+faqpage page = 
+    Decode.succeed page
+        |> required "asked_id" int
+        |> required "end_date" string
+        |> optional "is_answer" (Decode.map Just bool) Nothing
+        |> required "page" int
+        |> required "per_page" int
+        |> required "start_date" string
+        |> required "title" string
+        |> required "total_count" int
+        |> required "username" string
+
+faqdetail data detail =
+    Decode.succeed data 
+        |> required "data" (faqdetaildata detail)
+faqdetaildata detail =
+    Decode.succeed detail
+        |> optional "answer" (Decode.map Just string) Nothing
+        |> required "asked_id" int
+        |> required "content" string
+        |> required "id" int
+        |> required "is_answer" bool
+        |> required "title" string
+        |> required "username" string
+    
+diaryData data meal body kcal photo bmi=
+    Decode.succeed data
+        |> required "data" (diarymeal meal body kcal photo bmi)
+    
+diarymeal meal body kcal photo bmi = 
+    Decode.succeed meal
+        |> required "body" (diaryBody body bmi)
+        |> required "date_exercise" string
+        |> required "date_kcal" string
+        |> required "kcal" (Decode.list (diaryKcal kcal))
+        |> required "photo" (diaryPhoto photo)
+
+diaryBody body bmi =
+    Decode.succeed body
+        |> required "age" int
+        |> required "bmi" (diaryBmi bmi)
+        |> required "bmr" float
+        |> required "body_fat_percentage" float
+        |> required "change_weight" string
+        |> required "goal_weight" string
+        |> required "height" string
+        |> optional "is_male" (Decode.map Just bool) Nothing
+        |> required "remain_weight" string
+        |> required "weight" string
+diaryBmi bmi =
+    Decode.succeed bmi
+        |>required "division" string
+        |>required "value" float
+        
+diaryKcal kcal = 
+    Decode.succeed kcal 
+        |> required "food_code" string
+        |> required "kcal" string
+    
+
+diaryPhoto photo = 
+    Decode.succeed photo
+        |>optional "after" (Decode.map Just string) Nothing
+        |>optional "before" (Decode.map Just string) Nothing
+
+myBodyImg data img =
+    Decode.succeed data
+    |> required "data" (myBody img)
+
+myBody img = 
+    Decode.succeed img
+    |> required "content_length" int
+    |> required "content_type" string
+    |> required "extension" string
+    |> required "name" string
+    |> required "origin_name" string
+    |> required "path" string
+
+dayKindOfMeal data meal page = 
+    Decode.succeed data
+        |> required "data" (Decode.list (dayKindOfMealData meal))
+        |> required "paginate" (dayKindOfPage page)
+
+dayKindOfMealData meal = 
+    Decode.succeed meal
+        |> required "diary_no" int
+        |> required "food_count" string
+        |> required "food_name" string
+        |> required "is_direct" bool
+        |> required "kcal" string
+        |> required "one_kcal" string
+
+dayKindOfPage page = 
+    Decode.succeed page
+        |> required "diary_date" string
+        |> required "food_code" string
+        |> required "page" int
+        |> required "per_page" int
+        |> required "total_count" int
+        |> required "user_id" int
+
+foodSearch data food page = 
+    Decode.succeed data
+        |> required "data" (Decode.list (foodSearchData food))
+        |> required "paginate" (foodSearchPage page) 
+
+foodSearchData food = 
+    Decode.succeed food
+        |> optional "company" (Decode.map Just string ) Nothing
+        |> required "construct_year" string
+        |> required "kcal" string
+        |> required "name" string
+
+foodSearchPage page = 
+    Decode.succeed page
+        |> required "name" string
+        |> required "page" int
+        |> required "per_page" int
+        |> required "total_count" int

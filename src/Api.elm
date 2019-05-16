@@ -73,6 +73,7 @@ port getPageId : (Value -> msg) -> Sub msg
 port setCookieSuccess : (Value -> msg) -> Sub msg
 port getHeightValue : (Value -> msg) -> Sub msg
 port videoWatchComplete : (Value -> msg) -> Sub msg
+port sendHeight : (Value -> msg) -> Sub msg
 viewerChanges toMsg decoder =
     onStoreChange (\value -> toMsg (decodeFromChange decoder value))
 
@@ -138,6 +139,9 @@ port historyUpdate : Value -> Cmd msg
 port removeJw : () -> Cmd msg
 port logoutpop : () -> Cmd msg
 port scrollControl : () -> Cmd msg
+port getHeight : Value -> Cmd msg
+port mypageMenu : () -> Cmd msg
+port bodyInfo : () -> Cmd msg
 -- port logout : () -> Cmd msg
 -- application :
     -- Decoder (Cred -> viewer)

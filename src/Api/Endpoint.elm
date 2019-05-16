@@ -45,7 +45,20 @@ module Api.Endpoint exposing
     , resetprofileImg
     , checkoverlapId
     , webtogetherList
-    , videoCompleteRecord)
+    , videoCompleteRecord
+    , faqlist
+    , faqDetail
+    , faqDelete 
+    , faqregist
+    , faqeidt
+    , diary 
+    , beforeImg
+    , afterImg
+    , dayKindOfMeal
+    , foodSearch
+    , mealRegistInfo
+    , mealDelete
+    , mealEditInfo)
 
 import Http
 import Url.Builder exposing (QueryParameter)
@@ -239,3 +252,42 @@ checkoverlapId =
 
 videoCompleteRecord id =
     url ["front", "my", "exercises", id][]
+
+
+-- faq
+faqlist = 
+    url ["front", "inquiries"] []
+
+faqDetail id = 
+    url ["front", "inquiries", id] []
+faqDelete id = 
+    url ["front","inquiries",id, "delete"][]
+faqregist =
+    url ["front", "inquiries", "new"] []
+
+faqeidt id =
+    url ["front", "inquiries", id ,"edit"] []
+
+diary date =
+    url ["front", "diary", date] []
+
+beforeImg date = 
+    url ["front", "body" , date , "before"][]
+
+afterImg date = 
+    url ["front", "body" , date , "after"][]
+
+dayKindOfMeal date code = 
+    url ["front", "foods" , date , code ][]
+
+foodSearch =
+    url ["front", "foods" ][]
+
+mealRegistInfo = 
+    url ["front", "foods", "new"][]
+
+mealDelete date no=
+    url ["front", "foods", date, no , "delete"][]
+
+mealEditInfo date no = 
+    url ["front", "foods", date, no , "edit"][]

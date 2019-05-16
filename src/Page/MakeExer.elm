@@ -85,14 +85,14 @@ init session mobile =
     let
         listmodel = 
             { page = 1
-            , per_page = 12
+            , per_page = 10
             , title = ""}
     in
     (
         { session = session
         , checkDevice = ""
         , page = 1
-        , per_page = 12
+        , per_page = 10
         , infiniteLoading = False
         , sumCount = 1
         , title = ""
@@ -124,7 +124,7 @@ init session mobile =
             }
         }, 
         Cmd.batch 
-        [ bodyEncode 1 12 "" session
+        [ bodyEncode 1 10 "" session
         , Api.removeJw ()
         ]
     )
@@ -460,8 +460,13 @@ bodyItem item=
                 |> String.replace "%25" "%"    
     in
     div [ class "make_box_card_wrap" ]
-    [ div [ class "make_videoboxwrap"]
-        [ div [ class "video_image" , onClick (CheckId item.id "")]
+
+    [div [ class "make_videoboxwrap"]
+
+      [div [class"make_overlay"]
+     [i [ class "fas fa-play overlay_makeplay" ][]],
+
+         div [ class "video_image" , onClick (CheckId item.id "")]
             [ img [ class "vpic1",src item.thembnail, alt "dummy_video_image" ]
                 []
             ]

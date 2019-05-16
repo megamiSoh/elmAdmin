@@ -74,8 +74,9 @@ webOrApp model =
     if model.check then
         div [class "appWrap"] [
             home,
-            div [ class "m_homemenu" ]
-            (List.map menuLayout menu)
+            hometopTitle,
+            div [class "homemenu"]
+            (List.indexedMap menuLayout menu)
         ]
     else 
          div [ class "yf_contentswarp" ]
@@ -83,8 +84,6 @@ webOrApp model =
                      lazy lazyview model.image 
                      
         , 
-        -- 
-        -- ,
     div [ class "home_main_middle" ]
     [ div [ class "columns home_yf_columns" ]
         [ div [ class "column1" ]
@@ -157,51 +156,59 @@ lazyview image=
         ] 
         
 home =
-    div [ class "m_home_topbox" ]
+     div [class "headerSpace"] [
+    div [ class " m_home_topbox" ]
             [ img [ src "image/logo.png", alt "logo" ]
                 []
             ]
-menuLayout item= 
-    a [ class "m_home_titlemenu" , Route.href item.routing]
-            [ div [ class "m_home_iconbox" ]
-                [ img [ src item.thumb , alt "menu" ]
-                    []
-                ]
-            , div [ class "m_home_menutext" ]
-                [ ul []
-                    [ li [ class "m_home_subtext" ]
-                        [ text item.description ]
-                    , li [ class "m_home_maintext" ]
-                        [ strong []
-                            [ text item.menuTitle ]
-                        ]
-                    ]
-                ]
+     ]
+hometopTitle = 
+    div [class "home_subtitle"] [
+         text "안녕하세요!" ,br []
+        [] , text "당신만의 트레이너" 
+        , span [ class "yourfit_text" ]
+        [ text "유어핏" ], text "입니다."    
+    ]
+
+menuLayout idx item = 
+        a [ class ("titlemenu" ++ String.fromInt (idx + 1)) , Route.href item.routing]
+           [div [class "m_home_iconbox"] [
+                img [src item.thumb ][]
             ]
+            , div [class "menutext"] [
+                p [class "maintext"] [text item.menuTitle]
+            ]
+    ]
 menu = 
     [
         {
-            thumb = "image/m.workout.png",
-            description = "하루 15분 당신만을 위한",
+            thumb = "image/icon01.png",
             menuTitle = "유어핏운동",
             routing = Route.YourFitExer
         },
         {
-            thumb = "image/m.customworkout.png",
-            description = "내가 만들어가는 운동레시피",
+            thumb = "image/icon00.png",
+            menuTitle = "공지사항",
+            routing = Route.Info
+        },
+        {
+            thumb = "image/icon02.png",
             menuTitle = "맞춤운동",
             routing = Route.MakeExer
         },
         {
-            thumb = "image/m.together.png",
-            description = "우리가 만들어가는 스토리",
+            thumb = "image/icon03.png",
             menuTitle = "함께해요",
             routing = Route.Together
         },
         {
-            thumb = "image/m.mypage.png",
-            description = "내 정보를 한눈에",
+            thumb = "image/icon04.png",
             menuTitle = "마이페이지",
             routing = Route.MyPage
+        },
+        {
+            thumb = "image/icon05.png",
+            menuTitle = "1:1문의",
+            routing = Route.Faq
         }
     ]

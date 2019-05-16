@@ -27,9 +27,9 @@ type alias Model
         , currentPage : String
         , nickname : String
         , sex : String
-        , weight : Int
-        , goal_weight : Int
-        , height : Int
+        , weight : String
+        , goal_weight : String
+        , height : String
         , birthday : String
         , is_male: Bool
         , notmatchPwd : String
@@ -44,6 +44,8 @@ type alias Model
         , preview : List String
         , show : String
         , deleteOrNot : String
+        , canNotUpdateField : String
+        , showDetail : String
         }
 
 type alias BodyData = 
@@ -52,10 +54,10 @@ type alias BodyData =
 type alias BodyInfoData =
     { birthday :String
     , body_no : Int
-    , goal_weight :Int
-    , height : Int
+    , goal_weight :String
+    , height : String
     , is_male : Bool
-    , weight : Int 
+    , weight : String
     }
 type alias DataWrap = 
     { data : MyData }
@@ -97,16 +99,18 @@ init session mobile
         , show = ""
         , deleteOrNot = ""
         , newpwd = ""
+        , canNotUpdateField = ""
         , profileFileName = Nothing
         , pwd = ""
         , profileImg = []
-        , weight = 0
-        , goal_weight = 0
-        , height = 0
+        , weight = ""
+        , goal_weight = ""
+        , height = ""
         , preview = []
         , birthday = ""
         , is_male = True
         , showbottomtoast = ""
+        , showDetail = ""
         , mydata = 
             { exercise = 0
             , share = 0
@@ -156,6 +160,7 @@ type Msg
     | GotPreviews (List String)
     | ChangeProfile
     | DeleteConfirm
+    | ShowDetail String
 
 toSession : Model -> Session
 toSession model =
@@ -169,13 +174,25 @@ onKeyDown:(Int -> msg) -> Attribute msg
 onKeyDown tagger = 
     on "keydown" (Decode.map tagger keyCode)
 
+justFloat item = 
+    let
+        flaot = String.toFloat item
+    in
+    
+    case flaot of
+        Just ok ->
+            ok
+    
+        Nothing ->
+            0
+
 saveEncode model =
     let
         body = 
             Encode.object   
-                [ ("weight", Encode.int model.weight)
-                , ("goal_weight", Encode.int model.goal_weight)
-                , ("height", Encode.int model.height)
+                [ ("weight", Encode.float (justFloat model.weight))
+                , ("goal_weight", Encode.float (justFloat model.goal_weight))
+                , ("height", Encode.float (justFloat model.height))
                 , ("birthday", Encode.string model.birthday)
                 , ("is_male", Encode.bool model.is_male)]
                 |> Http.jsonBody    
@@ -202,9 +219,35 @@ profileEncode profileImg session =
     (Decoder.profileData FileData File)
     |> Api.post Endpoint.profileImg (Session.cred session) ChangeComplete body 
 
+updateFieldBodyInfo item model = 
+    case String.toFloat item of
+        Just ok ->
+            if ok == 0 then
+            ({model | canNotUpdateField = "유효하지 않은 입력 값 입니다."}, Cmd.none)
+            else
+            ({model | showDetail = "", canNotUpdateField = ""}, Cmd.none)
+        Nothing ->
+            ({model | canNotUpdateField = "유효하지 않은 입력 값 입니다."}, Cmd.none)
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of 
+        ShowDetail detail ->
+            case detail of
+                "weightInput" ->   
+                    updateFieldBodyInfo model.weight model  
+                "goalWeightInput" ->
+                    updateFieldBodyInfo model.goal_weight model  
+                "heightInput" ->
+                    updateFieldBodyInfo model.height model  
+                "birthInput" ->
+                    if model.birthday == "" then
+                    ({model | canNotUpdateField = "유효하지 않은 입력 값 입니다."}, Cmd.none)
+                    else
+                    ({model | showDetail = "", canNotUpdateField = ""}, Cmd.none)
+                _ ->
+                    ({model | showDetail = detail, canNotUpdateField = ""}, Cmd.none)
+
         ChangeProfile ->
             (model, profileEncode model.profileImg model.session)
             -- (model, Cmd.none)
@@ -304,7 +347,7 @@ update msg model =
             else
             ({model | notmatchPwd = ""}, Cmd.batch[ pwdEncode model model.session ])
         BodyInfoComplete (Ok ok) ->
-            ({model | currentPage = "body", birthday = ok.data.birthday, goal_weight = ok.data.goal_weight, height = ok.data.height, sex = if ok.data.is_male then "Male" else "Female", weight= ok.data.weight}, Cmd.none)
+            ({model | currentPage = "body", birthday = ok.data.birthday, goal_weight = ok.data.goal_weight, height = ok.data.height, sex = if ok.data.is_male then "Male" else "Female", weight = ok.data.weight}, Cmd.none)
         BodyInfoComplete (Err err) ->
             let 
                 serverErrors =
@@ -320,7 +363,7 @@ update msg model =
             let
                 text = Encode.string "저장 되었습니다."
             in
-            (model, Cmd.batch
+            ({model | currentPage = "body"}, Cmd.batch
             [ Api.showToast text
             -- , -- Api.historyUpdate (Encode.string "myAccount")
             , Route.pushUrl (Session.navKey model.session) Route.MyAccount
@@ -332,28 +375,54 @@ update msg model =
             in  
             (model, (Session.changeInterCeptor (Just serverErrors) model.session))
         SaveBody ->
+            if model.weight == "0" || model.goal_weight == "0" || model.height == "0" || model.birthday == "" || model.weight == "" || model.goal_weight == "" || model.height == "" then
+            ({model | canNotUpdateField = "항목을 정확히 입력 해 주세요."}, Cmd.none)
+            else
             (model, saveEncode model)
         BodyInfo info what ->
             let
-                toInt = String.toInt what
+                split = String.split "." what
+                tail = List.drop 1 split
+                len = List.map (\x ->
+                        String.slice 0 2 x
+                    ) tail
+                head = List.take 1 split
+                result = String.join "." (head ++ len)
+                -- toInt = String.toFloat result
             in
-            (
-            case toInt of
-                Just int ->
-                    case info of
+            if what == "" then
+            (case info of
+                "weight" ->
+                    {model | weight = ""}
+                "goalWeight" ->
+                    {model | goal_weight = ""}            
+                "height" ->
+                    {model | height = ""}
+                "date" ->
+                    {model | birthday = what}
+                _ ->
+                    model
+                , Cmd.none )
+            else
+                case String.toFloat what of
+                    Just ok ->
+                        (case info of
                         "weight" ->
-                            {model | weight = int}
+                            {model | weight = result}
                         "goalWeight" ->
-                            {model | goal_weight = int}            
+                            {model | goal_weight = result}            
                         "height" ->
-                            {model | height = int}
+                            {model | height = result}
                         "date" ->
                             {model | birthday = what}
                         _ ->
                             model
-                Nothing ->
-                    {model | birthday = what}
-            , Cmd.none)
+                            
+                        , Cmd.none)
+                
+                    Nothing ->
+                        ({model | birthday = what}, Cmd.none)
+            
                     
         Sex sex ->
             if sex == "male" then
@@ -419,8 +488,14 @@ update msg model =
         ChangePage str ->
             if str == "body" then
             (model, 
-            Decoder.bodyInfo BodyData BodyInfoData
-                |>Api.get BodyInfoComplete Endpoint.getBodyInfo (Session.cred model.session) )
+            Cmd.batch [
+                Decoder.bodyInfo BodyData BodyInfoData
+                |>Api.get BodyInfoComplete Endpoint.getBodyInfo (Session.cred model.session)
+            
+            ] )
+            else if str =="nick" then
+            ({model | currentPage = str,  showbottomtoast = "showbottomToast  lastShowToast" }
+            , Api.scrollControl ())
             else
             ({model | currentPage = str,  showbottomtoast = "showbottomToast  lastShowToast"}, Cmd.none)
         MyInfoData (Ok ok) ->
@@ -464,14 +539,22 @@ view model =
                     , accountContents model
                 ]
             }
+        -- "body" ->
+        --     { title = "신체정보관리"
+        --     , content = 
+        --         div [id "mypage_container"] [
+        --             appHeaderConfirmDetailR "신체정보관리" "myPageHeader whiteColor" (ChangePage "")  (ChangePage "bodyedit")  (if model.weight == "" then "등록" else "수정")
+        --             , bodyRecord model 
+        --         ]
+        --     }
         "body" ->
             { title = "신체정보관리"
             , content = 
-                div [] [
-                    appHeaderConfirmDetailR "신체정보관리" "myPageHeader whiteColor" (ChangePage "")  SaveBody  "저장"
-                    , bodyRecord model 
+                div [id "mypage_container"] [
+                    bodyRecord model 
                 ]
             }
+        
         "image" ->
             { title =" 프로필 사진"
             , content = 
@@ -503,9 +586,9 @@ justData cases =
         Nothing ->
             " 닉네임을 등록 해 주세요. "
 nicknameContents model =    
-    div [class "nicknameStyle"] [
-        input [onKeyDown KeyDown, type_ "text",value model.nickname, onInput ChangeNick, placeholder "닉네임을 입력 해 주세요." ] []
-        , span [class "allDeleteBtn", onClick AllDeleteText ] [
+    div [ class "control has-icons-right"] [
+        input [onKeyDown KeyDown, type_ "text",value model.nickname, onInput ChangeNick, placeholder "닉네임을 입력 해 주세요.", maxlength 10 , class "input nicknameInput", id "noScrInput"] []
+        , span [class "allDeleteBtn icon is-right", onClick AllDeleteText ] [
             i [ class "far fa-times-circle" ]
             []
         ]
@@ -592,12 +675,14 @@ contents model =
                 ]
             ]
 
-bodyRecord model = 
-   div [ class "settingbox" ]
-    [ div [ class "physical_setting" ]
+bodysex model = 
+   div [ class "editTop showAccount" ]
+    [ 
+        appHeaderConfirmDetailR "성별" "myPageHeader whiteColor" (ShowDetail "")  (ShowDetail "")  "확인"
+        , div [ class "editData" ]
         [ label [ class "label physical_title" ]
             [ text "성별" ]
-        , p [ class "physicalbox" ]
+        , p [ class "editdataBoxsex" ]
             [ 
             label [ class "radio" ]
                 [ input [ type_ "radio", name "question"
@@ -631,57 +716,162 @@ bodyRecord model =
                 ]
             ]
         ]
-    , div [ class "physical_setting" ]
+    ]
+bodyweight model = 
+    div [class "editTop showAccount"] [
+         appHeaderConfirmDetailR "체중" "myPageHeader whiteColor" (ShowDetail "weightInput")  (ShowDetail "weightInput")  "확인"
+        , div [  class "editData"]
         [ label [ class "label physical_title" ]
             [ text "체중" ]
-        , p [ class "physicalbox" ]
-        [   input [ class "input yf_input_box", type_ "number" ,onInput (BodyInfo "weight"), value (
-            if model.weight == 0 then
-                ""
-            else
-            String.fromInt(model.weight)
-        ) ]
+        , p [ class "editdataBox" ]
+        [   div [] [
+            input [ class "input yf_input_box" ,onInput (BodyInfo "weight"), value model.weight, type_ "number" ]
             [], text "Kg"
+            ]
+             , div [class "wrongValueWarn"] [text model.canNotUpdateField]
+            ]
+        ]
+    ]
+
+
+goalweight model = 
+    div [class "editTop showAccount"] [
+         appHeaderConfirmDetailR "목표체중" "myPageHeader whiteColor" (ShowDetail "goalWeightInput")  (ShowDetail "goalWeightInput")  "확인"
+        , div [  class "editData"]
+        [ label [ class "label physical_title" ]
+            [ text "목표체중" ]
+        , p [ class "editdataBox" ]
+        [   div [] [
+            input [ class "input yf_input_box" ,onInput (BodyInfo "goalWeight") , value model.goal_weight, type_ "number"]
+                [], text "Kg"
+        ]
+        , div [class "wrongValueWarn"] [text model.canNotUpdateField]
+            ]
+        ]
+    ]
+
+height model = 
+    div [class "editTop  showAccount"] [
+         appHeaderConfirmDetailR "신장" "myPageHeader whiteColor" (ShowDetail "heightInput")  (ShowDetail "heightInput")  "확인"
+        , div [  class "editData"]
+        [ label [ class "label physical_title" ]
+            [ text "신장" ]
+        , p [ class "editdataBox" ]
+        [   div [][
+            input [ class "input yf_input_box", onInput (BodyInfo "height"), value model.height , type_ "number"]
+                [], text "Cm"
+        ] 
+            , div [class "wrongValueWarn"] [text model.canNotUpdateField]
+            ]
+        ]
+    ]
+
+birth model = 
+    div [class "editTop showAccount"] [
+         appHeaderConfirmDetailR "생년월일" "myPageHeader whiteColor" (ShowDetail "birthInput")  (ShowDetail "birthInput")  "확인"
+        , div [  class "editData"]
+        [ label [ class "label physical_title" ]
+            [ text "생년월일" ]
+        , p [ class "editdataBox" ]
+        [  div [] [
+            input [ class "input yf_input_box2", type_ "date", onInput (BodyInfo "date"), value model.birthday , style "min-width" "200px"]
+                []
+        ]
+        , div [class "wrongValueWarn"] [text model.canNotUpdateField]
+        ]
+    ]
+    ]
+
+
+bodyRecord model = 
+   div [ class "settingbox" ]
+    [ appHeaderConfirmDetailR "신체정보" "myPageHeader whiteColor"  (ChangePage "") SaveBody  (if model.weight == "" then "등록" else "수정")
+        , div [ class "physical_setting" ]
+        [ label [ class "label physical_title" ]
+            [ text "성별" ]
+        , p [ class "physicalbox", onClick (ShowDetail "sex")]
+            [ 
+            label [ class "radio" ]
+                [ input [ type_ "radio", name "question"
+                , value model.sex
+                -- , onClick (Sex "Male")
+                         ]
+                    []
+                , i [ class (
+                    if model.sex == "Male" then
+                        "fas fa-mars man man_colorChange"
+                    else
+                        "fas fa-mars man"
+                ) ]
+                    [] 
+                ]
+                -- ,div [] [text "남자"]
+            , label [ class "radio" ]
+                [ input [ type_ "radio", name "question"
+                , value model.sex
+                -- , onClick (Sex "Female")
+                 ]
+                    []
+                , i [ class (
+                    if model.sex == "Female" then
+                        "fas fa-venus waman woman_colorChange"
+                    else
+                        "fas fa-venus waman"
+                ) ]
+                    []
+                -- ,div [] [text "여자" ]
+                ]
             ]
         ]
     , div [ class "physical_setting" ]
         [ label [ class "label physical_title" ]
-            [ text "목표체중" ]
-        , p [ class "physicalbox" ]
-            [ input [ class "input yf_input_box", type_ "number" ,onInput (BodyInfo "goalWeight") , value (
-            if model.weight == 0 then
-                ""
-            else
-            String.fromInt(model.goal_weight)
-        )]
-                [], text "Cm" 
+            [ text "체중" ]
+        , p [ class "physicalbox bodyinput", onClick (ShowDetail "weight") ]
+        [   div [ class "input yf_input_box " ]
+            [text model.weight], text "Kg"
+            ]
+        ]
+    , div [ class "physical_setting" ]
+        [ label [ class "label physical_title" ]
+            [ text "목표 체중" ]
+        , p [ class "physicalbox bodyinput" ]
+            [ div [ class "input yf_input_box", onClick (ShowDetail "goalweight")]
+                [text model.goal_weight], text "Kg" 
             ]
         ]
     , div [ class "physical_setting" ]
         [ label [ class "label physical_title" ]
             [ text "신장" ]
-        , p [ class "physicalbox" ]
-            [ input [ class "input yf_input_box", type_ "number", onInput (BodyInfo "height"), value (
-            if model.height == 0 then
-                ""
-            else
-            String.fromInt(model.height)
-        ) ]
-                [], text "Kg" 
+        , p [ class "physicalbox bodyinput", onClick (ShowDetail "height") ]
+            [ div [ class "input yf_input_box" ]
+                [text model.height ], text "Cm" 
             ]
         ]
     , div [ class "physical_setting_birth" ]
         [ label [ class "label physical_title" ]
             [ text "생년월일" ]
-        , p [ class "physicalbox2" ]
-            [ input [ class "input yf_input_box2", type_ "date", onInput (BodyInfo "date"), value model.birthday ]
-                []
+        , p [ class "physicalbox2 bodyinput", onClick (ShowDetail "birth") ]
+            [ div [ class "input yf_input_box2" ]
+                [text model.birthday]
             ]
-        ]
+        ],
+        case model.showDetail of
+            "sex" ->
+                bodysex model   
+            "weight" ->
+                bodyweight model
+            "goalweight" ->
+                goalweight model
+            "height" ->
+                height model
+            "birth" ->
+                birth model
+            _ ->
+                div [class "editTop "] []
     ]
 
 pwdContents  model =
-    div [class "m_pwd"] [
+    div [class "m_pwd", id "noScrInput"] [
         div [class "notmatchPwd"] [text model.notmatchPwd]
         , input [ class "input myPage_yf_input", type_ "text", placeholder "기존의  패스워드를 입력 해 주세요." , onInput OldPwd]
         []

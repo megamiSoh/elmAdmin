@@ -31,7 +31,7 @@ type alias Model =
     , loading : Bool
     , infiniteLoading : Bool
     , appData : List TogetherData
-    , ofheight : Int
+    , ofheight : Maybe Int
     , need2login : Bool
     , videoStart : String
     , showAllText : Bool
@@ -136,7 +136,7 @@ init session mobile
         , showDetail = False
         , infiniteLoading = False
         , appData = []
-        , ofheight = 0
+        , ofheight = Just 800
         , count = 1
         , likeList = []
         , idx = 0
@@ -186,12 +186,13 @@ init session mobile
             }
         }
         ,  Cmd.batch 
-        [ (if mobile then
+        [ (
+            if mobile then
             dataEncoder 1 9 session
             else
             webDataEncoder 1 9 session
         )
-        , mydata session
+        -- , mydata session
         , Cmd.batch [
             Api.removeJw ()
             , Api.scrollControl ()
@@ -359,10 +360,7 @@ update msg model =
                         else
                             x
                     )model.appData 
-                -- webLike = 
-                --     List.map (\x ->
-                --             {x | recommend_cnt = ok.data.recommend_cnt}
-                --     )model.oneOfdata
+
                 webAllupdate = 
                     List.map (\x ->
                         if x.id == model.like then
@@ -386,10 +384,6 @@ update msg model =
             ({model | showAllText = not model.showAllText}, Cmd.none)
         OnLoad ->
             (model, Cmd.none)
-            -- if model.count >= List.length (model.togetherData.data) then
-            -- ({model | loading = False}, Cmd.none)
-            -- else
-            -- ({model | count = model.count + 1, loading = False}, Cmd.none)
         VideoCall (p ,idx) ->  
             let 
                 stringint = String.fromInt(idx)
@@ -437,11 +431,29 @@ update msg model =
             ({model | loading = False}, Cmd.none)
         
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
-             if (scrollHeight - scrollTop) <= offsetHeight then
-                ({model | infiniteLoading = True}, Cmd.batch[loadingEncoder (model.page + 1)  model.per_page model.session])
+            let _ = Debug.log "scroll" scrollTop
+                
+            in
+            
+             if (scrollHeight - scrollTop) <= (offsetHeight + 77) then
+                let _ = Debug.log "complete" (model.togetherData.paginate.total_count // model.per_page + 1)
+                    
+                in 
+                if model.togetherData.paginate.total_count // model.per_page + 1 > model.page then
+                ({model | infiniteLoading = True, ofheight = 
+                case model.ofheight of
+                    Just a ->
+                        Just (a + 200)
+                
+                    Nothing ->
+                        Nothing
+                        }, Cmd.batch[loadingEncoder (model.page + 1)  model.per_page model.session])
+                else
+                ({model | ofheight = Nothing}, Cmd.none)
                 
             else
-                ({model | ofheight = offsetHeight}, Cmd.none)
+                (model, Cmd.none)
+                -- ({model | ofheight = scrollHeight}, Cmd.none)
         PageBtn (idx, str) ->
             case str of
                 "prev" ->
@@ -546,8 +558,7 @@ view model =
                         ]
                 else 
                     div [] []
-                    , 
-                app model
+                    , app model
             ]
     }
     else
@@ -604,23 +615,31 @@ web model contentsItem=
 
 app model =
      
-    div [class "container "] [
+    div [class "container scrollContainer"] [
         justappHeader "함께해요" "togetherHeader",
-        div [scrollEvent ScrollEvent, id "scrollE" ] [
+        appStartBtn,
+        div [class "scroll", id "scrollE" ] [
             if model.need2login then
             need2loginAppDetailRoute Route.Together
             else
-            div [ class "scroll", scrollEvent ScrollEvent] [
+            div [  scrollEvent ScrollEvent, class "hereScrl"] [
                 -- appTab model,
-                appStartBtn,
-                div [] (List.indexedMap (
+                div [class "togetherscrollContent", 
+                    case model.ofheight of
+                        Just a ->
+                            (style "height" ((String.fromInt a) ++ "vh"))
+                    
+                        Nothing ->
+                            (style "overflow" "hidden")
+                            
+                ] (List.indexedMap (
                         \idx x -> appContentsItem idx x model ) model.appData )
-                ,if model.infiniteLoading then
-                div [class "loadingPosition"] [
-                infiniteSpinner
-                ]
-                else
-                span [] []
+                -- ,if model.infiniteLoading then
+                -- div [class "loadingPosition"] [
+                -- infiniteSpinner
+                -- ]
+                -- else
+                -- span [] []
             ]
         ]
     ]

@@ -58,6 +58,7 @@ type Route
     | FPwd
     | LogoutConfirm
     | TA
+    | MyPageBottomMenu
 
 parser : Parser (Route -> a) a
 parser =
@@ -223,5 +224,7 @@ routeToString page =
                     ["logoutcomplete"]
                 TA ->
                     ["test"]
+                MyPageBottomMenu ->
+                    ["myPage"]
     in
     "#/" ++ String.join "/" pages

@@ -10,25 +10,52 @@ import Route exposing (..)
 import Json.Decode as Decode
 import Json.Encode as E
 import Api as Api
+import Http as Http
+import Api.Endpoint as Endpoint
+import Api.Decoder as Decoder
 
 type alias Model 
     = {
         session : Session
         , checkDevice : String
         , check : Bool
+        , title : String
+        , content : String
     }
--- init : Session -> Api.Check ->(Model, Cmd Msg)
-init session mobile
-    = (
-        {session = session
-        , check = mobile
-        , checkDevice = ""}
-        , Cmd.none
+
+init : Session -> Bool ->(Model, Cmd Msg)
+init session mobile = 
+    ({session = session
+    , check = mobile
+    , checkDevice = ""
+    , title = ""
+    , content = ""}
+    , Cmd.none
     )
 
+faqEncode titleString content session = 
+    let
+        new string = 
+            string
+                |> String.replace "&" "%26" 
+                |> String.replace "%" "%25"
+        body =
+            ("title="
+                ++ (new titleString)
+                ++ "&content="
+                ++ (new content)
+            )
+            |> Http.stringBody "application/x-www-form-urlencoded"
+    in
+    Api.post Endpoint.faqregist (Session.cred session) RegistSuccess body (Decoder.resultD)
 
 type Msg 
     = CheckDevice E.Value
+    | Title String
+    | Content String
+    | RegistSuccess (Result Http.Error Decoder.Success)
+    | GoRegist
+    | GoBack
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -46,6 +73,28 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GoBack ->
+            (model, Route.pushUrl (Session.navKey model.session) Route.Faq)
+        GoRegist ->
+            (model, faqEncode model.title model.content model.session)
+        RegistSuccess (Ok ok) ->
+            (model, Cmd.batch [
+                Api.showToast (E.string "문의가 등록 되었습니다.")
+                , Route.pushUrl (Session.navKey model.session) Route.Faq
+            ])
+        RegistSuccess (Err err) ->
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model,(Session.changeInterCeptor (Just serverErrors) model.session))
+            else
+            (model, Cmd.none)
+        Title titleStr ->
+            ({model | title = titleStr}, Cmd.none)
+        Content contentStr ->
+            ({model | content = contentStr }, Cmd.none)
         CheckDevice str ->
             let
                 result = Decode.decodeValue Decode.string str
@@ -60,24 +109,24 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    if model.check then
+    -- if model.check then
         { title = "1:1문의"
         , content = 
             div [] [
                 app
             ]
         }
-    else
-        { title = "1:1문의"
-        , content = 
-            div [] [
-                web
-            ]
-        }
+    -- else
+    --     { title = "1:1문의"
+    --     , content = 
+    --         div [] [
+    --             web
+    --         ]
+    --     }
 
 app =
-    div [class "container"] [
-        appHeaderBothBtn "문의하기" "myPageHeader" Route.Faq "fas fa-angle-left" "등록" Route.Faq
+    div [class "container faqcontainer"] [
+        appHeaderConfirmDetailleft "문의하기" "myPageHeader" GoBack GoRegist "등록" 
         , apptitle
         , apptextArea
     ]
@@ -90,15 +139,15 @@ web =
         , backBtn
     ]
 title = 
-        input [ class "input tapbox", type_ "text", placeholder "제목을 입력해주세요" ]
+        input [ class "input tapbox", type_ "text", placeholder "제목을 입력해주세요" , onInput Title, maxlength 50]
                 []
 textArea =
-        textarea [ class "textarea tapbox", placeholder "내용을 입력해주세요", rows 10 ]
+        textarea [ class "textarea tapbox", placeholder "내용을 입력해주세요", rows 10 , onInput Content, maxlength 250]
         []
 uploadBtn = 
     div [ class "togetherWrite_yf_dark" ]
-        [ a [ class "button is-dark", Route.href Route.Faq]
-            [ text "올리기" ]
+        [ div [ class "button is-dark", onClick GoRegist]
+                    [ text "올리기" ]
         ]
 backBtn = 
     div [ class "faqWrite_backbtn" ]
@@ -107,8 +156,8 @@ backBtn =
         ]
 
 apptitle = 
-        input [ class "input tapbox fnqapptitle", type_ "text", placeholder "제목을 입력해주세요" ]
+        input [ class "input", type_ "text", placeholder "제목을 입력해주세요" , maxlength 50, onInput Title]
                 []
 apptextArea =
-        textarea [ class "textarea fnqtapbox", placeholder "내용을 입력해주세요", rows 10 ]
+        textarea [ class "textarea m_textarea", placeholder "내용을 입력해주세요", rows 10, maxlength 250 , onInput Content]
         []

@@ -7,6 +7,8 @@ import Session exposing(..)
 import Html exposing (..)
 import Route exposing (..)
 import Page.Common as Common
+import Date exposing (..)
+import DatePicker exposing (Msg(..))
 -- myInfo : Html msg
 myInfo item changeNick changeBtn wantChangeNickname changeGo pwdInput changePwd notmatchPwd repwdInput oldInput nick getFile profileImg cannotChangeImg goprofilechange resetimg=         
     div [ class "columns" ]
@@ -47,7 +49,7 @@ myInfo item changeNick changeBtn wantChangeNickname changeGo pwdInput changePwd 
                 , if wantChangeNickname == "nick" then
                     div [] [
                             div [class "notmatchPwd"] []
-                            , input [ class "input myPage_yf_input", type_ "text", placeholder "닉네임을 정해주세요" , onInput changeNick]
+                            , input [ class "input myPage_yf_input", type_ "text", placeholder "닉네임을 정해주세요" , onInput changeNick, maxlength 10]
                             []
                             , div [ class "button is-info mypage_nickbtn", onClick changeGo ]
                                 [ text "적용" ]
@@ -66,9 +68,16 @@ myInfo item changeNick changeBtn wantChangeNickname changeGo pwdInput changePwd 
         ]
     ]
 -- bodyInfo : Html msg
-bodyInfo model inputTagger bodySave ismale= 
-    div [ class "wrap" ]
-        [ div [ class "gender_title" ]
+bodyInfo model inputTagger bodySave ismale  datePicker firstdate datepickerShow cannotSave= 
+    div [ class "wrap", id "datepickerPosition" ]
+        [
+            p [class "bodyRecordsstyle"] [
+                if String.isEmpty cannotSave then
+                text "자신의 신체정보를 기록합니다."
+                else
+                span [class "red"] [text cannotSave]
+                ]
+            , div [ class "gender_title" ]
             [ label [ class "label" ]
                 [ text "성별" ]
             , p []
@@ -102,7 +111,7 @@ bodyInfo model inputTagger bodySave ismale=
             [ label [ class "label" ]
                 [ text "목표체중" ]
             , p []
-                [ input [ class "input myPage2_yf_input_box", type_ "number", value  model.goalWeight, onInput (inputTagger "goalWeight") ]
+                [ input [ class "input myPage2_yf_input_box", value  model.goalWeight, onInput (inputTagger "goalWeight") ]
                     [],text "Cm" 
                 ]
             ]
@@ -110,18 +119,34 @@ bodyInfo model inputTagger bodySave ismale=
             [ label [ class "label" ]
                 [ text "신장" ]
             , p []
-                [ input [ class "input myPage2_yf_input_box", type_ "number", value model.height, onInput (inputTagger "height") ]
+                [ input [ class "input myPage2_yf_input_box", value model.height, onInput (inputTagger "height") ]
                     [], text "Kg" 
                 ]
             ]
         , div [ class "myPage2_title" ]
             [ label [ class "label" ]
                 [ text "생년월일" ]
-            , label []
-                [ input [ class "input myPage2_yf_input_box2", type_ "date", value model.birth, onInput (inputTagger "birth") ]
-                    [] 
-                ]
+            ,
+            --  label []
+            --     [ 
+                    -- input [ class "input myPage2_yf_input_box2", type_ "date", value model.birth, onInput (inputTagger "birth") ]
+                    -- [] 
+                    div [ class "field datepickerOn" ]
+                        [ p [ class ("control is-expanded has-icons-right datePickerBorder input datepickerIndividualStyle" )
+                        , onClick datepickerShow
+                        ]
+                            [ div []
+                                [text firstdate]
+                            , span [ class "icon is-small is-right" ]
+                                [ i [ class "fa fa-calendar-alt" ]
+                                    []
+                                ]
+                            ]
+                            , datePicker
+                        ]
+                -- ]
             ]
+        
         ,div [ class "button is-dark yf_is-dark", onClick bodySave ]
             [ text "저장" ]
         ]
@@ -704,3 +729,87 @@ termsArticle style =
 goBtn back = 
      div [ class "button is-dark yf_darkbut", onClick (back "signup") ]
     [ text "확인" ]
+
+datepicker model startdatemsg= 
+    if model.dateShow then
+    div [class "datepickerPosition"] 
+        [ div
+            []
+            [ DatePicker.view
+                model.datePickerData
+                getDatePickerProps
+                |> Html.map startdatemsg
+            ]
+         ]
+    else
+    span [] []
+
+
+getFormattedDate model whenday= 
+    let
+        year x = Date.year x
+        month x= Date.month x
+        day x= Date.day x
+        encode d = 
+            Date.fromCalendarDate (year d) (month d) (day d)
+            |> Date.toIsoString
+    in  
+    case model of  
+        Just d ->  
+            encode d
+        Nothing ->
+            case whenday of
+                Just d ->  
+                    encode d
+                Nothing ->
+                    "날짜 로드 실패"
+
+
+stringToDate model whenday birth= 
+    let
+        year x = Date.year x
+        month x= Date.month x
+        day x= Date.day x
+        encode d = 
+            Date.fromCalendarDate (year d) (month d) (day d)
+            |> Date.toIsoString
+    in  
+    case model of  
+        Just d ->  
+            encode d
+        Nothing ->
+            if String.isEmpty birth then
+            -- case  of
+            --     Just d ->  
+                    "생년월일을 선택 해 주세요."
+                -- Nothing ->
+            else
+            birth
+                    
+
+calendarDate date =
+    let
+        year x = Date.year x
+        month x= Date.month x
+        day x= Date.day x
+    in
+    Date.fromCalendarDate (year date) (month date) (day date)
+
+getDatePickerProps : DatePicker.Props
+getDatePickerProps =
+    let
+        defaultProps =
+            DatePicker.defaultProps
+    in
+        {defaultProps
+            | okButtonText = "확인",
+            cancelButtonText = "취소"}
+type Day
+    = Mon
+    | Tue
+    | Wed
+    | Thu
+    | Fri
+    | Sat
+    | Sun
+

@@ -2,7 +2,7 @@ module Page.MyPageMenu.MyCalendar exposing(..)
 
 import Browser exposing (..)
 import Html.Events exposing(..)
-import Html.Attributes exposing(..)
+import Html.Attributes  as Attr exposing(..)
 import Session exposing(..)
 import Html exposing (..)
 import Page.Common exposing(..)
@@ -11,28 +11,133 @@ import Json.Decode as Decode
 import Route exposing (..)
 import Page.Common exposing(..)
 import Api as Api
+import Http as Http
+import Api.Endpoint as Endpoint
+import Api.Decoder as Decoder
+import File as Files
+import Date exposing (Date, Interval(..), Unit(..), add, fromCalendarDate)
+import Task exposing (Task)
+import Time exposing(Month(..))
+import Page.MyPageMenu.MyPageInfoLayout exposing (..)
 
-type alias Model 
-    = {
-        session : Session
-        ,checkDevice : String
-        , check : Bool
+type alias Model = 
+    { session : Session
+    , checkDevice : String
+    , check : Bool
+    , data : MealData
+    , date : String
+    , beforeImg : List Files.File
+    , afterImg : List Files.File
+    , currentDay : Date
+    , today : String
     }
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+
+type alias Meal = 
+    { data : MealData }
+
+type alias MealData = 
+    { body : Body
+    , date_exercise : String
+    , date_kcal : String
+    , kcal : List Kcal
+    , photo : Photo }
+
+type alias Body = 
+    { age : Int
+    , bmi : Bmi
+    , bmr : Float
+    , body_fat_percentage : Float
+    , change_weight: String
+    , goal_weight: String
+    , height: String
+    , is_male : Maybe Bool
+    , remain_weight : String
+    , weight: String }
+
+type alias Bmi = 
+    { division : String
+    , value : Float }
+
+type alias Kcal = 
+    { food_code : String
+    , kcal : String }
+
+type alias Photo = 
+    { after : Maybe String
+    , before : Maybe String }
+
+type alias ImgData = 
+    { data : BodyImg }
+
+type alias BodyImg = 
+    { content_length : Int
+    , content_type : String
+    , extension : String
+    , name : String
+    , origin_name : String
+    , path : String }
+
+diaryApi date session = 
+    Api.get GetData (Endpoint.diary date) (Session.cred session) (Decoder.diaryData Meal MealData Body Kcal Photo Bmi)
+
+imgEncoder img date session whatKindOf endpoint= 
+    let
+        body = (List.map (Http.filePart whatKindOf)img)
+            |> Http.multipartBody 
+    in
+    Api.post (endpoint date) (Session.cred session) ImgUploadComplete body (Decoder.myBodyImg ImgData BodyImg)
+
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
-        {session = session
-        ,checkDevice = ""
-        , check = mobile}
-        , Cmd.none
+        { session = session
+        , checkDevice = ""
+        , check = mobile
+        , date = ""
+        , beforeImg = []
+        , afterImg = []
+        , data = 
+            { body = 
+                { age = 0
+                , bmi = 
+                    { division = ""
+                    , value = 0 }
+                , bmr = 0
+                , body_fat_percentage = 0
+                , change_weight = ""
+                , goal_weight = ""
+                , height = ""
+                , is_male = Nothing
+                , remain_weight = ""
+                , weight = ""
+                }
+            , date_exercise = ""
+            , date_kcal = ""
+            , kcal = []
+            , photo = 
+                { after = Nothing
+                , before = Nothing }
+            }
+        , currentDay = Date.fromCalendarDate 2019 Jan 1
+        , today = ""
+        }
+        , Cmd.batch[Date.today |> Task.perform ReceiveDate]
     )
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    Api.successSave SaveKey
 
 type Msg 
-    = CheckDevice E.Value
-    | BackBtn
+    = BackBtn
+    | GetData (Result Http.Error Meal)
+    | ImgUploadComplete (Result Http.Error ImgData)
+    | ImgUploadBefore (List Files.File)
+    | ImgUploadAfter (List Files.File)
+    | GoMealRecord String
+    | SaveKey E.Value
+    | ReceiveDate Date
+    | ChangeDate String
 
 toSession : Model -> Session
 toSession model =
@@ -42,252 +147,306 @@ toCheck : Model -> Bool
 toCheck model =
     model.check
 
-
+justToint int = 
+    case String.toInt int of
+        Just ok ->
+            ok
+    
+        Nothing ->
+            0
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        CheckDevice str ->
-           let 
-                result =
-                    Decode.decodeValue Decode.string str
+        ChangeDate when ->
+            let
+                formatDate day =
+                    Date.add Date.Days day model.currentDay
+
+                formatDateString day = 
+                    getFormattedDate Nothing (Just (formatDate day))
             in
-                case result of
-                    Ok string ->
-                        ({model| checkDevice = string}, Cmd.none)
-                    Err _ -> 
-                        ({model | checkDevice = ""}, Cmd.none)
+            
+            case when of
+                "next" ->
+                    let
+                        date = String.dropLeft 8 model.date
+                        today = String.dropLeft 8 model.today
+                    in
+                    if justToint date >= justToint today  then
+                    (model, Cmd.none)
+                    else
+                    ({model | date = formatDateString 1, currentDay = formatDate 1}, diaryApi (formatDateString 1) model.session)
+                "before" ->
+                    ({model | date = formatDateString -1, currentDay = formatDate -1}, diaryApi (formatDateString -1) model.session)
+                _ ->
+                    (model, Cmd.none)
+                    
+        ReceiveDate date ->
+            ({model | date = getFormattedDate Nothing (Just date), currentDay = date, today = getFormattedDate Nothing (Just date)}, 
+            diaryApi (getFormattedDate Nothing (Just date)) model.session
+            )
+        SaveKey success ->
+            (model, Route.pushUrl (Session.navKey model.session )Route.MealR)
+        GoMealRecord code ->
+            (model,Api.saveKey (E.string code))
+        ImgUploadAfter img ->
+            ({model | afterImg = img}, imgEncoder img model.date model.session "after" Endpoint.afterImg)
+        ImgUploadBefore img ->
+            ({model | beforeImg = img}, imgEncoder img model.date model.session "before" Endpoint.beforeImg) 
+        ImgUploadComplete (Ok ok) ->
+            (model, Cmd.batch[Api.showToast (E.string "등록 되었습니다."), diaryApi model.date model.session]) 
+        ImgUploadComplete (Err err) ->
+            (model, Cmd.none)
+        GetData (Ok ok)->
+            ({model | data = ok.data}, Cmd.none)
+        GetData (Err err)->
+            let _ = Debug.log "err" err
+                
+            in
+            
+            (model, Cmd.none)
         BackBtn ->
             (model, Route.backUrl (Session.navKey model.session) 1)
 
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
+    if model.check then
+    { title = "YourFitExer"
     , content =
        div [] [
-           if model.checkDevice == "pc" then
-            web
-            else
-            app  
+           app model
+       ]
+    }
+    else
+    { title = "YourFitExer"
+    , content =
+       div [] [
+           web model
        ]
     }
 
-web = 
+web model= 
         div [ class "container" ]
             [
                 commonJustHeader "/image/icon_calendar.png" "캘린더"
                 , div [ class "yf_yfworkout_search_wrap" ]
                     [
-                        calendarDate,
-                        dietRecords,
-                        weightResult,
-                        bodyPhoto,
-                        bodyInfo,
-                        workoutSum,
-                        doneWorkOut
+                        calendarDate model,
+                        dietRecords model,
+                        weightResult model,
+                        bodyPhoto model,
+                        bodyInfo model ,
+                        workoutSum model
+                        -- doneWorkOut
                     ]
             ]
 
-app =
+app model =
     div [class "container"] [
         appHeaderback "캘린더" "myPageHeader" BackBtn,
-        appcalendarDate,
-        appdietRecords,
-        appweightResult,
-        appbodyPhoto,
-        appbodyInfo,
-        appworkoutSum,
-        appdoneWorkOut
+        appcalendarDate model,
+        appdietRecords model,
+        appweightResult model ,
+        appbodyPhoto model ,
+        appbodyInfo model,
+        appworkoutSum model
+        -- appdoneWorkOut
     ]
-calendarDate = 
+calendarDate model = 
     div [ class "myCalendar_tapbox" ]
         [ div [ class "myCalendar_datebox" ]
-            [ i [ class "fas fa-angle-left myCalendar_yf_left" ]
-                [], text "2019.01.01" 
-            , i [ class "fas fa-angle-right myCalendar_yf_right" ]
+            [ i [ class "fas fa-angle-left myCalendar_yf_left", onClick (ChangeDate "before") ]
+                [], 
+                if model.date == model.today then 
+                div [class "date_container"] [text model.date, span [class"today"] [text "today"] ]
+                else 
+                div [class "date_container"] [text model.date, span [class"today"] [] ]
+            , i [ class "fas fa-angle-right myCalendar_yf_right", onClick (ChangeDate "next") , style "color" (if model.date == model.today then "#d2caca" else "#000" )]
                 []
             ]
         ]
 
-appcalendarDate = 
+appcalendarDate model  = 
     div [ class "m_myCalendar_tapbox" ]
         [ div [ class "m_myCalendar_datebox" ]
             [ i [ class "fas fa-angle-left m_myCalendar_yf_left" ]
-                [], text "2019.01.01" 
+                [], text model.date
             , i [ class "fas fa-angle-right m_myCalendar_yf_right" ]
                 []
             ]
         ]
+foodKcalLayout foodImg time kcal style code =
+    div [ class (style ++ " cursor"), onClick (GoMealRecord code )]
+            [ img [ src foodImg ] []
+            , ul []
+                [ li[]
+                    [ text time ]
+                , li[]
+                    [ 
+                    if Basics.round (stringToFloat kcal) == 0 then
+                        span [class "RecordMeal"] [text "식단 기록 하기"]
+                    else
+                        span [class "RecordMeal"] [text (kcal ++ "Kcal") ]
+                    ]
+                ]
+            ]
+foodKcal item class = 
+    case item.food_code of
+        "10" ->
+            foodKcalLayout "/image/dite_morning.png" "아침" item.kcal class "10"
+        "20" ->
+            foodKcalLayout "/image/dite_lunch.png" "점심" item.kcal class "20"
+        "30" ->
+            foodKcalLayout "/image/dite_dinner.png" "저녁" item.kcal class "30"
+        "40" ->
+            foodKcalLayout "/image/dite_snack.png" "간식" item.kcal class "40"
+        _ ->
+            foodKcalLayout "" "" "" "" ""
 
+stringToFloat item = 
+    case String.toFloat item of
+        Just ok ->
+            ok
+    
+        Nothing ->
+            0
 
-dietRecords = 
+roundPercent model = 
+    Basics.round((stringToFloat model.data.date_kcal) / model.data.body.bmr * 100)
+
+dietRecords model = 
     div [ class "myCalendar_ditebox" ]
         [ div [ class "myCalendar_goal" ]
-            [ text "목표체중 nn Kg" ]
-        , div [ class "myCalendar_food" ]
-            [ img [ src "/image/dite_morning.png" ]
-                []
-            , ul []
-                [li[]
-                    [ text "아침" ]
-                ,li[]
-                    [ text "1000Kcal" ]
-                ]
-            ]
-        , div [ class "myCalendar_food" ]
-            [ img [ src "/image/dite_lunch.png" ]
-                []
-            , ul []
-                [li[]
-                    [ text "점심" ]
-                ,li[]
-                    [ text "1000Kcal" ]
-                ]
-            ]
-        , div [ class "myCalendar_food" ]
-            [ img [ src "/image/dite_dinner.png" ]
-                []
-            , ul []
-                [li[]
-                    [ text "저녁" ]
-                ,li[]
-                    [ text "1000Kcal" ]
-                ]
-            ]
-        , div [ class "myCalendar_food" ]
-            [ img [ src "/image/dite_snack.png" ]
-                []
-            , ul []
-                [li[]
-                    [ text "간식" ]
-                ,li[]
-                    [ text "1000Kcal" ]
-                ]
-            ]
+            [ text ("목표체중" ++ model.data.body.goal_weight ++ "Kg") ]
+        , div [class "myCalendar_food_container"] (List.map (\x -> foodKcal x "myCalendar_food") model.data.kcal)
         , div [ class "myCalendar_kcalbox" ]
-            [ text "일일 섭취 칼로리 1000 Kcal / 기초대사량 4000 Kcal",   
-            div [ class "progress is-medium is-primary yf_progress" ]
-                [], text "일일 섭취 칼로리 80%" 
+            [ text ("일일 섭취 칼로리 "++ model.data.date_kcal ++ " Kcal / 기초대사량 "++ String.fromFloat model.data.body.bmr ++  " Kcal"), 
+            if roundPercent model >= 100 then
+                progress [ class "progress is-medium is-danger yf_progress", value model.data.date_kcal , Attr.max (String.fromInt(Basics.round model.data.body.bmr))]
+                []
+            else
+                progress [ class "progress is-medium is-primary yf_progress", value model.data.date_kcal , Attr.max (String.fromInt(Basics.round model.data.body.bmr))]
+                []
+            , if roundPercent model == 0 then
+                div [] [text "식단을 기록 해 주세요."]
+            else
+                div [] [
+                 text ("일일 섭취 칼로리 " ++ String.fromInt(Basics.round((stringToFloat model.data.date_kcal) / model.data.body.bmr * 100)) ++ " %") 
+            ]
             ]
         ]
 
-appdietRecords = 
+appdietRecords model  = 
     div [ class "myCalendar_ditebox" ]
         [ div [ class "m_myCalendar_goal" ]
-            [ text "목표체중 nn Kg" ]
-        , div [ class "m_myCalendar_food" ]
-            [ img [ src "/image/dite_morning.png" ]
-                []
-            , ul []
-                [li[]
-                    [ text "아침" ]
-                ,li[]
-                    [ text "1000Kcal" ]
-                ]
-            ]
-        , div [ class "m_myCalendar_food" ]
-            [ img [ src "/image/dite_lunch.png" ]
-                []
-            , ul []
-                [li[]
-                    [ text "점심" ]
-                ,li[]
-                    [ text "1000Kcal" ]
-                ]
-            ]
-        , div [ class "m_myCalendar_food_a" ]
-            [ img [ src "/image/dite_dinner.png" ]
-                []
-            , ul []
-                [li[]
-                    [ text "저녁" ]
-                ,li[]
-                    [ text "1000Kcal" ]
-                ]
-            ]
-        , div [ class "m_myCalendar_food_a" ]
-            [ img [ src "/image/dite_snack.png" ]
-                []
-            , ul []
-                [li[]
-                    [ text "간식" ]
-                ,li[]
-                    [ text "1000Kcal" ]
-                ]
-            ]
+            [ text ("목표체중" ++ model.data.body.goal_weight ++ "Kg") ]
+        , div [] (List.map (\x -> foodKcal x "m_myCalendar_food")model.data.kcal)
         , div [ class "m_myCalendar_kcalbox" ]
-            [ text "일일 섭취 칼로리 1000 Kcal / 기초대사량 4000 Kcal",   
-            div [ class "progress is-medium is-primary yf_progress" ]
-                [], text "일일 섭취 칼로리 80%" 
+            [ text ("일일 섭취 칼로리 " ++ model.data.date_kcal ++ "Kcal / 기초대사량 "++ String.fromFloat model.data.body.bmr ++  " Kcal"),
+            progress [ class "progress is-medium is-primary yf_progress", value model.data.date_kcal , Attr.max (String.fromInt(Basics.round model.data.body.bmr))]
+                [], text ("일일 섭취 칼로리 " ++ String.fromFloat((stringToFloat model.data.date_kcal) / model.data.body.bmr * 100) ++ " %") 
             ]
         ]
 
-weightResult = 
+weightResult model = 
     div [ class "myCalendar_weightbox" ]
         [ i [ class "fas fa-weight" ]
-            [], text "현재 체중 56.8KG" 
-        , p[][text "목표 체중까지  3.2KG 남았습니다." ]
+            [], text (" 현재 체중 "++ model.data.body.weight ++"KG") 
+        , p[][text ("목표 체중까지 " ++ String.fromFloat(Basics.negate (stringToFloat model.data.body.remain_weight)) ++ "KG 남았습니다.") ]
         ]
 
-appweightResult = 
+appweightResult model = 
     div [ class "m_myCalendar_weightbox" ]
         [ i [ class "fas fa-weight" ]
-            [], text "현재 체중 56.8KG" 
-        , p[][text "목표 체중까지  3.2KG 남았습니다." ]
+            [], text ("현재 체중 "++ model.data.body.weight ++"KG")
+        , p[][text ("목표 체중까지 " ++ model.data.body.remain_weight ++ "KG 남았습니다.") ]
         ]
 
-bodyPhoto = 
+bodyPhoto model = 
     div [ class "myCalendar_phototbox" ]
         [ div [ class "myCalendar_boxtitle" ]
             [ text "신체변화기록" ]
         , div [ class "photobtnbox" ]
             [ div [ class "myCalendar_photo1" ]
-                [ img [ src "/image/photo.png" ]
+                [ img [ src (
+                    case model.data.photo.before of
+                        Just before ->
+                            before
+                    
+                        Nothing ->
+                            "/image/photo.png"
+                ) ]
                     []
-               ,p[] [text"Before 2018-01-01"] 
+               ,p[] [text "Before"] 
                 ]
             , div [ class "myCalendar_photo1" ]
-                [ img [ src "/image/photo.png" ]
+                [ img [ src (
+                    case model.data.photo.after of
+                        Just after ->
+                            after
+                    
+                        Nothing ->
+                            "/image/photo.png"
+                ) ]
                     []
-                ,p[] [text "After 2018-01-01"]
+                ,p[] [text "After"]
                 ]
             , div [ class "myCalendar_photobtnbox2" ]
                 [ ul []
                     [ li []
-                        [ a [ class "button yf_is-dark myCalendar_btn" ]
+                        [ label [] [
+                            div [ class "button yf_is-dark myCalendar_btn" ]
                             [ text "비포사진 올리기" ]
+                        , input [ type_ "file", style "display" "none",  on "change" (Decode.map ImgUploadBefore targetFiles)] []
+                        ]
                         ]
                     , li []
-                        [ a [ class "button is-dark yf_is-dark myCalendar_btn" ]
+                        [ label [] [
+                            div [ class "button is-dark yf_is-dark myCalendar_btn" ]
                             [ text "에프터사진 올리기" ]
+                            , input [ type_ "file", style "display" "none",  on "change" (Decode.map ImgUploadAfter targetFiles)] []
+                        ]
                         ]
                     ]
                 ]
             ]
         ]
 
-appbodyPhoto = 
+appbodyPhoto model = 
     div [ class "m_myCalendar_phototbox" ]
         [ div [ class "m_myCalendar_boxtitle" ]
             [ text "신체변화기록" ]
         , div [ class "photobtnbox" ]
             [ div [ class "m_myCalendar_photo" ]
-                [ img [ src "/image/photo.png" ]
+                [ img [ src (
+                    case model.data.photo.before of
+                        Just before ->
+                            before
+                    
+                        Nothing ->
+                            "/image/photo.png"
+                ) ]
                     []
-               ,p[] [text"Before 2018-01-01"] 
+               ,p[] [text"Before"] 
                 ]
             , div [ class "m_myCalendar_photo1" ]
-                [ img [ src "/image/photo.png" ]
+                [ img [ src (
+                    case model.data.photo.after of
+                        Just after ->
+                            after
+                    
+                        Nothing ->
+                            "/image/photo.png"
+                ) ]
                     []
-                ,p[] [text "After 2018-01-01"]
+                ,p[] [text "After"]
                 ]
             
             ]
         ]
 
-bodyInfo = 
+bodyInfo model = 
     div [ class "myCalendar_inforbox" ]
         [ div [ class "myCalendar_boxtitle" ]
             [ text "신체정보" ]
@@ -295,29 +454,45 @@ bodyInfo =
             [ li [class"myCalendar_infotitle"]
                 [ text "체지방율(%)" ]
             , li []
-                [ text "nn%" ]
+                [ text (String.fromFloat model.data.body.body_fat_percentage ++ " %") ]
             ]
         , ul []
             [ li [class"myCalendar_infotitle"]
                 [ text "기초대사량" ]
             , li []
-                [ text "nn Kcal" ]
+                [ text (model.data.date_kcal ++ " Kcal") ]
             ]
         , ul []
             [ li [class"myCalendar_infotitle"]
                 [ text "비만도(BMI)" ]
             , li []
-                [ text "nn.n (고체중)" ]
+                [ text (String.fromFloat model.data.body.bmi.value ++ " ( " ++ model.data.body.bmi.division ++ " )") ]
             ]
         , ul []
             [ li [class"myCalendar_infotitle"]
                 [ text "몸무게 변화" ]
             , li [class"myCalendar_infotitle"]
-                [ text "+ 1.2Kg" ]
+                [ 
+                if changeWeight model < 0 then
+                p[][text (String.fromFloat(Basics.negate (changeWeight model)))
+                , i [ class "fas fa-caret-down" , style "font-size" "2rem", style "color" "green"][]
+                ]
+                else if changeWeight model == 0 then
+                p[][text (String.fromFloat(Basics.negate(changeWeight model)))
+                , i [ class "fas fa-caret-up" , style "font-size" "2rem", style "color" "red"] []
+                ]
+                else
+                p[][text (String.fromFloat(Basics.negate(changeWeight model)))
+                , i [ class "fas fa-caret-up" , style "font-size" "2rem", style "color" "red"] []
+                ]
+                
+                ]
             ]
         ]
 
-appbodyInfo = 
+changeWeight model = 
+    stringToFloat model.data.body.change_weight - stringToFloat model.data.body.weight
+appbodyInfo model = 
     div [ class "m_myCalendar_inforbox" ]
         [ div [ class "m_myCalendar_boxtitle" ]
             [ text "신체정보" ]
@@ -325,42 +500,42 @@ appbodyInfo =
             [ li [class"m_myCalendar_infotitle"]
                 [ text "체지방율(%)" ]
             , li [class"m_myCalendar_infotitle"]
-                [ text "nn%" ]
+                [ text (String.fromFloat model.data.body.body_fat_percentage ++ " %") ]
             ]
         , ul []
             [ li [class"m_myCalendar_infotitle"]
                 [ text "기초대사량" ]
             , li [class"m_myCalendar_infotitle"]
-                [ text "nn Kcal" ]
+                [ text (model.data.date_kcal ++ " Kcal") ]
             ]
         , ul []
             [ li [class"m_myCalendar_infotitle"]
                 [ text "비만도(BMI)" ]
             , li [class"m_myCalendar_infotitle"]
-                [ text "nn.n (고체중)" ]
+                [ text (String.fromFloat model.data.body.bmi.value ++ " ( " ++ model.data.body.bmi.division ++ " )") ]
             ]
         , ul [class"m_myCalendar_infotitle"]
             [ li [class"m_myCalendar_infotitle"]
                 [ text "몸무게 변화" ]
             , li [class"m_myCalendar_infotitle"]
-                [ text "+ 1.2Kg" ]
+                [ text (String.fromFloat(stringToFloat model.data.body.change_weight - stringToFloat model.data.body.weight )) ]
             ]
         ]
 
-workoutSum =
+workoutSum model =
         div [ class "myCalendar_timetbox" ]
             [ div [ class "boxtitle" ]
                 [ text "총운동시간" ]
             , i [ class "fas fa-clock" ]
-                [], text "nn분" 
+                [], text ( model.data.date_exercise ++ " 분") 
             ]
 
-appworkoutSum =
+appworkoutSum model =
         div [ class "m_myCalendar_timetbox" ]
             [ div [ class "m_myCalendar_boxtitle" ]
                 [ text "총운동시간" ]
             , i [ class "fas fa-clock m_myCalendar_infotitle" ]
-              [], text "nn분"
+              [], text ( model.data.date_exercise ++ " 분")
             ]
 
 doneWorkOut = 

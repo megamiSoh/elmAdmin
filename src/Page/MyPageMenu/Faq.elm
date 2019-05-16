@@ -9,30 +9,133 @@ import Route exposing (..)
 import Json.Decode as Decode
 import Json.Encode as E
 import Api as Api
+import Http as Http
+import Api.Endpoint as Endpoint
+import Api.Decoder as Decoder
+import Page.Detail.FaqDetail as FaqDetail
 type alias Model 
     = {
         session : Session
         , checkDevice : String
         , idx : String
         , check : Bool
+        , faq : Faq
+        , getId : Int
+        , pageNum : Int
+        , page : Int
+        , per_page : Int
+        , detail : Detail
+        , screenInfo : ScreenInfo
+        , ofheight : Bool
+        , appFaqData : List Data
     }
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+
+type alias Faq =
+    { data : List Data
+    , paginate : Page }
+
+type alias Data = 
+    { id : Int
+    , inserted_at : String
+    , is_answer : Bool
+    , title : String }
+
+type alias Detail = 
+    { answer : Maybe String
+    , asked_id : Int
+    , content : String
+    , id : Int
+    , is_answer : Bool
+    , title : String
+    , username : String }
+
+type alias Page = 
+    { asked_id : Int
+    , end_date : String
+    , is_answer : Maybe Bool
+    , page : Int
+    , per_page : Int
+    , start_date : String
+    , title : String
+    , total_count : Int
+    , username : String }
+
+type alias ScreenInfo = 
+    { scrollHeight : Int
+    , scrollTop : Int
+    , offsetHeight : Int}
+
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
         {session = session
         ,checkDevice = "",
         idx = ""
-        , check = mobile}
-        , Cmd.none
+        , check = mobile
+        , getId = 0
+        , pageNum = 1
+        , page = 1
+        , per_page = 10
+        , ofheight = False
+        , appFaqData = []
+        , screenInfo = 
+            { scrollHeight = 0
+            , scrollTop = 0
+            , offsetHeight = 0}
+        , faq = 
+            { data = []
+            , paginate =
+                { asked_id = 0
+                , end_date = ""
+                , is_answer = Nothing
+                , page = 1
+                , per_page = 10
+                , start_date = ""
+                , title = ""
+                , total_count = 0
+                , username = ""}
+            }
+        , detail = 
+            { answer = Nothing
+            , asked_id = 0
+            , content = ""
+            , id = 0
+            , is_answer = False
+            , title = ""
+            , username = "" }
+        
+        }
+        , faqEncode 1 10 session
     )
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    Api.successSave GetDetail
+
+faqEncode page per_page session =
+    let
+        body = 
+            E.object 
+                [ ("page", E.int page)
+                , ("per_page", E.int per_page)]
+                    |> Http.jsonBody 
+    in
+    Api.post Endpoint.faqlist (Session.cred session) FaqList body (Decoder.faqList Faq Data Page)
+    
+detailApi id session = 
+    Api.get AppDetail (Endpoint.faqDetail id) (Session.cred session) (Decoder.faqdetail FaqDetail.Data Detail)
 
 type Msg 
     = CheckDevice E.Value
-    | Show Int
+    | Show Int Int
+    | FaqList (Result Http.Error Faq)
+    | DetailGo Int
+    | GetDetail E.Value
+    | PageBtn (Int, String)
+    | AppDetail (Result Http.Error FaqDetail.Data)
+    | GoDelete Int
+    | DeleteSuccess (Result Http.Error Decoder.Success)
+    | ScrollEvent ScreenInfo
 
 toSession : Model -> Session
 toSession model =
@@ -43,9 +146,78 @@ toCheck model =
     model.check
 
 
+scrollEvent msg = 
+    on "scroll" (Decode.map msg scrollInfoDecoder)
+
+scrollInfoDecoder =
+    Decode.map3 ScreenInfo
+        (Decode.at [ "target", "scrollHeight" ] Decode.int)
+        (Decode.at [ "target", "scrollTop" ] Decode.int)
+        (Decode.at [ "target", "offsetHeight" ] Decode.int)
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
+            let _ = Debug.log "scroll" scrollTop
+                endOfPage =  model.faq.paginate.total_count // model.per_page 
+            in
+             if (scrollHeight - scrollTop) <= offsetHeight then
+                if model.page < (endOfPage + 1) then
+                let _ = Debug.log "scroll" scrollTop
+                    
+                in
+                
+                ({model | page = model.page + 1}, faqEncode  (model.page + 1) model.per_page model.session )
+                else
+                ({model | ofheight = True}, Cmd.none)
+            else
+                (model, Cmd.none)
+        DeleteSuccess (Ok ok) ->
+            (model, Cmd.batch [
+                Api.showToast (E.string "삭제되었습니다.")
+                , faqEncode model.page model.per_page model.session
+            ])
+        DeleteSuccess (Err err) ->
+            (model, Cmd.none)
+        GoDelete id ->
+            ({model | getId = id}, Api.get DeleteSuccess (Endpoint.faqDelete (String.fromInt id)) (Session.cred model.session) (Decoder.resultD) )
+        AppDetail (Ok ok) ->
+            ({model | detail = ok.data}, Cmd.none)
+        AppDetail (Err err) ->
+            (model, Cmd.none)
+        PageBtn (idx, str) ->
+            let
+                idxEncode = E.int idx
+            in
+            
+            case str of
+                "prev" ->
+                    ({model | page = idx, pageNum = model.pageNum - 1}, Cmd.batch[faqEncode idx model.per_page model.session, Api.setCookie idxEncode])
+                "next" ->
+                    ({model | page = idx, pageNum = model.pageNum + 1}, Cmd.batch[faqEncode idx model.per_page model.session, Api.setCookie idxEncode])
+                "go" -> 
+                    ({model | page = idx}, Cmd.batch[faqEncode idx model.per_page model.session, Api.setCookie idxEncode])
+                _ ->
+                    (model, Cmd.none)
+        GetDetail str ->
+            (model, Route.pushUrl (Session.navKey model.session) Route.FaqD )
+        DetailGo id ->
+            ({model | getId = id}, Api.saveKey (E.string (String.fromInt id)))
+        FaqList (Ok ok) ->
+            -- if model.check then
+            ({model | faq = ok, appFaqData = model.appFaqData ++ ok.data}, Cmd.none)
+            -- else
+            -- ({model | faq = ok}, Cmd.none)
+        FaqList (Err err) ->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            else
+            (model, Cmd.none)
         CheckDevice str ->
             let
                 result = Decode.decodeValue Decode.string str
@@ -57,137 +229,162 @@ update msg model =
                     Err _ ->
                         ({model | checkDevice = ""}, Cmd.none)
                         
-        Show idx ->
+        Show idx id->
             if String.fromInt(idx) == model.idx then
             ({model| idx = ""}, Cmd.none)    
             else
-            ({model| idx = String.fromInt(idx)}, Cmd.none)
+            ({model| idx = String.fromInt(idx), getId = id}, detailApi (String.fromInt id) model.session)
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = "YourFitExer"
+    if model.check then
+    { title = "YourFitExer"
     , content = 
         div [] [
-            if model.check then
             app model
-            else
-            web
         ]
     }
-web = 
+    else
+    { title = "YourFitExer"
+    , content = 
+        div [] [
+            web model
+        ]
+    }
+web model = 
     div [ class "container" ]
         [
             commonJustHeader "/image/icon_qna.png" "1:1문의",
-            contentsBody,
-            pagenation,
+            if List.isEmpty model.faq.data then
+            div [class "noResult"] [text "1:1 문의가 없습니다."]
+            else
+            div [] [
+                contentsBody model,
+                pagination 
+                    PageBtn
+                    model.faq.paginate
+                    model.pageNum
+            ],
             faqWrite
         ]
 app model = 
     div [class "container"] [
-        appHeaderBothfnq "1:1문의" "myPageHeader" Route.MyPage "fas fa-angle-left" "글쓰기" Route.FaqW,
+        appHeaderConfirmDetail "1:1문의" "myPageHeader" Route.MyPage "fas fa-angle-left" Route.FaqW "글쓰기" , 
         appContentsBody model,
         floating
 
     ]
 appContentsBody model=
-    div [class "settingbox"] [
-        div [] (List.indexedMap (\idx x ->  itemLayout idx x model) faqData)
+    div [class (
+            if model.ofheight then
+            "m_faqEndScrollBox"
+            else
+            "m_fqaScrollbox"
+    ) , scrollEvent ScrollEvent] [
+        div [class "m_loadlistbox", scrollEvent ScrollEvent] (List.indexedMap (\idx x ->  itemLayout idx x model) model.appFaqData)
     ]
 itemLayout idx item model =
-     div [][
-        div [class "eventArea" ,onClick (Show idx)] [
-            div [class "titleLeft"] [text item.title],
-            div [class "qna_date inlineB"] [
-                ul [] [
-                    li [] [text item.createDate],
-                    li [] [
-                        if item.isAnswer then
-                        span [class "faq_done"] [text "답변완료"]
-                        else
-                        span [class "faq_waiting"] [text "대기중"]
+        div [class "eventArea" ,onClick (Show idx item.id)] [
+            div [class "eventAreaChild"] [
+                pre [class "titleLeft"] [text item.title],
+                div [class "qna_date inlineB"] [
+                    ul [] [
+                        li [] [text (String.dropRight 10 item.inserted_at)],
+                        li [] [
+                            if item.is_answer then
+                            span [class "faq_done"] [text "답변완료"]
+                            else
+                            span [class "faq_waiting"] [text "대기중"]
+                        ]
                     ]
                 ]
             ]
+            , expandQ idx model item.id
         ]
-       , expandQ idx model item.article item.answerDate item.answer item.isAnswer
-       ]
-expandAnswer date  = 
+expandAnswer title = 
         div [class"answerbox"] [
-        p [ class "yf_answerbox" ]
-            [ p[class"answerbox_text"][text "답변드립니다."]]
-        ,p [ class ("inlineB " ++ date) ]
-            [ text "19-01-01" ]
+            p[class"answerbox_text"][text ("Re: " ++  title)]
         ]
 showAnswer answer= 
     tr [class"tr_showAnswer"]
         [ td [ colspan 2 ]
-            [  text answer ]
+            [  pre [class "faq_q"][text (justString answer)] ]
         ]
 
 
 
-expandQ idx model userText aDate ans isAnswer =
+expandQ idx model id =
     div [classList [
         ("heightZero", True),
         ("heightShow", String.fromInt(idx)  == model.idx )
     ]] [
         div [][
-            p[class"faq_q"] [text userText, text (String.fromInt (idx))],
+            pre[class"faq_q"] [text ( model.detail.content)],
             p [class"m_fnq_btn"  ]
-                [ a [ class "button faq_q_btn "]
-                    [ i [ class "fas fa-edit " ]
-                        [], text "수정" 
-                    ]
-                , a [ class "button faq_q_btn" ]
-                    [ i [ class "far fa-trash-alt " ]
-                        [], text "삭제" 
+                [ 
+                    if model.detail.is_answer then
+                    div [] []
+                    else
+                    div [] [
+                        div [ class "button faq_q_btn ", onClick (DetailGo id)]
+                        [ i [ class "fas fa-edit " ]
+                            [], text "수정" 
+                        ]
+                        , div [ class "button faq_q_btn" , onClick (GoDelete id) ]
+                        [ i [ class "far fa-trash-alt " ]
+                            [], text "삭제" 
+                        ]
                     ]
                 ]
-            ],
-            if isAnswer then
-                div [ class "tableSet"] [
-                expandAnswer aDate,
-                showAnswer ans
-                ]
-            else 
-            span [] []
+            ]
+            ,
+           
+                expandAnswer (decodeChar model.detail.title)
+                , showAnswer model.detail.answer
+
                 
             
     ]
 
 
-contentsBody =
+contentsBody model =
     div [ class "info_mediabox" ]
         [ div [ class "table info_yf_table" ]
             [ div [class "tableRow"]
                     [ div [class "tableCell faq_num"]
                         [ text "번호" ]
                     , div [class "tableCell faq_title"]
-                        [ text "내용" ]
+                        [ text "제목" ]
                     , div [class "tableCell faq_ing"]
                         [ text "진행사항" ]
                     , div [class "tableCell faq_date"]
                         [ text "등록일" ]
                     ]
             , tbody []
-                (List.indexedMap contentsLayout faqData)
+                (List.indexedMap (\idx x -> contentsLayout idx x model) model.faq.data)
             ]
         ]
 
-contentsLayout idx item= 
-    a [class "tableRow", Route.href Route.FaqD] [
-        div [class "tableCell qna_numtext"] [text (String.fromInt(idx + 1))],
-        div [class "tableCell qna_title_text"] [text item.title],
+contentsLayout idx item model = 
+    div [class "tableRow cursor", onClick (DetailGo item.id)] [
+        div [class "tableCell qna_numtext"] [text (
+                    String.fromInt(model.faq.paginate.total_count - ((model.faq.paginate.page - 1) * 10) - (idx)  )
+                )],
+        div [class "tableCell qna_title_text"] 
+            [text (
+                item.title
+                    |> String.replace "%26" "&"
+                    |> String.replace "%25" "%"
+            ) ],
         div [class "tableCell qna_ing_text"] [
-            if item.isAnswer then
+            if item.is_answer then
             span [class "faq_done"] [text "답변 완료"]
             else
             span [class "faq_waiting"][text "대기중"]
         ],
-        div [class "tableCell qna_title_date"] [text item.createDate]
+        div [class "tableCell qna_title_date"] [text (String.dropRight 10 item.inserted_at)]
     ]
+
 pagenation=
     div [ class "yf_Pagination" ]
         [ nav [ class "pagination is-centered" ]
@@ -221,86 +418,15 @@ floating =
         [ i [ class "fas fa-pen icon_pen" ]
             []
         ]
-faqData = 
-    [
-        {
-            title = "기기 등록 서비스는 각각 가입해야 하나요?",
-            answerDate = "19-01-01",
-            createDate = "19-01-01",
-            isAnswer = True,
-                answer ="발휘하기 되는 위하여 찾아 튼튼하며, 소금이라 이상 천하를 있는가? 실현에 쓸쓸한 발휘하기 사랑의 무엇을 작고 속에 이상은 공자는 힘있다. 얼음과 희망의 새가 사랑의 아니한 것이 있으며, 것이다. 미인을 목숨이 못할 커다란 청춘의 무엇을 황금시대를 끓는다. 뭇 못하다 봄바람을 갑 찬미를 사막이다. 구하지 무한한 되려니와, 아니한 뜨고, 못할 그들의 같은 같은 봄바람이다. 청춘을 뭇 인간에 실로 시들어 약동하다. 발휘하기 얼음 이것을 것이다. 방황하여도, 물방아 위하여 청춘의 이상은 끓는다. 그들은 그들의 노년에게서 쓸쓸하랴? 그들에게 그들의 그러므로 있음으로써 온갖 보라.",
-                article ="발휘하기 되는 위하여 찾아 튼튼하며, 소금이라 이상 천하를 있는가? 실현에 쓸쓸한 발휘하기 사랑의 무엇을 작고 속에 이상은 공자는 힘있다. 얼음과 희망의 새가 사랑의 아니한 것이 있으며, 것이다. 미인을 목숨이 못할 커다란 청춘의 무엇을 황금시대를 끓는다. 뭇 못하다 봄바람을 갑 찬미를 사막이다. 구하지 무한한 되려니와, 아니한 뜨고, 못할 그들의 같은 같은 봄바람이다. 청춘을 뭇 인간에 실로 시들어 약동하다. 발휘하기 얼음 이것을 것이다. 방황하여도, 물방아 위하여 청춘의 이상은 끓는다. 그들은 그들의 노년에게서 쓸쓸하랴? 그들에게 그들의 그러므로 있음으로써 온갖 보라."
-        },
-        {
-            title = "기기 등록 서비스 가입은 어떻게 하나요?",
-            answerDate = "19-01-01",
-            createDate = "19-01-01",
-            isAnswer = True,
-                answer ="발휘하기 되는 위하여 찾아 튼튼하며, 소금이라 이상 천하를 있는가? 실현에 쓸쓸한 발휘하기 사랑의 무엇을 작고 속에 이상은 공자는 힘있다. 얼음과 희망의 새가 사랑의 아니한 것이 있으며, 것이다. 미인을 목숨이 못할 커다란 청춘의 무엇을 황금시대를 끓는다. 뭇 못하다 봄바람을 갑 찬미를 사막이다. 구하지 무한한 되려니와, 아니한 뜨고, 못할 그들의 같은 같은 봄바람이다. 청춘을 뭇 인간에 실로 시들어 약동하다. 발휘하기 얼음 이것을 것이다. 방황하여도, 물방아 위하여 청춘의 이상은 끓는다. 그들은 그들의 노년에게서 쓸쓸하랴? 그들에게 그들의 그러므로 있음으로써 온갖 보라.",
-                article ="발휘하기 되는 위하여 찾아 튼튼하며, 소금이라 이상 천하를 있는가? 실현에 쓸쓸한 발휘하기 사랑의 무엇을 작고 속에 이상은 공자는 힘있다. 얼음과 희망의 새가 사랑의 아니한 것이 있으며, 것이다. 미인을 목숨이 못할 커다란 청춘의 무엇을 황금시대를 끓는다. 뭇 못하다 봄바람을 갑 찬미를 사막이다. 구하지 무한한 되려니와, 아니한 뜨고, 못할 그들의 같은 같은 봄바람이다. 청춘을 뭇 인간에 실로 시들어 약동하다. 발휘하기 얼음 이것을 것이다. 방황하여도, 물방아 위하여 청춘의 이상은 끓는다. 그들은 그들의 노년에게서 쓸쓸하랴? 그들에게 그들의 그러므로 있음으로써 온갖 보라."
-        },
-        {
-            title = "PC에서 사용 가능한 기기 등록 서비스는 무엇인가요?",
-            answerDate = "19-01-01",
-            createDate = "19-01-01",
-            isAnswer = True,
-                answer ="발휘하기 되는 위하여 찾아 튼튼하며, 소금이라 이상 천하를 있는가? 실현에 쓸쓸한 발휘하기 사랑의 무엇을 작고 속에 이상은 공자는 힘있다. 얼음과 희망의 새가 사랑의 아니한 것이 있으며, 것이다. 미인을 목숨이 못할 커다란 청춘의 무엇을 황금시대를 끓는다. 뭇 못하다 봄바람을 갑 찬미를 사막이다. 구하지 무한한 되려니와, 아니한 뜨고, 못할 그들의 같은 같은 봄바람이다. 청춘을 뭇 인간에 실로 시들어 약동하다. 발휘하기 얼음 이것을 것이다. 방황하여도, 물방아 위하여 청춘의 이상은 끓는다. 그들은 그들의 노년에게서 쓸쓸하랴? 그들에게 그들의 그러므로 있음으로써 온갖 보라.",
-                article ="발휘하기 되는 위하여 찾아 튼튼하며, 소금이라 이상 천하를 있는가? 실현에 쓸쓸한 발휘하기 사랑의 무엇을 작고 속에 이상은 공자는 힘있다. 얼음과 희망의 새가 사랑의 아니한 것이 있으며, 것이다. 미인을 목숨이 못할 커다란 청춘의 무엇을 황금시대를 끓는다. 뭇 못하다 봄바람을 갑 찬미를 사막이다. 구하지 무한한 되려니와, 아니한 뜨고, 못할 그들의 같은 같은 봄바람이다. 청춘을 뭇 인간에 실로 시들어 약동하다. 발휘하기 얼음 이것을 것이다. 방황하여도, 물방아 위하여 청춘의 이상은 끓는다. 그들은 그들의 노년에게서 쓸쓸하랴? 그들에게 그들의 그러므로 있음으로써 온갖 보라."
-        },
-        {
-            title = "개인정보에 등록 된 휴대폰 번호(이메일주소)를 변경하고싶어요.", 
-            answerDate = "19-01-01",
-            createDate = "19-01-01",
-            isAnswer = True,
-                answer ="발휘하기 되는 위하여 찾아 튼튼하며, 소금이라 이상 천하를 있는가? 실현에 쓸쓸한 발휘하기 사랑의 무엇을 작고 속에 이상은 공자는 힘있다. 얼음과 희망의 새가 사랑의 아니한 것이 있으며, 것이다. 미인을 목숨이 못할 커다란 청춘의 무엇을 황금시대를 끓는다. 뭇 못하다 봄바람을 갑 찬미를 사막이다. 구하지 무한한 되려니와, 아니한 뜨고, 못할 그들의 같은 같은 봄바람이다. 청춘을 뭇 인간에 실로 시들어 약동하다. 발휘하기 얼음 이것을 것이다. 방황하여도, 물방아 위하여 청춘의 이상은 끓는다. 그들은 그들의 노년에게서 쓸쓸하랴? 그들에게 그들의 그러므로 있음으로써 온갖 보라.",
-                article ="발휘하기 되는 위하여 찾아 튼튼하며, 소금이라 이상 천하를 있는가? 실현에 쓸쓸한 발휘하기 사랑의 무엇을 작고 속에 이상은 공자는 힘있다. 얼음과 희망의 새가 사랑의 아니한 것이 있으며, 것이다. 미인을 목숨이 못할 커다란 청춘의 무엇을 황금시대를 끓는다. 뭇 못하다 봄바람을 갑 찬미를 사막이다. 구하지 무한한 되려니와, 아니한 뜨고, 못할 그들의 같은 같은 봄바람이다. 청춘을 뭇 인간에 실로 시들어 약동하다. 발휘하기 얼음 이것을 것이다. 방황하여도, 물방아 위하여 청춘의 이상은 끓는다. 그들은 그들의 노년에게서 쓸쓸하랴? 그들에게 그들의 그러므로 있음으로써 온갖 보라."
-        },
-        {
-            title = "스페셜 패키지의 아이템을 실수로 다른 캐릭터로 수령했어요.이동 가능한가요?", 
-            answerDate = "19-01-01",
-            createDate = "19-01-01",
-            isAnswer = True,
-                answer ="발휘하기 되는 위하여 찾아 튼튼하며, 소금이라 이상 천하를 있는가? 실현에 쓸쓸한 발휘하기 사랑의 무엇을 작고 속에 이상은 공자는 힘있다. 얼음과 희망의 새가 사랑의 아니한 것이 있으며, 것이다. 미인을 목숨이 못할 커다란 청춘의 무엇을 황금시대를 끓는다. 뭇 못하다 봄바람을 갑 찬미를 사막이다. 구하지 무한한 되려니와, 아니한 뜨고, 못할 그들의 같은 같은 봄바람이다. 청춘을 뭇 인간에 실로 시들어 약동하다. 발휘하기 얼음 이것을 것이다. 방황하여도, 물방아 위하여 청춘의 이상은 끓는다. 그들은 그들의 노년에게서 쓸쓸하랴? 그들에게 그들의 그러므로 있음으로써 온갖 보라.",
-                article ="발휘하기 되는 위하여 찾아 튼튼하며, 소금이라 이상 천하를 있는가? 실현에 쓸쓸한 발휘하기 사랑의 무엇을 작고 속에 이상은 공자는 힘있다. 얼음과 희망의 새가 사랑의 아니한 것이 있으며, 것이다. 미인을 목숨이 못할 커다란 청춘의 무엇을 황금시대를 끓는다. 뭇 못하다 봄바람을 갑 찬미를 사막이다. 구하지 무한한 되려니와, 아니한 뜨고, 못할 그들의 같은 같은 봄바람이다. 청춘을 뭇 인간에 실로 시들어 약동하다. 발휘하기 얼음 이것을 것이다. 방황하여도, 물방아 위하여 청춘의 이상은 끓는다. 그들은 그들의 노년에게서 쓸쓸하랴? 그들에게 그들의 그러므로 있음으로써 온갖 보라."
-        },
-        {
-            title = "회원가입 시 부모동의를 받았는데 추가 회원가입 시 다시 받아야 하나요?",
-            answerDate = "19-01-01",
-            createDate = "19-01-01",
-            isAnswer = True,
-                answer ="발휘하기 되는 위하여 찾아 튼튼하며, 소금이라 이상 천하를 있는가? 실현에 쓸쓸한 발휘하기 사랑의 무엇을 작고 속에 이상은 공자는 힘있다. 얼음과 희망의 새가 사랑의 아니한 것이 있으며, 것이다. 미인을 목숨이 못할 커다란 청춘의 무엇을 황금시대를 끓는다. 뭇 못하다 봄바람을 갑 찬미를 사막이다. 구하지 무한한 되려니와, 아니한 뜨고, 못할 그들의 같은 같은 봄바람이다. 청춘을 뭇 인간에 실로 시들어 약동하다. 발휘하기 얼음 이것을 것이다. 방황하여도, 물방아 위하여 청춘의 이상은 끓는다. 그들은 그들의 노년에게서 쓸쓸하랴? 그들에게 그들의 그러므로 있음으로써 온갖 보라.",
-                article ="발휘하기 되는 위하여 찾아 튼튼하며, 소금이라 이상 천하를 있는가? 실현에 쓸쓸한 발휘하기 사랑의 무엇을 작고 속에 이상은 공자는 힘있다. 얼음과 희망의 새가 사랑의 아니한 것이 있으며, 것이다. 미인을 목숨이 못할 커다란 청춘의 무엇을 황금시대를 끓는다. 뭇 못하다 봄바람을 갑 찬미를 사막이다. 구하지 무한한 되려니와, 아니한 뜨고, 못할 그들의 같은 같은 봄바람이다. 청춘을 뭇 인간에 실로 시들어 약동하다. 발휘하기 얼음 이것을 것이다. 방황하여도, 물방아 위하여 청춘의 이상은 끓는다. 그들은 그들의 노년에게서 쓸쓸하랴? 그들에게 그들의 그러므로 있음으로써 온갖 보라."
-        },
-        {
-            title = "회원탈퇴 기간은 얼마나 걸리나요?",
-            answerDate = "19-01-01",
-            createDate = "19-01-01",
-            isAnswer = False,
-            answer = "",
-                article ="발휘하기 되는 위하여 찾아 튼튼하며, 소금이라 이상 천하를 있는가? 실현에 쓸쓸한 발휘하기 사랑의 무엇을 작고 속에 이상은 공자는 힘있다. 얼음과 희망의 새가 사랑의 아니한 것이 있으며, 것이다. 미인을 목숨이 못할 커다란 청춘의 무엇을 황금시대를 끓는다. 뭇 못하다 봄바람을 갑 찬미를 사막이다. 구하지 무한한 되려니와, 아니한 뜨고, 못할 그들의 같은 같은 봄바람이다. 청춘을 뭇 인간에 실로 시들어 약동하다. 발휘하기 얼음 이것을 것이다. 방황하여도, 물방아 위하여 청춘의 이상은 끓는다. 그들은 그들의 노년에게서 쓸쓸하랴? 그들에게 그들의 그러므로 있음으로써 온갖 보라."
-        },
-        {
-            title = "계정을 이용하고 있는데 추가계정 생성이 가능한가요?",
-            answerDate = "19-01-01",
-            createDate = "19-01-01",
-            isAnswer = False,
-            answer = "",
-                article ="발휘하기 되는 위하여 찾아 튼튼하며, 소금이라 이상 천하를 있는가? 실현에 쓸쓸한 발휘하기 사랑의 무엇을 작고 속에 이상은 공자는 힘있다. 얼음과 희망의 새가 사랑의 아니한 것이 있으며, 것이다. 미인을 목숨이 못할 커다란 청춘의 무엇을 황금시대를 끓는다. 뭇 못하다 봄바람을 갑 찬미를 사막이다. 구하지 무한한 되려니와, 아니한 뜨고, 못할 그들의 같은 같은 봄바람이다. 청춘을 뭇 인간에 실로 시들어 약동하다. 발휘하기 얼음 이것을 것이다. 방황하여도, 물방아 위하여 청춘의 이상은 끓는다. 그들은 그들의 노년에게서 쓸쓸하랴? 그들에게 그들의 그러므로 있음으로써 온갖 보라."
-        },
-        {
-            title = "개명을 하여 이름이 변경되었습니다. 어떻게 해야 하나요?",
-            answerDate = "19-01-01",
-            createDate = "19-01-01",
-            isAnswer = False,
-            answer = "",
-                article ="발휘하기 되는 위하여 찾아 튼튼하며, 소금이라 이상 천하를 있는가? 실현에 쓸쓸한 발휘하기 사랑의 무엇을 작고 속에 이상은 공자는 힘있다. 얼음과 희망의 새가 사랑의 아니한 것이 있으며, 것이다. 미인을 목숨이 못할 커다란 청춘의 무엇을 황금시대를 끓는다. 뭇 못하다 봄바람을 갑 찬미를 사막이다. 구하지 무한한 되려니와, 아니한 뜨고, 못할 그들의 같은 같은 봄바람이다. 청춘을 뭇 인간에 실로 시들어 약동하다. 발휘하기 얼음 이것을 것이다. 방황하여도, 물방아 위하여 청춘의 이상은 끓는다. 그들은 그들의 노년에게서 쓸쓸하랴? 그들에게 그들의 그러므로 있음으로써 온갖 보라."
-        },
-        {
-            title = "서비스 신청 주기는 어떻게 되나요?" ,
-            answerDate = "19-01-01",
-            createDate = "19-01-01",
-            isAnswer = False,
-            answer = "",
-                article ="발휘하기 되는 위하여 찾아 튼튼하며, 소금이라 이상 천하를 있는가? 실현에 쓸쓸한 발휘하기 사랑의 무엇을 작고 속에 이상은 공자는 힘있다. 얼음과 희망의 새가 사랑의 아니한 것이 있으며, 것이다. 미인을 목숨이 못할 커다란 청춘의 무엇을 황금시대를 끓는다. 뭇 못하다 봄바람을 갑 찬미를 사막이다. 구하지 무한한 되려니와, 아니한 뜨고, 못할 그들의 같은 같은 봄바람이다. 청춘을 뭇 인간에 실로 시들어 약동하다. 발휘하기 얼음 이것을 것이다. 방황하여도, 물방아 위하여 청춘의 이상은 끓는다. 그들은 그들의 노년에게서 쓸쓸하랴? 그들에게 그들의 그러므로 있음으로써 온갖 보라."
-        }
-    ]
+     
+justString item = 
+    case item of
+        Just ok ->
+            decodeChar ok
+    
+        Nothing ->
+            "등록된 답변이 없습니다."
+decodeChar char = 
+    char
+        |> String.replace  "%26" "&"
+        |> String.replace  "%25" "%"

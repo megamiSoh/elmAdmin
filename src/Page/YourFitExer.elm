@@ -235,7 +235,7 @@ view model =
                     ]
             }
     else
-        if model.loading then
+            if model.loading then
             { title = "유어핏 운동"
             , content = 
                div [] [ div [class "spinnerBackWeb"] [
@@ -250,6 +250,7 @@ view model =
             , content = 
                 div [] [ web model ]
             }
+
             
 web model =
     div [ class "yourfitExercise_yf_workoutcontainerwrap" ]
@@ -357,7 +358,10 @@ bodyContentsApp item model=
 
 videoItem idx item = 
     div [ class "yf_workoutvideoboxwrap" , onClick (GoContentsDetail item.id)]
-            [ div [ class "yf_workoutvideo_image" ]
+      [  div [class"list_overlay"]
+        [i [ class "fas fa-play overlayplay_list" ][]],
+
+             div [ class "yf_workoutvideo_image" ]
                 [ img [ class "yf_workoutvpic1", src item.thembnail, onLoad (OnLoad idx) ]
                     []
                 ]

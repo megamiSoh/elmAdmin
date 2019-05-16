@@ -6,16 +6,20 @@ a {
 
 .m_home_topbox
 {
+  position: fixed;
   height: 55px;
-  background-color: #3D3D3D;
-  text-align: center;
-  padding: .5rem;
+  background-color: #3D3D3D!important;
+  /* text-align: center; */
+  display: flex;
+  align-items: center;
+  width: 100%;
+  /* padding: .5rem; */
   box-shadow: 0px 3px 3px rgba(24,23,23,0.36);
 }
-
 .m_home_topbox img
 {
   width: 135px;
+  margin: 0 auto;
 }
 
 
@@ -41,14 +45,10 @@ a {
 }
 .m_home_iconbox
 {
-  width: 25vw;
-  /* height: 160px; */
-  padding: .9rem;
-  /* float: left; */
-  align-items: center;
-  justify-content: center;
-  display: flex;
-  margin-left: 1rem;
+  width: 5rem;
+  height: 5rem;
+  display: block;
+  margin: 0 auto;
 }
 
 .m_home_maintext
@@ -81,7 +81,7 @@ a {
   /* padding:10px 0 0 0; */
   display: flex;
   flex-direction: row;
-  height: 9vh;
+  height: 77px;
   background-color: #373F51;
   color:white;
   font-weight:bold;
@@ -328,6 +328,7 @@ ul.commonHeaderBoth {
   z-index: 999999999999999;
   color: white;
   top: 0;
+  left: 0;
 }
 ul.commonHeaderBoth li {
   display: flex;
@@ -337,12 +338,12 @@ ul.commonHeaderBoth li {
 }
 
 ul.commonHeaderBoth li:first-child {
-  width: 3rem;
+  /* width: 3rem; */
   margin-right: auto;
   padding-right: 1rem;
 }
 ul.commonHeaderBoth li:last-child {
-  width: 3rem;
+  /* width: 3rem; */
   margin-left: auto
 }
 ul.commonHeaderBack::after {
@@ -1952,13 +1953,6 @@ padding-left: .5rem;
   padding: .5rem;
 }
 
-.titleLeft
-{
-  text-align: left;
-  /* font-size: 3rem; */
-  padding: 1rem;
-  width: 80%;
-}
 
 .inlineB
 {
@@ -1973,6 +1967,9 @@ padding-left: .5rem;
   text-align: left;
   padding: 1rem;
   /* font-size: 2rem; */
+  font-family: 'Noto Sans KR', sans-serif;
+  background-color: #fff;
+  white-space: pre-line;
 }
 
 
@@ -1985,7 +1982,6 @@ padding-left: .5rem;
 .m_fnq_btn
 {
   text-align: right;
-  margin-bottom: 2rem;
 }
 
 .faq_q_btn
@@ -1998,9 +1994,11 @@ padding-left: .5rem;
 {
   background-color: #D2D2D2;
   padding: 1rem;
+  overflow: hidden;
   display: block;
-  height: 6rem;
+  /* height: 6rem; */
   /* font-size: 3rem; */
+  margin-top: .5rem;
 }
 
 .answerbox_text
@@ -2011,11 +2009,11 @@ padding-left: .5rem;
 
 .inlineB
 {
-
   text-align: right;
   float: right;
   /* font-size: 2rem; */
-  padding: .2rem 1rem 0 0;
+  margin: .2rem .5rem 0 0;
+  width: 30%;
 }
 
 .fnqapptitle
@@ -2355,7 +2353,7 @@ margin-right: 1rem;
   display: flex;
     flex-direction: column;
     align-items: center;
-    bottom: 0;
+    bottom: 10px;
     position: fixed;
     width: 100%;
     height: 13rem;
@@ -2503,4 +2501,118 @@ font-size: .9rem;
 
 .m_breaktimetbox {
   border-right: 1px solid #ccc;
+}
+.togetherscrollContent {
+  overflow: hidden;
+}
+.togetherscrollContent:after {
+  content: '';
+  height: 77px;
+  width: 100%;
+  display: block;
+}
+
+
+.home_subtitle
+{
+  background: url(/image/anigif.gif) repeat;
+
+
+  height: 85px;
+  color: white;
+  padding: 1rem;
+  font-size: 1.1rem;
+  text-align: center;
+  width: 100%;
+}
+
+
+.yourfit_text
+{
+  color:#EAC435;
+  font-weight: 550;
+}
+
+
+
+.menutext
+{
+  float: left;
+  padding: .3rem;
+  width: 100%;
+  color: white;
+  font-weight: 550;
+  font-size: 1.2rem;
+}
+
+.titlemenu1,.titlemenu2,.titlemenu3,.titlemenu4,.titlemenu5,.titlemenu6
+{
+  display: block;
+  width: 50%;
+  height: calc( ( 100vh - 85px ) / 3);
+  overflow:hidden;
+  float: left;
+  color: white;
+
+ text-align: center;
+ padding-top: 3%
+}
+
+
+@media screen and (min-width: 340px){
+  .titlemenu1,.titlemenu2,.titlemenu3,.titlemenu4,.titlemenu5,.titlemenu6
+  {
+    padding-top: 10%;
+  } 
+}
+
+
+.titlemenu1
+{
+  background-color: #f26957;  
+}
+
+.titlemenu2
+{
+  background-color: #f8bf34;
+}
+
+.titlemenu3
+{
+  background-color: #b0c238;
+}
+
+.titlemenu4
+{
+  background-color: #6dbccb;
+}
+
+.titlemenu5
+{
+  background-color: #377491;
+}
+
+.titlemenu6
+{
+  background-color: #cb87ba;
+}
+
+.appFaqleft {
+  text-align: right;
+  padding: 0 .5rem;
+}
+.appfaqedittitle {
+  font-weight: bold;
+  text-align: left;
+  padding: 1rem;
+  background-color: #e4e4e4;
+}
+.appFaqEditAnswer {
+  padding: 1rem;
+}
+.m_textarea {
+  height: 10rem !important;
+}
+.faqcontainer {
+  overflow: hidden !important;
 }

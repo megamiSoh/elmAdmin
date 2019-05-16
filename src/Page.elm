@@ -56,7 +56,9 @@ type Page
 -- view:Maybe Cred -> Api.Check  -> Page -> {check : String , title : String, content: Html msg} -> Browser.Document msg
 view maybeViewer checkB  page { title, content}  =
     if checkB then
-        {title = title , body = appContents content page maybeViewer:: [footerCommon page]}
+        {title = title , body =
+         appContents content page maybeViewer
+         :: [footerCommon page]}
                 
     else
         { title = title 
@@ -102,6 +104,11 @@ type Msg = NoOp
 webContents content page maybeViewer=
     case maybeViewer of
         Just _ ->
+            if page == MyPage then
+            div [ class "" ][ 
+                content, webtoastPop
+                ,logoutlayer ]
+            else
             div [ class "" ][ 
                 content, webtoastPop
                 ,logoutlayer ]
@@ -117,6 +124,7 @@ webContents content page maybeViewer=
 appContents content page maybeViewer=
   case maybeViewer of
         Just _ ->
+            
             div [ class "appWrap" ][ content, apptoastPop,mlogoutlayer ]
         Nothing ->
             if page == MakeExer  then

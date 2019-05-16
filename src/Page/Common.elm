@@ -81,18 +81,18 @@ myPageCommonHeader scrRight scrLeft another=
             [] ,
             div [ class "haderIconWrap", id "scrollCtr" ]
             [ 
-            --     a [ class "headerIcons" , Route.href Route.MyC]
-            --     [ img [ src "../image/icon_calendar.png" ]
-            --         []
-            --     , p []
-            --         [ text "캘린더" ]
-            --     ]
-            -- , a [ class "headerIcons", Route.href Route.MealR]
-            --     [ img [ src "../image/icon_diet.png" ]
-            --         []
-            --     , p []
-            --         [ text "식단기록" ]
-            --     ]
+                a [ class "headerIcons" , Route.href Route.MyC]
+                [ img [ src "../image/icon_calendar.png" ]
+                    []
+                , p []
+                    [ text "캘린더" ]
+                ]
+            , a [ class "headerIcons", Route.href Route.MealR]
+                [ img [ src "../image/icon_diet.png" ]
+                    []
+                , p []
+                    [ text "식단기록" ]
+                ]
             -- , a [ class "headerIcons", Route.href Route.MyS]
             --     [ img [ src "../image/icon_stats.png" ]
             --         []
@@ -100,7 +100,7 @@ myPageCommonHeader scrRight scrLeft another=
             --         [ text "나의통계" ]
             --     ]
             -- ,
-             a [ class "headerIcons", Route.href Route.MyScrap]
+            , a [ class "headerIcons", Route.href Route.MyScrap]
                 [ img [ src "../image/icon_list.png" ]
                     []
                 , p []
@@ -196,17 +196,23 @@ appHeaderBDetail title style back=
 
         ]
 appHeaderBothBtn title style back icon btnText go=
-    div [ class ("commonHeader " ++ style) ]
-        [ a [ class "m_backbtn", Route.href back ]
-            [ i [ class icon ]
-                []
+    div [class "headerSpace"] [
+        ul [ class ("commonHeaderBoth " ++ style), id "focusInput" ]
+            [ li [][
+                a [ class "m_backbtn", Route.href back ]
+                [ i [ class icon ]
+                    []
+                ]
             ]
-        , div [ class "m3_topboxtitle" ]
-            [ text title ]
-        , a [ class "m2_nextbtn", Route.href go ]
-            [ text btnText ]
-        ] 
-
+                
+            , li [ class "" ]
+                [ text title ]
+            , li [class "app_detail_text"] [
+                a [ Route.href go ]
+                [ text btnText ]
+            ]
+            ] 
+        ]
 appHeaderBothfnq title style back icon btnText go=
     div [ class ("commonHeader " ++ style) ]
         [ a [ class "m_backbtn", Route.href back ]
@@ -278,7 +284,7 @@ appHeaderinforDetail title style back icon=
 
 appHeaderConfirmDetail title style back btnStyle confirm btnText =
     div [class "headerSpace"] [
-    ul [ class ("commonHeaderBoth " ++ style) ]
+    ul [ class ("commonHeaderBoth " ++ style) ,id "focusInput"]
             [ li [  ]
                 [   a [Route.href back] [
                     i [ class btnStyle ]
@@ -296,7 +302,7 @@ appHeaderConfirmDetail title style back btnStyle confirm btnText =
 
 appHeaderConfirmDetailleft title style back confirm btnText =
     div [class "headerSpace"] [
-    ul [ class ("commonHeaderBoth " ++ style) ]
+    ul [ class ("commonHeaderBoth " ++ style) ,id "focusInput"]
             [ li [ class "", onClick back ]
                 [ i [ class "fas fa-angle-left" ]
                     []
@@ -310,7 +316,7 @@ appHeaderConfirmDetailleft title style back confirm btnText =
     
 appHeaderConfirmDetailR title style back confirm btnText =
     div [class "headerSpace"] [
-        ul [ class ("commonHeaderBoth " ++ style) ]
+        ul [ class ("commonHeaderBoth " ++ style) ,id "focusInput"]
         [ li [ class "", onClick back ]
             [ i [ class "fas fa-times" ]
                 []
@@ -322,6 +328,17 @@ appHeaderConfirmDetailR title style back confirm btnText =
         ]
     ]
 
+appHeaderConfirmDetailmypage title style back confirm btnText =
+        ul [ class ("commonHeaderBoth " ++ style) ,id "focusInput"]
+        [ li [ class "", onClick back ]
+            [ i [ class "fas fa-times" ]
+                []
+            ]
+        , li [ class "" ]
+            [ text title ]
+        , li [ class "app_detail_text", onClick confirm ]
+            [ text btnText ]
+        ]
 appHeaderConfirmDetail2 title style back confirm btnText =
     div [ class ("commonHeader " ++ style) ]
         [ div [ class "m_backbtn", onClick back ]
@@ -467,7 +484,11 @@ scrollToTop : msg -> Cmd msg
 scrollToTop noop=
     Task.perform (\_ -> noop) (Dom.setViewport 0 0)
 
-
+-- jumpToBottom : String -> Cmd msg
+jumpToBottom id noop =
+  Dom.getViewportOf id
+    |> Task.andThen (\info -> Dom.setViewport 0 info.scene.height)
+    |> Task.attempt (\_ -> noop)
 
 fileupload getFile thumb =
     div [ class "field is-horizontal" ] [

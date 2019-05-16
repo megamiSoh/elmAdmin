@@ -376,7 +376,7 @@ update msg model =
             else
                 (model, Cmd.none)
         Search ->
-            (model , Cmd.batch[filterEncoder model.getFilter model.session model.page model.per_page, Api.blur () ])
+            ({model | filterData = []} , Cmd.batch[filterEncoder model.getFilter model.session model.page model.per_page ])
         ScrInfo ->
              (model, Cmd.none)
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->

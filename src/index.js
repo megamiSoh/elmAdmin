@@ -2,6 +2,7 @@ import './css/bulma.css';
 import './main.css';
 import './css/all.min.css'
 import './css/app.css'
+import './css/datepicker.css'
 import { Elm } from './Main.elm';
 import registerServiceWorker from './registerServiceWorker';
 
@@ -23,7 +24,8 @@ var flags =
         if (!executed) {
             executed = true;
             alert ("로그아웃되었습니다.")
-            // location.reload();
+            location.replace("/")
+            // location.replace("/");
         }
     };
 })();
@@ -58,7 +60,7 @@ setInterval(async function() {
             if(response.status == 401) {
               localStorage.removeItem("token")
               localStorage.removeItem("refresh")
-              return location.reload()
+              return location.replace("/")
             } else  {
             return  response.json()}
           })
@@ -177,8 +179,7 @@ var t = JSON.stringify(token)
 if (token === null) {
   localStorage.removeItem("token")
   localStorage.removeItem ("refresh")
-  window.location.href = "/"
-  location.reload()
+  location.replace("/")
     
 } else {
   localStorage.setItem("token", t)
@@ -192,7 +193,7 @@ app.ports.secRefreshFetch.subscribe(function() {
   var retoken = localStorage.getItem ("refresh")
   if (retoken ==undefined) {
     localStorage.removeItem("token")
-    location.reload()
+    location.replace("/")
   }    
   var freshParse = JSON.parse(retoken)
     var refreshTokenHeader =  new Headers({
@@ -212,7 +213,7 @@ var tokenInit =
         localStorage.removeItem("token")
         localStorage.removeItem("refresh")
         something();
-        return location.reload()
+        return location.replace("/")
       } else {
       return  response.json()
     }
@@ -324,11 +325,11 @@ app.ports.showToast.subscribe(function (text) {
     return false;
 })
 
-app.ports.blur.subscribe(function() {
-  var id = document.getElementById("keyboardBlur")
-  id.blur();
+// app.ports.blur.subscribe(function() {
+//   var id = document.getElementById("keyboardBlur")
+//   id.blur();
 
-})
+// })
 
 app.ports.getscrollHeight.subscribe(function(data) {
   var heightValue = document.documentElement.scrollTop
@@ -345,7 +346,16 @@ app.ports.scrollControl.subscribe (function () {
   if (window.location.hash == "#/filterStep1" || window.location.hash == "#/makeExerciseEdit") {
     
     document.body.style.overflow = ""
-  } else {
+  } 
+  else if( window.location.hash == "#/myAccount") {
+    // document.getElementById().ontouchend = (e) => {
+    //   e.preventDefault();
+      
+    // }
+   // console.log()
+  //  document.documentElement.style.height = 0
+  }
+   else {
     document.body.style.overflow = ("hidden", "auto")
   }
 })
@@ -370,8 +380,14 @@ if (checkDisplay.className == "logoutShow")  {
 }
 })
 
-window.addEventListener('hashchange', function() {
-}, false);
+document.addEventListener('touchmove', function(e) {
+  if (document.getElementById("noScrInput")){
+    console.log("getinin")
+  e.preventDefault();}
+  else {
+    return;
+  }
+}, { passive: false });
 
 document.addEventListener('DOMContentLoaded', () => {
   const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
@@ -380,7 +396,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $navbarBurgers.forEach( el => {
       el.addEventListener('click', () => {
-        console.log()
       if (document.getElementsByClassName("is-active")[0] == undefined){
       document.getElementById("expandMenu").setAttribute('class','is-active')
     

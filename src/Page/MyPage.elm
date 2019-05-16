@@ -16,9 +16,16 @@ import Api.Endpoint as Endpoint
 import Http as Http
 import File as Files
 import Task
+import Date exposing (..)
+import DatePicker exposing (Msg(..))
+import Browser.Dom as Dom
 
 type alias Model =
     { session : Session
+    , firstSelectedDate : Maybe Date
+    , datePickerData : DatePicker.Model
+    , dateShow : Bool
+    , today : Maybe Date
     , selecTab : String
     , checkDevice : String
     , check : Bool
@@ -41,6 +48,7 @@ type alias Model =
     , profileImg : List Files.File
     , cannotChange : String
     , profileFileName : Maybe String
+    , canNotUpdateField : String
     }
 
 type alias FileData = 
@@ -74,17 +82,26 @@ type alias BodyData =
 type alias BodyInfoData =
     { birthday :String
     , body_no : Int
-    , goal_weight :Int
-    , height : Int
+    , goal_weight :String
+    , height : String
     , is_male : Bool
-    , weight : Int 
+    , weight : String 
     }
 
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile = 
+    let
+        
+        ( datePickerData, datePickerCmd ) =
+            DatePicker.init "my-datepicker"
+    in
     (
         { session = session
         , selecTab = "myInfo"
+        , datePickerData = datePickerData
+        , firstSelectedDate = Nothing
+        , today = Nothing
+        , dateShow = False
         , checkDevice = ""
         , check = mobile
         , nickname = ""
@@ -105,6 +122,7 @@ init session mobile =
         , height = ""
         , birth = ""
         , profileFileName = Nothing
+        , canNotUpdateField = ""
         , mydata = 
             { exercise = 0
             , share = 0
@@ -117,7 +135,7 @@ init session mobile =
         , Cmd.batch
         [  Decoder.dataWRap DataWrap MyData UserData
             |> Api.get MyInfoData Endpoint.myInfo (Session.cred session) 
-        
+        , Cmd.map DatePickerMsg datePickerCmd
         ]
     )
 
@@ -171,6 +189,9 @@ type Msg
     | ResetProfileImg
     | ResetComplete (Result Http.Error Decoder.Success)
     | AccountDeleteConfirm 
+    | DatePickerMsg DatePicker.Msg
+    | DatePickerShow
+    | NoOp
 
 subscriptions :Model -> Sub Msg
 subscriptions model=
@@ -187,28 +208,92 @@ toCheck : Model -> Bool
 toCheck model =
     model.check
 justInt int = 
-    case String.toInt int of
+    case String.toFloat int of
         Just num ->
             num
     
         Nothing ->
             0
+
+justTail item =
+    case item of
+        Just ok ->
+            ok
+    
+        Nothing ->
+            []
 bodyInfoEncode model = 
     let
         body = 
             E.object 
-                [ ("weight", E.int (justInt (model.weight)))
-                , ("goal_weight", E.int (justInt (model.goalWeight)))
-                , ("height", E.int (justInt (model.height)))
+                [ ("weight", E.float (justInt (model.weight)))
+                , ("goal_weight", E.float (justInt (model.goalWeight)))
+                , ("height", E.float (justInt (model.height)))
                 , ("birthday", E.string model.birth)   
                 , ("is_male", E.bool model.is_male) ]
                     |> Http.jsonBody
     in
     Decoder.resultD
     |>Api.post Endpoint.bodyRecord (Session.cred model.session) SaveComplete body 
+
+
+-- initFromApolloLanding : Flags -> ( Model, Cmd Msg )
+-- initFromApolloLanding  =
+--     let
+--         datePickerData =
+--             DatePicker.initFromDate "my-datepicker" (fromCalendarDate 1969 canSelectMonth 8 20)
+--     in
+--     ( { datePickerData = datePickerData
+--       , selectedDate = Nothing
+--       }
+--     , Cmd.none
+--     )
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        NoOp->
+            (model, Cmd.none)
+        -- NoOp (Err err) ->
+        --     (model ,Cmd.none)
+        DatePickerShow ->
+            let _ = Debug.log "id" Dom.getViewportOf "datepickerPosition"
+                
+            in
+            
+            ({model | dateShow = not model.dateShow} , 
+            (jumpToBottom "datepickerPosition" NoOp)
+            )
+        DatePickerMsg datePickerMsg ->
+            DatePicker.update datePickerMsg model.datePickerData
+                |> (\( data, cmd ) ->
+                        ( { model | datePickerData = data }
+                        , Cmd.map DatePickerMsg cmd
+                        )
+                   )
+
+                |> (\( newModel, cmd ) ->
+                        case datePickerMsg of         
+                            CancelClicked ->
+                                let _ = Debug.log "current" "hello"
+                                
+                                in
+                                ({newModel | dateShow = False}, cmd)                   
+                            SubmitClicked currentSelectedDate ->
+                                let _ = Debug.log "current" currentSelectedDate
+                                
+                                in
+                                ( { newModel | firstSelectedDate = Just currentSelectedDate, birth = ( stringToDate (Just currentSelectedDate)  model.today model.birth), dateShow = False }
+                                , cmd
+                                )
+                            GetToday todaydate ->
+                                ( { newModel | today = Just todaydate }
+                                , cmd
+                                )
+                            _ ->
+                                ( newModel, cmd )
+                   )
         AccountDeleteConfirm ->
             ({model | show = "logoutShow"}, Cmd.none)
         ResetComplete (Ok ok) ->
@@ -289,15 +374,18 @@ update msg model =
                 encodeText = 
                     E.string "저장되었습니다."    
             in
-            (model, Api.showToast encodeText)
+            ({model | canNotUpdateField = ""}, Api.showToast encodeText)
         SaveComplete (Err err)->
             (model, Cmd.none)
         IsMale str ->
             ({model | is_male = str}, Cmd.none)
         BodySave ->
+            if model.weight == "0" || model.goalWeight == "0" || model.height == "0" || model.birth == "" || model.weight == "" || model.goalWeight == "" || model.height == "" then
+            ({model | canNotUpdateField = "항목을 정확히 입력 해 주세요."}, Cmd.none)
+            else
             (model, bodyInfoEncode model)
         BodyInfoComplete (Ok ok)->
-            ({model | weight = String.fromInt (ok.data.weight), goalWeight = String.fromInt (ok.data.goal_weight), height = String.fromInt(ok.data.height), is_male = ok.data.is_male, birth = ok.data.birthday}, Cmd.none)
+            ({model | weight = (ok.data.weight), goalWeight = (ok.data.goal_weight), height =(ok.data.height), is_male = ok.data.is_male, birth = ok.data.birthday, canNotUpdateField = ""}, Cmd.none)
         BodyInfoComplete (Err err)->
             let
                 serverErrors =
@@ -305,24 +393,49 @@ update msg model =
             in  
             (model, (Session.changeInterCeptor (Just serverErrors) model.session))
         BodyRecordsInput category str ->
-                  ( case category of
+            let _ = Debug.log "str" str
+                split = String.split "." str
+                tail = List.drop 1 split
+                len = List.map (\x ->
+                        String.slice 0 2 x
+                    ) tail
+                head = List.take 1 split
+                result = String.join "." (head ++ len)
+            in
+                if str == "" then
+                ( case category of
                         "weight" ->
-                            {model | weight = str}
+                            {model | weight = ""}
                         "goalWeight" ->
-                            {model | goalWeight = str}
+                            {model | goalWeight = ""}
                         "height" ->
-                            {model | height = str}
+                            {model | height = ""}
                         "birth" ->
                             {model | birth = str}
                         _ ->
                             model
                             
-                    , Cmd.none)
-            
-                -- Nothing ->
-                --     {model | birth = str, weight = str}
-                -- , Cmd.none)
-                    
+                        , Cmd.none)
+                else
+                case String.toFloat str of
+                    Just ok ->
+                        ( case category of
+                        "weight" ->
+                            {model | weight = result}
+                        "goalWeight" ->
+                            {model | goalWeight = result}
+                        "height" ->
+                            {model | height = result}
+                        "birth" ->
+                            {model | birth = str}
+                        _ ->
+                            model
+                            
+                        , Cmd.none)
+                
+                    Nothing ->
+                        ({model | birth = str}, Cmd.none)
+                
             
         PwdComplete (Ok ok) ->
             let
@@ -498,7 +611,11 @@ view model =
                     , content = div [] [web model 
                     , div [class "container"][
                     div [class "myPage_mediabox"] [
-                        bodyInfo model BodyRecordsInput BodySave IsMale
+                        bodyInfo model BodyRecordsInput BodySave IsMale 
+                        (datepicker model DatePickerMsg)
+                        (stringToDate model.firstSelectedDate model.today model.birth) 
+                        DatePickerShow
+                        model.canNotUpdateField
                     ]]
                     ]
                     } 
