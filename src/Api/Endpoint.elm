@@ -58,7 +58,8 @@ module Api.Endpoint exposing
     , foodSearch
     , mealRegistInfo
     , mealDelete
-    , mealEditInfo)
+    , mealEditInfo
+    , exerciseCompleteList)
 
 import Http
 import Url.Builder exposing (QueryParameter)
@@ -291,3 +292,6 @@ mealDelete date no=
 
 mealEditInfo date no = 
     url ["front", "foods", date, no , "edit"][]
+
+exerciseCompleteList date = 
+    url ["front", "diary", "exercises", date] []

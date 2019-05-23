@@ -431,11 +431,11 @@ dataCount data =
     Decode.succeed data
         |> required "count" int
     
-bodyInfo data list= 
+bodyInfo data list protain= 
     Decode.succeed data  
-        |> required "data" (bodyInfoList list)
+        |> required "data" (bodyInfoList list protain)
 
-bodyInfoList list = 
+bodyInfoList list protain = 
     Decode.succeed list
         |> required "birthday" string
         |> required "body_no" int
@@ -443,6 +443,13 @@ bodyInfoList list =
         |> required "height" string
         |> required "is_male" bool
         |> required "weight" string
+        |> required "age" int
+        |> required "protain" (bodyProtain protain)
+
+bodyProtain protain = 
+    Decode.succeed protain
+        |> optional "need" (Decode.map Just int) Nothing
+        |> optional "recommend" (Decode.map Just int) Nothing
 
 myscrapData data list item page=
     Decode.succeed data
@@ -663,3 +670,26 @@ foodSearchPage page =
         |> required "page" int
         |> required "per_page" int
         |> required "total_count" int
+
+exerciseCompleteList data list page=
+    Decode.succeed data
+        |> required "data" (Decode.list (exerciseCompleteData list))
+        |> required "paginate" (exerciseCompleteListPaginate page)
+
+
+exerciseCompleteData list = 
+    Decode.succeed list
+        |> required "exercise_no" int
+        |> required "exericse_id" int
+        |> required "mediaid" string
+        |> required "thembnail" string
+        |> required "title" string
+
+exerciseCompleteListPaginate page = 
+    Decode.succeed page
+        |> required "date" string
+        |> required "exercise_date" string
+        |> required "page" int
+        |> required "per_page" int
+        |> required "total_count" int
+        |> required "user_id" int

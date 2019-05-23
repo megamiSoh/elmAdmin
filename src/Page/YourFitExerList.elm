@@ -246,7 +246,10 @@ view model =
                 , content = 
                     div [] [
                     appHeaderRDetailClick result.name "yourfitListDetail yourfitHeader" BackPage "fas fa-angle-left"
-                    ,app model
+                    , div [class "heightFix"] [
+                        apptapbox model
+                    ]  
+                    , app model
                     ]
                 } 
                 else
@@ -319,10 +322,8 @@ view model =
                 
     
 app model =    
-    div ([ class "container" ] ++ [style "max-height" "100%"])
-    [  div [class "heightFix"] [
-        apptapbox model
-    ],     
+    div ([ class "container" ] ++ [style "max-height" "100%", style "min-height" (String.fromInt(200 * List.length model.listData) ++ "px")])
+    [    
         div ([ class "searchbox" ] ++ [scrollEvent ScrollEvent])
         (List.indexedMap contentsLayout2 model.listData)
         , if model.infiniteLoading then

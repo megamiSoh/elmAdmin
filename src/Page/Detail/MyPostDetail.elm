@@ -167,11 +167,13 @@ update msg model =
         GetList(Ok ok) ->
             update GoVideo {model | getData = ok.data, loading = False}
         GetList(Err err) ->
-            let
-                serverErrors =
-                    Api.decodeErrors err
+            let 
+                serverErrors = Api.decodeErrors err
             in
-            (model,(Session.changeInterCeptor (Just serverErrors) model.session))
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
+            (model, Cmd.none)
         Loading success ->
             let
                 d = Decode.decodeValue Decode.string success
@@ -211,14 +213,14 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    if model.check then
-        { title = "내 게시물 관리"
-        , content = 
-            div [] [
-                app BackPage model
-            ]
-        }
-    else
+    -- if model.check then
+    --     { title = "내 게시물 관리"
+    --     , content = 
+    --         div [] [
+    --             app BackPage model
+    --         ]
+    --     }
+    -- else
         { title = "내 게시물 관리"
         , content = 
             div [] [
@@ -239,21 +241,11 @@ web msg model=
         , goBtn
         ]
     ]
-app msg model= 
-    div [class "container"] [
-        div [] [
-            if model.loading then
-            div [class "spinnerBack"] [
-                spinner
-                ]
-            else 
-            div [] []
-        ]
-        , div []
+app model video goback = 
+        div []
         ( List.map( \x-> 
-            appcontentsItem x model
+            appcontentsItem x model video goback
         ) (justList model.getData.detail)) 
-    ]
 goBtn  = 
     div [ class "make_yf_butbox" ]
         [ div [ class "yf_backbtm" ]
@@ -291,7 +283,7 @@ contentsItem item model=
 
 
                     -- img [class "postImg" ,src item.thembnail, onClick (VideoCall item.pairing) ] []
-                , div [id "myElement"] []
+                , div [id "myElement", style "height" (if String.isEmpty model.zindex then "0px" else "auto") ] []
 
                 ]
                 ], 
@@ -317,11 +309,11 @@ contentsItem item model=
 
 
 
-appcontentsItem item model= 
+appcontentsItem item model video goback= 
             div [ ]
-            [   appHeaderRDetail item.title "myPageHeader" Route.MyPost "fas fa-times" 
+            [  appHeaderRDetailClick2 item.title "myPageHeader" goback "fas fa-times" 
                 , div [class "PostVideo"] [
-                     div [ class ("appimagethumb " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thembnail ++") ") , onClick (VideoCall item.pairing) ][]
+                     div [ class ("appimagethumb " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thembnail ++") ") , onClick (video item.pairing) ][]
                     , div [id "myElement"][]
                 ], 
                 div [ class "m_yf_post_textbox" ]

@@ -16,6 +16,8 @@ import Api.Decoder as Decoder
 import Json.Encode as Encode
 import Swiper
 import Html.Lazy exposing (lazy, lazy2, lazy3)
+import Page.Common exposing (..)
+
 type alias Model 
     = {
         session : Session
@@ -75,6 +77,7 @@ init session mobile =
                 |> Api.get GetList Endpoint.yourfitVideoList (Session.cred session) 
             , Api.removeJw ()
             , mydata session
+            , scrollToTop NoOp
         ]
     )
 
@@ -92,9 +95,10 @@ type Msg
     | GotSession Session
     | Swiped String Swiper.SwipeEvent 
     | GetIndex String
-    | OnLoad Int
+    | OnLoad String
     | MoveMore Int
     | MoveLeft Int
+    | NoOp
 
 toSession : Model -> Session
 toSession model =
@@ -117,6 +121,8 @@ subscriptions model=
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        NoOp ->
+            (model, Cmd.none)
         MyInfoData (Ok ok) ->
             (model, Cmd.none) 
         MyInfoData (Err err) ->
@@ -214,42 +220,34 @@ update msg model =
 view : Model -> {title : String , content : Html Msg}
 view model =
     if model.check then
-       if model.loading then
             { title = "유어핏 운동"
             , content = 
             div [class "appWrap container" ] [
                             justappHeader "유어핏운동" "yourfitHeader",
                             div [][
-                                div [class "spinnerBack"] [
+                                div [class "spinnerBack", style "display" (if model.loading then "block" else "none")] [
                                     spinner
                                     ]
+                                , div [] [app model]
                             ]
                     ]
             }
-       else
-            { title = "유어핏 운동"
-            , content = 
-            div [class "appWrap container" ] [
-                        justappHeader "유어핏운동" "yourfitHeader"
-                        , app model
-                    ]
-            }
     else
-            if model.loading then
-            { title = "유어핏 운동"
-            , content = 
-               div [] [ div [class "spinnerBackWeb"] [
+        { title = "유어핏 운동"
+        , content = 
+            div [][
+                div [class "spinnerBackWeb", style "display" (if model.loading then "block" else "none")] [
                     spinner
                 ]
                 , div [] [ web model ]
-                ]
-                
-            }
-        else
-            { title = "유어핏 운동"
-            , content = 
-                div [] [ web model ]
-            }
+            ]
+            
+        }
+        -- else
+        --     { title = "유어핏 운동"
+        --     , content = 
+        --         div [] [ web model ]
+        --     }
 
             
 web model =
@@ -259,7 +257,7 @@ web model =
                     [
                         commonHeader "/image/icon_workout.png" "유어핏운동",
                         div [] (List.indexedMap (\idx x -> 
-                            bodyContents idx x
+                            bodyContents idx x model
                             ) model.data)
                     ]
                 ]
@@ -267,19 +265,15 @@ web model =
 
 
 app model =
-        div [ class "container" ]
-            [ div [ class "flexContainer"]
-                [
-                       
+        div [ class "container yourfitExerContainer" ]
+            [ 
                     div [] (List.map (\x -> 
                             lazy2 bodyContentsApp x model
                             ) model.data)
-                    
-                ]
             ]
             
 
-bodyContents idx item = 
+bodyContents idx item model = 
     div [class "webFxWrap"]
     [  
         div [class "webMoveKeyR", onClick (MoveLeft idx)] [
@@ -288,9 +282,8 @@ bodyContents idx item =
        ,
        div [ class "menubox_wrap", id ("scrollCtr" ++ (String.fromInt idx))] [
             div [ class "yf_workoutmenubox1", style "width" (String.fromInt(200 * 6 + 130) ++ "px") ]
-        [ div [ class "yf_workoutvideopic" ]
-            [ 
-                if item.code == "10" then
+        [  div [ class "yf_workoutvideopic" ]
+            [    if item.code == "10" then
                 img [src "/image/workout_menu1.png", alt item.name ]
                 []
                 else if item.code == "20" then
@@ -303,7 +296,7 @@ bodyContents idx item =
              div [ class "yf_workouttext1" ]
                 [ text item.name ]
             ]
-        , div [] (List.indexedMap videoItem item.exercises)
+        , div [] (List.indexedMap (\i x-> videoItem i x item.code model.loading) item.exercises )
         , div [ class "yf_workoutaddwarp" ]
                 [ div [ class "yf_workoutadd" , onClick (GoDetail item.code)]
                     [ div [ class "yf_workouttext3" ]
@@ -342,7 +335,7 @@ bodyContentsApp item model=
                 [ text item.name ]
             ]
         ,
-        div [] (List.indexedMap (\idx x -> videoItemApp idx x model) item.exercises)
+        div [] (List.indexedMap (\idx x -> videoItemApp idx x model item.code) item.exercises)
         , div [ class "yf_workoutaddwarp" ]
                 [ div [ class "m_yf_workoutadd", onClick (GoDetail item.code) ]
                     [ div [ class "m_addtext" ]
@@ -356,13 +349,14 @@ bodyContentsApp item model=
 
 
 
-videoItem idx item = 
+videoItem idx item code loading = 
     div [ class "yf_workoutvideoboxwrap" , onClick (GoContentsDetail item.id)]
-      [  div [class"list_overlay"]
+        [ div [class"list_overlay"]
         [i [ class "fas fa-play overlayplay_list" ][]],
 
              div [ class "yf_workoutvideo_image" ]
-                [ img [ class "yf_workoutvpic1", src item.thembnail, onLoad (OnLoad idx) ]
+                [ 
+                    img [ class "yf_workoutvpic1", src item.thembnail, onLoad (OnLoad (code ++ String.fromInt idx)) ]
                     []
                 ]
             , div [ class "yf_workoutvideo_lavel_bg" ]
@@ -383,14 +377,14 @@ lazyImageview item lazy=
        
     ]
 
-videoItemApp idx item model = 
+videoItemApp idx item model code = 
     div [ class "m_workoutvideoboxwrap" , onClick (GoContentsDetail item.id)]
             [   
                 div [ class "m_yf_workoutvideo_image" ]
                 [ 
                     -- lazy2 lazyImageview item.thembnail model.lazyImg
-                    img [ class "m_workoutvpic", 
-                    src item.thembnail, onLoad (OnLoad idx)]
+                     img [ class "m_workoutvpic", 
+                    src item.thembnail, onLoad (OnLoad (code ++ String.fromInt idx))  ]
                     []
                 ]
             , div [ class "m_yf_workoutvideo_lavel_bg" ]

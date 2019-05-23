@@ -9,9 +9,11 @@ import Json.Encode as E
 import Json.Decode as Decode
 import Route exposing(..)
 import Page.Common exposing(..)
-searchResult model mealData step= 
-    div [ class "searchbox" ]
-        [ table [ class "table is-fullwidth yf_table" ]
+
+
+searchResult model scrollEvent detail = 
+    div [ class "searchbox"]
+        [ table [ class "table is-fullwidth yf_table"  ]
             [ thead []
                 [ tr []
                     [ th []
@@ -21,18 +23,19 @@ searchResult model mealData step=
                     ]
                 ]
             , tbody []
-                (List.map(\x ->
-                     mealLayout x model step
-                ) mealData)
+                (List.indexedMap(\idx x ->
+                     mealLayout idx x model detail
+                ) model.foodListData)
             ]
         ]
-mealLayout item model step = 
-    tr [onClick step] [
-        td[][text item.name ],
+mealLayout idx item model detail = 
+    tr [onClick (detail(item.name, {kcal = item.kcal, one_kcal = ""}, Nothing)), class "wordBreakTable"] [
+        -- td [] [text (String.fromInt (idx + 1))],
+        td[][text (item.name ++ (String.fromInt (idx + 1)) )],
         td[][text item.kcal ]
     ]
 
-selectedItem selectData=
+selectedItem selectData delete totalKcal editshow direct=
     div [ class "settingbox" ]
         [ table [ class "table is-fullwidth yf_table" ]
             [ thead []
@@ -42,102 +45,72 @@ selectedItem selectData=
                     , th []
                         [ text "칼로리" ]
                     , th []
-                        []
+                        [text "삭제"]
                     ]
                 ]
             , tfoot []
                 [ tr []
                     [ th []
                         [ strong []
-                            [ text "칼로리 총 합계" ]
+                            [ text "칼로리 총 합계(Kcal)" ]
                         ]
-                    , th []
-                        [ text "600 Kacl" ]
-                    , th []
-                        []
+                    , th [colspan 2]
+                        [ text totalKcal ]
                     ]
                 ]
             , tbody []
-                (List.map selectTableLayout selectData)
+                (List.map(\x -> selectTableLayout x delete editshow direct ) selectData)
             ]
         ]
 
-selectTableLayout item = 
-    tr [] [
-        td[] [text item.name],
-        td[] [text item.kcal],
-        td[] [
+selectTableLayout item delete editshow direct= 
+    tr [class "wordBreakTable"] [
+        td[onClick (
+        if item.is_direct then
+            direct (item.food_name, item.kcal, String.fromInt item.diary_no)
+        else
+        editshow (item.food_name, {kcal = item.one_kcal, one_kcal = item.food_count}, (Just (String.fromInt item.diary_no))
+        )
+    )] [text item.food_name],
+        td[onClick (
+        if item.is_direct then
+            direct (item.food_name, item.kcal, String.fromInt item.diary_no)
+        else
+        editshow (item.food_name, {kcal = item.one_kcal, one_kcal = item.food_count}, (Just (String.fromInt item.diary_no))
+        )
+    )] [text item.kcal],
+        td[onClick (delete (String.fromInt item.diary_no))] [
             i [ class "far fa-trash-alt" ]
                 []
         ]
     ]
-directRegist model step = 
+directRegist model directinput= 
     div [ class "container yf_container" ]
         [ div [ class "settingbox" ]
-            [ div [ class "m_meal_yf_inputbox" ]
-                [ text "음식 칼로리 직접입력" ]
-            , div [ class "m_meal_listinput_box" ]
-                [ input [ class "input m_meal_yf_inputfood", type_ "text", placeholder "음식 입력" ]
+            [  input [ class "input m_meal_yf_inputfood", type_ "text", placeholder "음식 입력" , onInput (directinput "food"), value model.directFoodName, id (if model.derectRegistShow then "noScrInput" else "")]
                     []
-                , input [ class "input m_meal_yf_inputkacl", type_ "text", placeholder "칼로리 입력" ]
+                , input [ class "input m_meal_yf_inputkacl", type_ "text", placeholder "칼로리 입력" ,onInput (directinput "kcal"), value model.directKcal]
                     [], text "Kcal" 
-                , i [ class "far fa-trash-alt m_meal_trash" ]
-                    []
-                ]
-            , div [ class "listbtn_box" , onClick step]
-                [ div [ class "button m_meal_listadd_but" ]
-                    [ text "음식칼로리추가" ]
-                ]
             ]
         ]
-searchInput model step =
-    div  [class "m_meal_box"]
-        [ input [ class "input m_meal_yf_input", type_ "text", placeholder "음식을 검색하세요" ]
+searchInput model step search  scrollEvent detail=
+    div [class "m_meal_box_container scrollHegiht", scrollEvent
+    -- , scrollEvent, style "height" (model.offsetHeight ++ "px")
+    ] [
+        div  [class "m_meal_box"]
+        [ input [ class "input m_meal_yf_input", type_ "text", placeholder "음식을 검색하세요" , onInput search]
             []
         , p [ class "help_searchresult" ]
-            [ text "n개의 검색결과" ]
-        , div [ class "button m_meal_direct", onClick step ]
+            [ text (String.fromInt model.foodData.paginate.total_count ++ "개의 검색결과") ]
+        , div [ class "button m_meal_direct", onClick (step("","","")) ]
             [ text "음식 칼로리 직접입력" ]
         ]
+    , searchResult model scrollEvent detail
+    ]
 
 
-quantity =
-    div [ class "container yf_container" ]
-        [ div [ class "settingbox" ]
-            [ h1 [ class "m_meal_food_kcal" ]
-                [ text "호박 고구마 350Kcal" ]
-            , div [ class "m_meal_settingbox" ]
-                [ text "수량" , input [ class "input m_meal_q", type_ "text", placeholder "1" ]
-                    [], text "개" 
-                ]
-            , div [ class "yf_optionssetting" ]
-                [ div [ class "m_meal_box1" ]
-                    [ a [ class "button m_meal_yf_but" ]
-                        [ text "-" ]
-                    , input [ class "input m_meal_yf_num2", type_ "text", value "0.25" ]
-                        []
-                    , a [ class "button m_meal_yf_but" ]
-                        [ text "+" ]
-                    ]
-                , div [ class "m_meal_box1" ]
-                    [ a [ class "button m_meal_yf_but" ]
-                        [ text "-" ]
-                    , input [ class "input m_meal_yf_num2", type_ "text", value "0.5" ]
-                        []
-                    , a [ class "button m_meal_yf_but" ]
-                        [ text "+" ]
-                    ]
-                , div [ class "m_meal_box1" ]
-                    [ a [ class "button m_meal_yf_but" ]
-                        [ text "-" ]
-                    , input [ class "input m_meal_yf_num2", type_ "text", value "1" ]
-                        []
-                    , a [ class "button m_meal_yf_but" ]
-                        [ text "+" ]
-                    ]
-                ]
-            ]
-        ]
 selectedFood model title style step= 
     div [ class style, onClick step ]
         [ text title ]
+
+

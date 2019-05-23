@@ -10,7 +10,13 @@ import registerServiceWorker from './registerServiceWorker';
 if(!!document.createRange) {
   document.getSelection().removeAllRanges();
 }
+var agent = navigator.userAgent.toLowerCase();
 
+if (agent.indexOf("msie") != -1) {
+  alert("인터넷익스플로러 브라우저입니다.");
+  
+  }
+  
 const url ='http://13.209.49.169:4000/api/v1/'
 var filter = "win16|win32|win64|mac|macintel"; 
 var flags = 
@@ -332,6 +338,7 @@ app.ports.showToast.subscribe(function (text) {
 // })
 
 app.ports.getscrollHeight.subscribe(function(data) {
+  // alert( data)
   var heightValue = document.documentElement.scrollTop
   if (data){
     document.documentElement.style.position = "fixed"
@@ -385,6 +392,7 @@ document.addEventListener('touchmove', function(e) {
     console.log("getinin")
   e.preventDefault();}
   else {
+    console.log ("get outout")
     return;
   }
 }, { passive: false });
@@ -408,6 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   event.stopPropagation();
 }
+
 
 
 

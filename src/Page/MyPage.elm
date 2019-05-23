@@ -20,6 +20,7 @@ import Date exposing (..)
 import DatePicker exposing (Msg(..))
 import Browser.Dom as Dom
 
+
 type alias Model =
     { session : Session
     , firstSelectedDate : Maybe Date
@@ -49,6 +50,7 @@ type alias Model =
     , cannotChange : String
     , profileFileName : Maybe String
     , canNotUpdateField : String
+    , protain : Protain
     }
 
 type alias FileData = 
@@ -86,7 +88,13 @@ type alias BodyInfoData =
     , height : String
     , is_male : Bool
     , weight : String 
+    , age : Int
+    , protain : Protain
     }
+
+type alias Protain = 
+    { need : Maybe Int
+    , recommend : Maybe Int}
 
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile = 
@@ -123,6 +131,9 @@ init session mobile =
         , birth = ""
         , profileFileName = Nothing
         , canNotUpdateField = ""
+        , protain = 
+            { need = Nothing
+            , recommend = Nothing}
         , mydata = 
             { exercise = 0
             , share = 0
@@ -136,6 +147,7 @@ init session mobile =
         [  Decoder.dataWRap DataWrap MyData UserData
             |> Api.get MyInfoData Endpoint.myInfo (Session.cred session) 
         , Cmd.map DatePickerMsg datePickerCmd
+        , scrollToTop NoOp
         ]
     )
 
@@ -255,13 +267,7 @@ update msg model =
     case msg of
         NoOp->
             (model, Cmd.none)
-        -- NoOp (Err err) ->
-        --     (model ,Cmd.none)
         DatePickerShow ->
-            let _ = Debug.log "id" Dom.getViewportOf "datepickerPosition"
-                
-            in
-            
             ({model | dateShow = not model.dateShow} , 
             (jumpToBottom "datepickerPosition" NoOp)
             )
@@ -276,14 +282,8 @@ update msg model =
                 |> (\( newModel, cmd ) ->
                         case datePickerMsg of         
                             CancelClicked ->
-                                let _ = Debug.log "current" "hello"
-                                
-                                in
                                 ({newModel | dateShow = False}, cmd)                   
                             SubmitClicked currentSelectedDate ->
-                                let _ = Debug.log "current" currentSelectedDate
-                                
-                                in
                                 ( { newModel | firstSelectedDate = Just currentSelectedDate, birth = ( stringToDate (Just currentSelectedDate)  model.today model.birth), dateShow = False }
                                 , cmd
                                 )
@@ -374,7 +374,10 @@ update msg model =
                 encodeText = 
                     E.string "저장되었습니다."    
             in
-            ({model | canNotUpdateField = ""}, Api.showToast encodeText)
+            ({model | canNotUpdateField = ""}, Cmd.batch[ Api.showToast encodeText
+            , (Decoder.bodyInfo BodyData BodyInfoData Protain)
+            |> Api.get BodyInfoComplete Endpoint.getBodyInfo( Session.cred model.session) 
+            ])
         SaveComplete (Err err)->
             (model, Cmd.none)
         IsMale str ->
@@ -385,7 +388,7 @@ update msg model =
             else
             (model, bodyInfoEncode model)
         BodyInfoComplete (Ok ok)->
-            ({model | weight = (ok.data.weight), goalWeight = (ok.data.goal_weight), height =(ok.data.height), is_male = ok.data.is_male, birth = ok.data.birthday, canNotUpdateField = ""}, Cmd.none)
+            ({model | weight = (ok.data.weight), goalWeight = (ok.data.goal_weight), height =(ok.data.height), is_male = ok.data.is_male, birth = ok.data.birthday, canNotUpdateField = "", protain = ok.data.protain}, Cmd.none)
         BodyInfoComplete (Err err)->
             let
                 serverErrors =
@@ -393,7 +396,7 @@ update msg model =
             in  
             (model, (Session.changeInterCeptor (Just serverErrors) model.session))
         BodyRecordsInput category str ->
-            let _ = Debug.log "str" str
+            let 
                 split = String.split "." str
                 tail = List.drop 1 split
                 len = List.map (\x ->
@@ -549,7 +552,7 @@ update msg model =
         SelectTab tab->
             if tab == "bodyInfo" then
             ({model | selecTab = tab}, 
-            (Decoder.bodyInfo BodyData BodyInfoData)
+            (Decoder.bodyInfo BodyData BodyInfoData Protain)
             |> Api.get BodyInfoComplete Endpoint.getBodyInfo( Session.cred model.session) 
             )
             else
@@ -647,7 +650,7 @@ view model =
 app model = 
      div [class "container"] [
          appTopMenu model,
-         div [class "myMenuStyle"](List.map menuBottom (menu))
+         div [class "myMenuStyle", style "min-height" (String.fromInt ((List.length menu) * 70 + 77) ++ "px")](List.map menuBottom (menu))
      ]
 appTopMenu model = 
     div [ class "m_mypage_loginbox" ]
@@ -775,8 +778,8 @@ tabPanner model=
 menu = 
         
             [
-            -- {icon = "/image/icon_calendar.png", title ="캘린더", route = Route.MyC},
-            -- {icon = "/image/icon_diet.png", title ="식단기록", route = Route.MealRM},
+            {icon = "/image/icon_calendar.png", title ="캘린더", route = Route.MyC},
+            {icon = "/image/icon_diet.png", title ="식단기록", route = Route.MealRM},
             -- {icon = "/image/icon_stats.png", title ="나의 통계", route = Route.MyS},
             {icon = "/image/icon_list.png", title ="스크랩리스트", route = Route.MyScrap},
             {icon = "/image/icon_management.png", title ="내 게시물 관리", route= MyPost},

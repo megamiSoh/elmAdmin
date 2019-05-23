@@ -145,11 +145,13 @@ update msg model =
         MyInfoData (Ok ok) ->
             (model, Cmd.none) 
         MyInfoData (Err err) ->
-           let
-                serverErrors =
-                    Api.decodeErrors err
-            in  
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+           let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
+            (model, Cmd.none)
         GotSession session ->
             ({model | session = session}
             , Cmd.batch[
@@ -199,11 +201,13 @@ update msg model =
         GetListData (Ok ok) -> 
              ({model | listData = ok.data, scrap = False, loading = False}, Cmd.none)
         GetListData (Err err) -> 
-            let
-                serverErrors =
-                    Api.decodeErrors err
-            in  
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
+            (model, Cmd.none)
         Loading success ->
             let
                 d = Decode.decodeValue Decode.string success
@@ -231,7 +235,9 @@ update msg model =
             
         BackPage ->
             ( model, 
-            Route.backUrl (Session.navKey model.session) 1)
+            -- Route.pushUrl (Session.navKey model.session) Route.YourFitExer
+            Route.backUrl (Session.navKey model.session) 1
+            )
         -- CheckDevice str ->
         --    let 
         --         result =
@@ -262,7 +268,7 @@ view model =
         else
         { title = "유어핏 운동"
         , content = 
-             div [ class "container" ]
+             div [ class "container yfDContainer" ]
                 [
                    appHeaderRDetailClick model.listData.title  "yourfitHeader" BackPage "fas fa-times"
                    ,

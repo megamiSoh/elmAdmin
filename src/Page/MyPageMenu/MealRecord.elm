@@ -55,7 +55,7 @@ type alias KindOfMeal =
     , food_name : String
     , is_direct: Bool
     , kcal : String
-    , one_kcal : String}
+    , one_kcal : String }
 
 type alias Page = 
     { diary_date : String
@@ -218,7 +218,8 @@ mealRegistInfo foodInfo session =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Api.receiveKey ReceiveKey
+    Sub.batch[Api.receiveKey ReceiveKey
+    , Session.changes GotSession (Session.navKey model.session)]
 
 type Msg 
     = ActiveTab String
@@ -239,6 +240,7 @@ type Msg
     | DirectRegistMeal String
     | DirectMealInput String String
     | ReceiveDate Date
+    | GotSession Session
 
 toSession : Model -> Session
 toSession model =
@@ -260,6 +262,8 @@ justToint string =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GotSession session ->
+            ({model | session = session }, dayKindOfMealEncode model.mealPage model.mealPer_page model.session model.code model.date)
         ReceiveDate today ->
             ({model | date = getFormattedDate Nothing (Just today)} , dayKindOfMealEncode 1 10 model.session "10" (getFormattedDate Nothing (Just today)))
         DirectMealInput category contents->
@@ -323,11 +327,17 @@ update msg model =
             ({model | quantityShow = False}, Cmd.batch[dayKindOfMealEncode model.mealPage model.mealPer_page model.session model.code model.date
             , Api.showToast (Encode.string "삭제 되었습니다.")])
         MealDeleteComplete (Err err) ->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
             (model, Cmd.none)
         MealDelete id ->
             (model, Api.get MealDeleteComplete (Endpoint.mealDelete model.date id)(Session.cred model.session) Decoder.resultD )
         RegistOrEditMeal category->
-            let _ = Debug.log ""
+            let 
                 old = model.mealRegistInfo
                 new = 
                     { old | date = model.date
@@ -357,12 +367,19 @@ update msg model =
         RegistMealComplete (Ok ok)->
             ({model | quantityShow = False }, Cmd.batch[dayKindOfMealEncode model.mealPage model.mealPer_page model.session model.code model.date
             , Api.showToast (Encode.string "등록 되었습니다.")
-            , Api.getscrollHeight (Encode.bool (not model.quantityShow))]) 
+            ]) 
         RegistMealComplete (Err err)->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
             (model, Cmd.none)
         FoodQuantityClose ->
-                ({model | quantityShow = False}                    
-                , Api.getscrollHeight (Encode.bool (not model.quantityShow)))       
+                ({model | quantityShow = False}                   , Cmd.none
+                -- , Api.getscrollHeight (Encode.bool (not model.quantityShow))
+                )       
             
         UpNdown updown ->
             case String.toFloat model.quantityValue of
@@ -371,7 +388,7 @@ update msg model =
                         "up" ->
                             ({model | quantityValue = String.fromFloat(int + (justToint model.activeQuantity))}, Cmd.none) 
                         "down" ->
-                            if (justToint model.quantityValue) <= 0 then
+                            if int - (justToint model.activeQuantity) <= 0 then
                                 (model, Cmd.none)
                             else
                             ({model | quantityValue = String.fromFloat(int - (justToint model.activeQuantity))}, Cmd.none)
@@ -399,32 +416,34 @@ update msg model =
         SearchInput foodname ->
             ({model | foodSearch = foodname}, foodEncode model.page model.per_page foodname model.session)
         GetFoodData (Ok ok) ->
-            let _ = Debug.log "ok" ok.data
-                
-            in
-            
             ({model | food = ok}, Cmd.none)
         GetFoodData (Err err) ->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
             (model, Cmd.none)
         GetMealData (Ok ok) ->
             let
                 filter = List.filterMap (\x -> String.toFloat x.kcal) ok.data
                 total = List.sum filter
             in
-            let _ = Debug.log "f" filter
-            in
             ({model | data = ok, totalKcal = String.fromFloat total }, Cmd.none)
         GetMealData (Err err) ->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
             (model, Cmd.none)
         ReceiveKey code ->
             case Decode.decodeValue Decode.string code of
                 Ok ok ->
                     ({model | code = ok, activeBtn = Just ok}, dayKindOfMealEncode model.mealPage model.mealPer_page model.session ok model.date)
                 Err err ->
-                    let _ = Debug.log "err" err
-                        
-                    in
-                    
                     (model, Cmd.none)
         ActiveTab item ->
             ( {model | activeBtn = Just item, code = item}, dayKindOfMealEncode model.mealPage model.mealPer_page model.session item model.date )
@@ -471,7 +490,7 @@ directRegistMeal model =
     div [ class "inputkaclbox" ]
         [
             div [class "foodSettingClose", onClick FoodQuantityClose] [
-            i [ class "far fa-times-circle" ][] 
+            i [ class "far fa-times-circle", onClick (DirectRegistMeal "justshowNCancle") ][] 
             ]
             , div [ class "yf_inputbox" ]
             [ text "음식 칼로리 직접 입력" ]
@@ -698,5 +717,3 @@ saveBtn =
             [ text "캘린더로 이동" ]
         ]
 
-
- 

@@ -184,7 +184,10 @@ update msg model =
             let 
                 serverErrors = Api.decodeErrors err
             in
-            (model, (Session.changeInterCeptor (Just serverErrors)model.session))
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
+            (model, Cmd.none)
         Loading success ->
             let
                 d = Decode.decodeValue Decode.string success
@@ -219,23 +222,23 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    if model.check then
-        if model.loading then
-            { title = "내 스크랩"
-            , content = 
-                div [] [
-                        div [class "spinnerBack"] [spinner]
-                ]
+    -- if model.check then
+    --     if model.loading then
+    --         { title = "내 스크랩"
+    --         , content = 
+    --             div [] [
+    --                     div [class "spinnerBack"] [spinner]
+    --             ]
             
-            }
-        else
-            { title = "내 스크랩"
-            , content = 
-                div [] [app model
-                ]
+    --         }
+    --     else
+    --         { title = "내 스크랩"
+    --         , content = 
+    --             div [] [app model
+    --             ]
             
-            }
-    else
+    --         }
+    -- else
         { title = "내 스크랩"
         , content = 
             div [] [
@@ -243,15 +246,15 @@ view model =
             ]
         
         }
-app model= 
+app model back videoCall= 
         div [ class "container" ]
                 [
-                   appHeaderRDetailClick model.listData.title  "myPageHeader whiteColor" BackPage "fas fa-times"
+                   appHeaderRDetailClick model.listData.title  "myPageHeader whiteColor" back "fas fa-times"
                    , div [] [
-                         if model.need2login then
-                        need2loginAppDetail BackDetail
-                        else
-                        appcontentsItem model.listData model.loading model.zindex
+                        --  if model.need2login then
+                        -- need2loginAppDetail BackDetail
+                        -- else
+                        appcontentsItem model.listData model.zindex videoCall
                      ]
                 ]
 
@@ -286,7 +289,7 @@ contentsItem item loading zindex =
 
                          div [ class ("imagethumb " ++ zindex),style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") , onClick (VideoCall item.pairing) ][]
                         -- img [class zindex, src item.thumbnail, onClick (VideoCall item.pairing)] []
-                        , div [ id "myElement" ] [
+                        , div [ id "myElement", style "height" (if String.isEmpty zindex then "0px" else "auto") ] [
                             ]
                     ]
                 ], 
@@ -314,25 +317,16 @@ justok casees =
         Nothing ->
             "-"
 
-appcontentsItem item loading zindex = 
+appcontentsItem item zindex videoCall = 
             div []
             [ div []
                 [ p [ class "m_yf_container" ]
-                    [ 
-                        -- div [class ("imagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") ,onClick (govideo item.pairing)] []
-
-
-                        div [ class ("appimagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") "), onClick (VideoCall item.pairing) ][],
-                        -- img [src item.thumbnail, onClick (VideoCall item.pairing)] []
-                        -- ,
+                    [ div [ class ("appimagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") "), onClick (videoCall item.pairing) ][],
                          div [ id "myElement" ] [
                             ]
                     ]
                 ]
             , 
-            -- if loading then 
-            -- spinner
-            -- else
             div [ class "m_yf_work_textbox" ]
                 [ div [ class "m_yf_work_time" ]
                     [ span []
@@ -354,8 +348,6 @@ description idx item =
                 li [] [text ((String.fromInt(item.sort)) ++ " . " ++  item.title ++ " " ++ String.fromInt(item.value) ++ "분")]
             else 
                 li [] [text ((String.fromInt(item.sort)) ++ " . " ++  item.title ++ " " ++ String.fromInt(item.value) ++ "세트")] 
-                    
-        -- li [] [text]
     ]
     
 goBtnBox backPage = 

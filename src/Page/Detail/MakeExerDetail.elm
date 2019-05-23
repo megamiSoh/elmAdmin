@@ -47,6 +47,7 @@ type alias Pairing =
     { file : String
     , image : String
     , title : String}
+
 init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
@@ -73,10 +74,11 @@ init session mobile
         }
         , Cmd.batch 
         [  Api.getId ()
+        , scrollToTop NoOp
         ]
+
         
     )
-    
 
 type Msg 
     = CheckDevice E.Value
@@ -91,7 +93,7 @@ type Msg
     | SaveIdComplete E.Value
     | RecordComplete E.Value
     | VideoRecordComplete (Result Http.Error Decoder.Success)
-
+    | NoOp
 
 toSession : Model -> Session
 toSession model =
@@ -114,6 +116,8 @@ subscriptions model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        NoOp ->
+            (model, Cmd.none)
         VideoRecordComplete (Ok ok) ->
             (model, Cmd.none)
         VideoRecordComplete (Err err) ->

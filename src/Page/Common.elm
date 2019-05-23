@@ -481,7 +481,7 @@ need2loginAppDetailRoute route =
                 ]
 
 scrollToTop : msg -> Cmd msg
-scrollToTop noop=
+scrollToTop noop =
     Task.perform (\_ -> noop) (Dom.setViewport 0 0)
 
 -- jumpToBottom : String -> Cmd msg

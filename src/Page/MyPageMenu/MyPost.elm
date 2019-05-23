@@ -13,6 +13,8 @@ import Api as Api
 import Api.Endpoint as Endpoint
 import Api.Decoder as Decoder
 import Http as Http
+import Page.Detail.MyPostDetail as MyD
+
 
 type alias Model 
     = {
@@ -32,6 +34,10 @@ type alias Model
         , pageNum : Int
         , loading : Bool
         , show : String
+        , getData : MyD.TogetherData
+        , postId : String
+        , zindex : String
+        , showDetail : Bool
     }
 
 type alias ScreenInfo = 
@@ -72,6 +78,19 @@ init session mobile
         , pageNum = 1
         , infiniteLoading = False
         , per_page = 10
+        , postId = ""
+        , zindex = ""
+        , showDetail = False
+        , getData = 
+            { content = Nothing
+            , detail = Nothing
+            , id = 0
+            , inserted_at = ""
+            , is_delete = False
+            , link_code = ""
+            , recommend_cnt = 0
+            , nickname = Nothing
+            }
         , screenInfo = 
             { scrollHeight = 0
             , scrollTop = 0
@@ -130,6 +149,9 @@ type Msg
     | GotSession Session
     | NoOp
     | DeleteConfirm Int
+    | GetDetailList  (Result Http.Error MyD.TogetherDataWrap)
+    | VideoCall (List MyD.Pairing)
+    | GoBack
 
 toSession : Model -> Session
 toSession model =
@@ -143,6 +165,30 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GoBack ->
+            ({model | showDetail = False}, Cmd.none)
+        VideoCall pairing->
+            let
+                encodePairing pair= 
+                    Encode.object 
+                        [ ("file", Encode.string pair.file)
+                        , ("image", Encode.string pair.image)
+                        , ("title", Encode.string pair.title)]
+                listPair = 
+                    Encode.list encodePairing pairing
+            in
+            
+            ({model | zindex = "zindex"}, Api.videoData listPair)
+        GetDetailList(Ok ok) ->
+            ({model | getData = ok.data, loading = False}, Cmd.none)
+        GetDetailList(Err err) ->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
+            (model, Cmd.none)
         NoOp ->
             (model, Cmd.none)
         GotSession session ->
@@ -169,7 +215,12 @@ update msg model =
             let
                 encodeId = Encode.string id
             in
-            
+            if model.check then
+                ({model | postId = id , showDetail = True , zindex = ""} , 
+                    Decoder.mypostDataWrap MyD.TogetherDataWrap MyD.TogetherData MyD.DetailTogether MyD.TogetherItems MyD.Pairing
+                    |>Api.get GetDetailList (Endpoint.postList id) (Session.cred model.session)  
+                    )
+            else
             (model, Api.saveId encodeId)
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
              if (scrollHeight - scrollTop) <= offsetHeight then
@@ -240,49 +291,33 @@ update msg model =
 view : Model -> {title : String , content : Html Msg}
 view model =
     if model.check then
-        if model.loading then
         { title = "내 게시물"
-        , content = div [class "spinnerBack"] [
-                            spinner
-                            ]
+        , content =     
+            div [] [
+                div [ class ("container topSearch_container " ++ (if model.showDetail then "fadeContainer" else ""))] [
+                    div [class "spinnerBack", style "display" (if model.loading then "flex" else "none")] [
+                                spinner
+                    ]
+                    ,  div [style "display" (if List.isEmpty model.data.data then "none" else "block")] [ app model appcontentsBody]
+                    ,  div [style "display" (if List.isEmpty model.data.data then "block" else "none")] [ app model noappcontentsBody]
+                ]
+                , div [class ("container myaccountStyle " ++ (if model.showDetail then "account" else ""))] [
+                    MyD.app model VideoCall GoBack
+                ]
+            ]
         }
-        else
-            if List.length model.dataList > 0 then
-            { title = "내 게시물"
-            , content = 
-                div [] [ app model appcontentsBody]
-            }
-            else
-            { title = "내 게시물"
-            , content = 
-                div [] [ app model noappcontentsBody]
-            }
     else
-        if List.length (model.data.data) > 0 then
         { title = "내 게시물"
         , content = 
             div [] [
                 div [ class "container" ]
             [
                 commonJustHeader "/image/icon_management.png" "나의 게시물관리"
-                , contentsBody model.data model.pageNum model.show
-                
+                , div [style "display" (if List.isEmpty model.data.data then "none" else "block")] [contentsBody model.data model.pageNum model.show]
+                , div [style "display" (if List.isEmpty model.data.data then "block" else "none")] [nocontentsBody model.data model.pageNum model.show]
             ]
             ]
         }
-        else
-        { title = "내 게시물"
-        , content = 
-            div [] [
-                div [ class "container" ]
-        [
-            commonJustHeader "/image/icon_management.png" "나의 게시물관리"
-            , nocontentsBody model.data model.pageNum model.show
-            
-        ]
-            ]
-        }
-
 justData item =
     case item of
         Just val ->

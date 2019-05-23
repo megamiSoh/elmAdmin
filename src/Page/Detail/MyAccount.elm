@@ -46,6 +46,7 @@ type alias Model
         , deleteOrNot : String
         , canNotUpdateField : String
         , showDetail : String
+        , protain : Protain
         }
 
 type alias BodyData = 
@@ -57,8 +58,15 @@ type alias BodyInfoData =
     , goal_weight :String
     , height : String
     , is_male : Bool
-    , weight : String
+    , weight : String 
+    , age : Int
+    , protain : Protain
     }
+
+type alias Protain = 
+    { need : Maybe Int
+    , recommend : Maybe Int}
+
 type alias DataWrap = 
     { data : MyData }
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
@@ -111,6 +119,9 @@ init session mobile
         , is_male = True
         , showbottomtoast = ""
         , showDetail = ""
+        , protain = 
+            { need = Nothing
+            , recommend = Nothing}
         , mydata = 
             { exercise = 0
             , share = 0
@@ -121,8 +132,10 @@ init session mobile
                 , profile = Nothing}
              }}
         ,Cmd.batch [
-            Decoder.dataWRap My.DataWrap MyData UserData
+        Decoder.dataWRap My.DataWrap MyData UserData
              |> Api.get MyInfoData Endpoint.myInfo (Session.cred session) 
+        , Decoder.bodyInfo BodyData BodyInfoData Protain
+            |>Api.get BodyInfoComplete Endpoint.getBodyInfo (Session.cred session)
         ]
     )
 
@@ -161,6 +174,7 @@ type Msg
     | ChangeProfile
     | DeleteConfirm
     | ShowDetail String
+    | NoOp
 
 toSession : Model -> Session
 toSession model =
@@ -231,7 +245,9 @@ updateFieldBodyInfo item model =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of 
+    case msg of     
+        NoOp -> 
+            (model ,Cmd.none)
         ShowDetail detail ->
             case detail of
                 "weightInput" ->   
@@ -347,7 +363,7 @@ update msg model =
             else
             ({model | notmatchPwd = ""}, Cmd.batch[ pwdEncode model model.session ])
         BodyInfoComplete (Ok ok) ->
-            ({model | currentPage = "body", birthday = ok.data.birthday, goal_weight = ok.data.goal_weight, height = ok.data.height, sex = if ok.data.is_male then "Male" else "Female", weight = ok.data.weight}, Cmd.none)
+            ({model | birthday = ok.data.birthday, goal_weight = ok.data.goal_weight, height = ok.data.height, sex = if ok.data.is_male then "Male" else "Female", weight = ok.data.weight, protain = ok.data.protain }, Cmd.none)
         BodyInfoComplete (Err err) ->
             let 
                 serverErrors =
@@ -487,17 +503,19 @@ update msg model =
             ({model | nickname = str},Cmd.none)
         ChangePage str ->
             if str == "body" then
-            (model, 
+            ({model | currentPage = "body" }, 
             Cmd.batch [
-                Decoder.bodyInfo BodyData BodyInfoData
+                Decoder.bodyInfo BodyData BodyInfoData Protain
                 |>Api.get BodyInfoComplete Endpoint.getBodyInfo (Session.cred model.session)
-            
+                , scrollToTop NoOp
             ] )
             else if str =="nick" then
-            ({model | currentPage = str,  showbottomtoast = "showbottomToast  lastShowToast" }
-            , Api.scrollControl ())
+            ({model | currentPage = str}
+            , Cmd.batch[Api.scrollControl ()
+            , scrollToTop NoOp])
             else
-            ({model | currentPage = str,  showbottomtoast = "showbottomToast  lastShowToast"}, Cmd.none)
+            ({model | currentPage = str}, Cmd.batch [scrollToTop NoOp
+            ])
         MyInfoData (Ok ok) ->
             ({model | mydata = ok.data}, Cmd.none)
         MyInfoData (Err err) ->
@@ -514,63 +532,62 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    case model.currentPage of
-        "nick" ->
+    -- case model.currentPage of
+    --     "nick" ->
             { title = "닉네임 변경"
             , content =
-                div [] [
-                    appHeaderConfirmDetailR "닉네임 변경" "myPageHeader whiteColor" (ChangePage "")  ChangeGo  "확인"
-                    , nicknameContents model 
-                ]
-            }
-        "pwd" ->
-            { title = "비밀번호 변경"
-            , content = 
-                div [] [
-                        appHeaderConfirmDetailR "비밀번호 변경" "myPageHeader  whiteColor" (ChangePage "")  ChangePwd "변경"
+                div [style "min-height" "750px"] [
+                    -- appHeaderConfirmDetailR "닉네임 변경" "myPageHeader whiteColor" (ChangePage "")  ChangeGo  "확인"
+                    div [] [
+                         contents model
+                        , nicknameContents model
                         , pwdContents model
-                    ]
-            }
-        "account" ->
-            { title = "계정관리"
-            , content = 
-                div [] [
-                    appHeaderRDetailClick "계정관리" "myPageHeader  whiteColor" (ChangePage "") "fas fa-angle-left"
-                    , accountContents model
+                        , accountContents model
+                        , bodyRecord model 
+                        , div [] (List.map previewLayout model.preview )
+                    ] 
                 ]
             }
+        -- "pwd" ->
+        --     { title = "비밀번호 변경"
+        --     , content = 
+        --         div [] [
+        --                 appHeaderConfirmDetailR "비밀번호 변경" "myPageHeader  whiteColor" (ChangePage "")  ChangePwd "변경"
+        --                 , pwdContents model
+        --             ]
+        --     }
+        -- "account" ->
+        --     { title = "계정관리"
+        --     , content = 
+        --         div [] [
+        --             appHeaderRDetailClick "계정관리" "myPageHeader  whiteColor" (ChangePage "") "fas fa-angle-left"
+        --             , accountContents model
+        --         ]
+        --     }
         -- "body" ->
         --     { title = "신체정보관리"
         --     , content = 
         --         div [id "mypage_container"] [
-        --             appHeaderConfirmDetailR "신체정보관리" "myPageHeader whiteColor" (ChangePage "")  (ChangePage "bodyedit")  (if model.weight == "" then "등록" else "수정")
-        --             , bodyRecord model 
+        --             bodyRecord model 
         --         ]
         --     }
-        "body" ->
-            { title = "신체정보관리"
-            , content = 
-                div [id "mypage_container"] [
-                    bodyRecord model 
-                ]
-            }
         
-        "image" ->
-            { title =" 프로필 사진"
-            , content = 
-                div [] [
-                appHeaderConfirmDetailR "프로필 사진 변경" "myPageHeader whiteColor" (ChangePage "")  ChangeProfile  "저장"
-                , div [] (List.map previewLayout model.preview )
-                ]
-            }
-        _ ->
-            { title ="마이페이지"
-            , content = 
-                div [] [
-                    appHeaderRDetailClick "마이페이지" "myPageHeader whiteColor" BackBtn "fas fa-angle-left"
-                    , contents model
-                ]
-            }
+        -- "image" ->
+        --     { title =" 프로필 사진"
+        --     , content = 
+        --         div [] [
+        --         appHeaderConfirmDetailR "프로필 사진 변경" "myPageHeader whiteColor" (ChangePage "")  ChangeProfile  "저장"
+        --         , div [] (List.map previewLayout model.preview )
+        --         ]
+        --     }
+        -- _ ->
+        --     { title ="마이페이지"
+        --     , content = 
+        --         div [] [
+        --             appHeaderRDetailClick "마이페이지" "myPageHeader whiteColor" BackBtn "fas fa-angle-left"
+        --             , contents model
+        --         ]
+        --     }
 
     
 
@@ -586,18 +603,35 @@ justData cases =
         Nothing ->
             " 닉네임을 등록 해 주세요. "
 nicknameContents model =    
-    div [ class "control has-icons-right"] [
-        input [onKeyDown KeyDown, type_ "text",value model.nickname, onInput ChangeNick, placeholder "닉네임을 입력 해 주세요.", maxlength 10 , class "input nicknameInput", id "noScrInput"] []
+    div [ class ("control has-icons-right myaccountStyle "  ++ (if model.currentPage == "nick" then model.currentPage else ""))] [
+        ul [class "accountHeader"] 
+                [ li[onClick (ChangePage "")]
+                    [ span [class "fas fa-times"][] ]
+                , li[][text "닉네임 변경"]
+                , li[onClick ChangeGo][
+                   text "확인"
+                ]
+                ],
+        div [style "position" "relative"] [
+            input [onKeyDown KeyDown, type_ "text",value model.nickname, onInput ChangeNick, placeholder "닉네임을 입력 해 주세요.", maxlength 10 , class "input nicknameInput", id (if model.currentPage == "nick" then "noScrInput" else "")] []
         , span [class "allDeleteBtn icon is-right", onClick AllDeleteText ] [
             i [ class "far fa-times-circle" ]
             []
         ]
+        ]
     ]
 
 accountContents model = 
-    div [] [
-        div [ class "container yf_container" ]
-            [ div [ class "settingbox" ]
+        div [ class ("container yf_container myaccountStyle "  ++ (if model.currentPage == "account" then model.currentPage else ""))]
+            [ ul [class "accountHeader"] 
+                [ li[onClick (ChangePage "")]
+                    [ span [class "fas fa-times"][] ]
+                , li[][text "계정관리"]
+                , li[][
+                   text "확인"
+                ]
+                ],
+                div [ class "settingbox" ]
                 [ text "계정기록"  
                 --, a [ class "button is-large is-fullwidth settingmenu" ]
                 --     [ text "기록초기화" ], text "계정연결" 
@@ -608,12 +642,13 @@ accountContents model =
                 , mremovelayer model.show AccountDelete
                 ]
             ]
-    ]
 contents model = 
-        div [ class "container yf_container" ]
-            [ div [ class "m_yf_mypage_setting" ]
-                [ div [ class "m_profilebox" ]
-                    [ div [onClick (ChangeProfileImg True)] [
+        div [ class ("container yf_container account_container "++ (if model.currentPage /= "" then "fadeContainer" else ""))]
+            [ 
+                 appHeaderRDetailClick "마이페이지" "myPageHeader whiteColor" BackBtn "fas fa-angle-left"
+                ,div [ class "m_yf_mypage_setting" ]
+                [ div [ ]
+                    [ div [onClick (ChangeProfileImg True), class "m_profilebox"] [
                         case model.mydata.user.profile of
                             Just image ->
                                 img [src image][]
@@ -622,11 +657,36 @@ contents model =
                                 img [src "../image/profile.png"] []
                         , div [class"m_photo_changebox"]
                          [
-                            div [ class "button is-dark m_photo_change"]
+                            div [class "protainStyle"] [
+                                 case model.protain.need of
+                                    Just ok ->
+                                        div [style "padding" ".5rem"] [
+                                        span [style "font-weight" "bold"][text ( "단백질 평균필요량 (per day) : ")]
+                                        , span [] [text (String.fromInt ok ++ "g")]
+                                        , div [][
+                                            span [style "font-weight" "bold"] [text ( "단백질 권장섭취량 (per day) : ")]
+                                            , span [] [text ((case model.protain.recommend of
+                                                Just recom ->
+                                                    String.fromInt recom
+                                            
+                                                Nothing ->
+                                                    ""
+                                            ) ++ "g")]
+                                            ]
+                                        ]
+                                    Nothing ->
+                                        text "신체 정보를 기록 해 주세요."
+                            ]
+                            , div [ class "button is-dark m_photo_change"]
                             [ text "프로필 사진 변경" ]
                         ]
                     ]
-                    , p [class"m_account_id"]
+
+                    ]
+                , div [ class "loginbox_info" ]
+                    [ p [ class "m_logintext" ]
+                        [ text "닉네임" ]
+                    , p [ class "login_id" ]
                         [ text (justData model.mydata.user.nickname) ]
                     ]
                 , div [ class "loginbox_info" ]
@@ -678,11 +738,17 @@ contents model =
 bodysex model = 
    div [ class "editTop showAccount" ]
     [ 
-        appHeaderConfirmDetailR "성별" "myPageHeader whiteColor" (ShowDetail "")  (ShowDetail "")  "확인"
-        , div [ class "editData" ]
-        [ label [ class "label physical_title" ]
-            [ text "성별" ]
-        , p [ class "editdataBoxsex" ]
+        -- appHeaderConfirmDetailR "성별" "myPageHeader whiteColor" (ShowDetail "")  (ShowDetail "")  "확인"
+        -- , 
+        div [ class "editData" ]
+        [  ul [class "accountHeader"] 
+                [ li[onClick (ShowDetail "")]
+                    [ span [class "fas fa-times"][] ]
+                , li[][text  "성별"]
+                , li[onClick (ShowDetail "")][
+                   text "확인"
+                ]
+                ], p [ class "editdataBoxsex" ]
             [ 
             label [ class "radio" ]
                 [ input [ type_ "radio", name "question"
@@ -719,13 +785,18 @@ bodysex model =
     ]
 bodyweight model = 
     div [class "editTop showAccount"] [
-         appHeaderConfirmDetailR "체중" "myPageHeader whiteColor" (ShowDetail "weightInput")  (ShowDetail "weightInput")  "확인"
-        , div [  class "editData"]
-        [ label [ class "label physical_title" ]
-            [ text "체중" ]
-        , p [ class "editdataBox" ]
+        div [  class "editData"]
+        [ ul [class "accountHeader"] 
+                [ li[onClick (ShowDetail "weightInput")]
+                    [ span [class "fas fa-times"][] ]
+                , li[][text "체중"]
+                , li[onClick (ShowDetail "weightInput")][
+                   text "확인"
+                ]
+                ],
+        p [ class "editdataBox" ]
         [   div [] [
-            input [ class "input yf_input_box" ,onInput (BodyInfo "weight"), value model.weight, type_ "number" ]
+            input [ class "input yf_input_box" ,onInput (BodyInfo "weight"), value model.weight, type_ "number", id (if model.showDetail /= "" then "noScrInput" else "" ) ]
             [], text "Kg"
             ]
              , div [class "wrongValueWarn"] [text model.canNotUpdateField]
@@ -736,13 +807,20 @@ bodyweight model =
 
 goalweight model = 
     div [class "editTop showAccount"] [
-         appHeaderConfirmDetailR "목표체중" "myPageHeader whiteColor" (ShowDetail "goalWeightInput")  (ShowDetail "goalWeightInput")  "확인"
-        , div [  class "editData"]
-        [ label [ class "label physical_title" ]
-            [ text "목표체중" ]
-        , p [ class "editdataBox" ]
+        --  appHeaderConfirmDetailR "목표체중" "myPageHeader whiteColor" (ShowDetail "goalWeightInput")  (ShowDetail "goalWeightInput")  "확인"
+        -- , 
+        div [  class "editData"]
+        [ ul [class "accountHeader"] 
+                [ li[onClick (ShowDetail "goalWeightInput")]
+                    [ span [class "fas fa-times"][] ]
+                , li[][text "목표체중"]
+                , li[onClick (ShowDetail "goalWeightInput")][
+                   text "확인"
+                ]
+                ],
+            p [ class "editdataBox" ]
         [   div [] [
-            input [ class "input yf_input_box" ,onInput (BodyInfo "goalWeight") , value model.goal_weight, type_ "number"]
+            input [ class "input yf_input_box" ,onInput (BodyInfo "goalWeight") , value model.goal_weight, type_ "number", id (if model.showDetail /= "" then "noScrInput" else "" )]
                 [], text "Kg"
         ]
         , div [class "wrongValueWarn"] [text model.canNotUpdateField]
@@ -752,13 +830,21 @@ goalweight model =
 
 height model = 
     div [class "editTop  showAccount"] [
-         appHeaderConfirmDetailR "신장" "myPageHeader whiteColor" (ShowDetail "heightInput")  (ShowDetail "heightInput")  "확인"
-        , div [  class "editData"]
-        [ label [ class "label physical_title" ]
-            [ text "신장" ]
-        , p [ class "editdataBox" ]
+        --  appHeaderConfirmDetailR "신장" "myPageHeader whiteColor" (ShowDetail "heightInput")  (ShowDetail "heightInput")  "확인"
+        -- , 
+        div [  class "editData"]
+        [ 
+            ul [class "accountHeader"] 
+                [ li[onClick (ShowDetail "heightInput")]
+                    [ span [class "fas fa-times"][] ]
+                , li[][text "신장"]
+                , li[onClick (ShowDetail "heightInput")][
+                   text "확인"
+                ]
+                ]
+            , p [ class "editdataBox" ]
         [   div [][
-            input [ class "input yf_input_box", onInput (BodyInfo "height"), value model.height , type_ "number"]
+            input [ class "input yf_input_box", onInput (BodyInfo "height"), value model.height , type_ "number", id (if model.showDetail /= "" then "noScrInput" else "" )]
                 [], text "Cm"
         ] 
             , div [class "wrongValueWarn"] [text model.canNotUpdateField]
@@ -768,13 +854,21 @@ height model =
 
 birth model = 
     div [class "editTop showAccount"] [
-         appHeaderConfirmDetailR "생년월일" "myPageHeader whiteColor" (ShowDetail "birthInput")  (ShowDetail "birthInput")  "확인"
-        , div [  class "editData"]
-        [ label [ class "label physical_title" ]
-            [ text "생년월일" ]
-        , p [ class "editdataBox" ]
+        
+        --  appHeaderConfirmDetailR "생년월일" "myPageHeader whiteColor" (ShowDetail "birthInput")  (ShowDetail "birthInput")  "확인"
+        -- ,
+         div [  class "editData"]
+        [ ul [class "accountHeader"] 
+                [ li[onClick (ShowDetail "birthInput")]
+                    [ span [class "fas fa-times"][] ]
+                , li[][text "생년월일"]
+                , li[onClick (ShowDetail "birthInput")][
+                   text "확인"
+                ]
+                ],
+           p [ class "editdataBox" ]
         [  div [] [
-            input [ class "input yf_input_box2", type_ "date", onInput (BodyInfo "date"), value model.birthday , style "min-width" "200px"]
+            input [ class "input yf_input_box2", type_ "date", onInput (BodyInfo "date"), value model.birthday , style "min-width" "200px", id (if model.showDetail /= "" then "noScrInput" else "" )]
                 []
         ]
         , div [class "wrongValueWarn"] [text model.canNotUpdateField]
@@ -784,9 +878,19 @@ birth model =
 
 
 bodyRecord model = 
-   div [ class "settingbox" ]
-    [ appHeaderConfirmDetailR "신체정보" "myPageHeader whiteColor"  (ChangePage "") SaveBody  (if model.weight == "" then "등록" else "수정")
-        , div [ class "physical_setting" ]
+   div [ class ("settingbox myaccountStyle " ++ (if model.currentPage == "body" then model.currentPage else "")) ]
+    [ 
+        ul [class "accountHeader"] 
+                [ li[onClick (ChangePage "")]
+                    [ span [class "fas fa-times"][] ]
+                , li[][text "신체정보"]
+                , li[onClick SaveBody][
+                   text (if model.weight == "" then "등록" else "수정")
+                ]
+                ],
+        -- appHeaderConfirmDetailR "신체정보" "myPageHeader whiteColor"  (ChangePage "") SaveBody  (if model.weight == "" then "등록" else "수정")
+        -- , 
+        div [ class "physical_setting" ]
         [ label [ class "label physical_title" ]
             [ text "성별" ]
         , p [ class "physicalbox", onClick (ShowDetail "sex")]
@@ -870,10 +974,19 @@ bodyRecord model =
                 div [class "editTop "] []
     ]
 
+
 pwdContents  model =
-    div [class "m_pwd", id "noScrInput"] [
+    div [class ("m_pwd myaccountStyle " ++ (if model.currentPage == "pwd" then model.currentPage else ""))] [
+        ul [class "accountHeader"] 
+                [ li[onClick (ChangePage "")]
+                    [ span [class "fas fa-times"][] ]
+                , li[][text "패스워드 변경"]
+                , li[][
+                   text "확인"
+                ]
+                ],
         div [class "notmatchPwd"] [text model.notmatchPwd]
-        , input [ class "input myPage_yf_input", type_ "text", placeholder "기존의  패스워드를 입력 해 주세요." , onInput OldPwd]
+        , input [ class "input myPage_yf_input", type_ "text", placeholder "기존의  패스워드를 입력 해 주세요." , onInput OldPwd, id (if model.currentPage == "pwd" then "noScrInput" else "")]
         []
         , input [ class "input myPage_yf_input", type_ "text", placeholder "변경할 패스워드를 입력 해 주세요." , onInput Pwd]
         []

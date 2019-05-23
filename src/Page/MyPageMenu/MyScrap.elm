@@ -13,6 +13,8 @@ import Http as Http
 import Api.Endpoint as Endpoint
 import Json.Decode as Decode
 import Api.Decoder as Decoder
+import Page.Detail.MyScrapDetail as MyD
+
 type alias Model 
     = {
         session : Session
@@ -27,6 +29,11 @@ type alias Model
         , count : Int
         , loading : Bool
         , pageNum : Int
+        , zindex : String
+        , listData : MyD.DetailData
+        , scrap : Bool
+        , showDetail : Bool
+        , videoId : String
     }
 
 type alias ScreenInfo = 
@@ -71,6 +78,9 @@ init session mobile
         , count = 1
         , loading = True
         , pageNum = 1
+        , zindex = ""
+        , scrap = False
+        , videoId = ""
         , infiniteLoading = False
         , screenInfo = 
             { scrollHeight = 0
@@ -84,7 +94,21 @@ init session mobile
                 , total_count = 0
                 , user_id = 0
             }
-        }}
+        }
+        , listData = 
+            { difficulty_name = Nothing
+            , duration = ""
+            , exercise_items = []
+            , exercise_part_name = Nothing
+            , id = 0
+            , inserted_at = ""
+            , pairing = []
+            , title = ""
+            , nickname = Nothing
+            , thumbnail = ""
+            , description = Nothing}
+        , showDetail = False
+        }
         , Cmd.batch [
             scrapDataEncoder 1 10 session
             , Api.removeJw ()
@@ -102,6 +126,11 @@ type Msg
     | SaveComplete Encode.Value
     | GotSession Session
     | PageBtn (Int, String)
+    | GetListData (Result Http.Error MyD.GetData)
+    | GoVideo (List MyD.Pairing)
+    | BackBtn
+    | VideoEnd Encode.Value
+    | VideoRecordComplete (Result Http.Error Decoder.Success)
 
 toSession : Model -> Session
 toSession model =
@@ -137,12 +166,54 @@ scrapDataEncoder page per_page session =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch[Api.successId SaveComplete
-    , Session.changes GotSession (Session.navKey model.session)]
+    , Session.changes GotSession (Session.navKey model.session)
+    , Api.videoWatchComplete VideoEnd]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        VideoRecordComplete (Ok ok) ->
+            (model, Cmd.none)
+        VideoRecordComplete (Err err) ->
+            (model, Cmd.none)
+        VideoEnd complete ->
+            let
+                decodestr = Decode.decodeValue Decode.string complete
+            in
+                case decodestr of
+                    Ok ok ->
+                        (model, Api.get VideoRecordComplete  (Endpoint.videoCompleteRecord model.videoId)  (Session.cred model.session) Decoder.resultD)
+                
+                    Err err ->
+                        (model, Cmd.none)
+        BackBtn ->
+            ({model | showDetail = False, zindex = "" }, Cmd.none)
+        GoVideo pairing ->
+            let 
+                videoList = 
+                    Encode.object 
+                        [("pairing", (Encode.list videoEncode) model.listData.pairing) ]
+
+                videoEncode p=
+                    Encode.object
+                        [ ("file", Encode.string p.file)
+                        , ("image", Encode.string p.image)
+                        , ("title", Encode.string p.title)
+                        ]
+            in
+            
+            ({model | zindex = "zindex"}, Api.videoData videoList)
+        GetListData (Ok ok) -> 
+            ({model | listData = ok.data, scrap = False, loading = False, showDetail = True}, Cmd.none)
+        GetListData (Err err) -> 
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
+            (model, Cmd.none)
         PageBtn (idx, str) ->
             case str of
                 "prev" ->
@@ -179,7 +250,11 @@ update msg model =
                         [("code", Encode.string code)
                         , ("id", Encode.string stringInt)]
             in
-            
+            if model.check then
+            ({model | videoId = stringInt }, 
+                Decoder.yfDetailDetail MyD.GetData MyD.DetailData MyD.DetailDataItem MyD.Pairing
+                    |>Api.get GetListData (Endpoint.scrapDetail code stringInt) (Session.cred model.session) )
+            else
             (model, Api.saveId codeIdEncoder )
         OnLoad ->
             if model.count >= List.length model.data.data then
@@ -205,13 +280,13 @@ update msg model =
         NoOp ->
             ( model, Cmd.none )
         GetList (Ok ok) -> 
-            if model.check then
+            -- if model.check then
                 if ok.data == [] then
                     ({model | infiniteLoading = False, checkList = ["empty"], loading = False}, Cmd.none)
                 else
                     ({model | data = ok, dataList = model.dataList ++ ok.data, page = model.page + 1, infiniteLoading = False, loading = False}, Cmd.none)
-            else
-                ({model | data = ok}, (scrollToTop NoOp))
+            -- else
+            --     ({model | data = ok}, (scrollToTop NoOp))
         GetList (Err err) -> 
             let
                 serverErrors = 
@@ -225,66 +300,27 @@ update msg model =
 view : Model -> {title : String , content : Html Msg}
 view model =
     if model.check then
-        if model.loading then
             { title = "나의 스크랩"
             , content = 
                 div [] [
+                        div [class ("topSearch_container " ++ (if model.showDetail then "fadeContainer" else ""))] [
                         appHeaderRDetail "나의 스크랩리스트" "myPageHeader  whiteColor" Route.MyPage "fas fa-angle-left", 
-                        div [class "spinnerBack"] [
+                        div [class "spinnerBack", style "display" (if model.loading then "flex" else "none" )] [
                             spinner
                             ]
-                ]
-            }
-        else
-            if model.data.data == [] then
-                { title = "나의 스크랩"
-                , content = 
-                        div [][
-                            appHeaderRDetail "나의 스크랩리스트" "myPageHeader  whiteColor" Route.MyPage "fas fa-angle-left",
-                            div [class "noResult"] [
+                        , div [class "noResult", style "display" (if List.isEmpty model.data.data then "fixed" else "none")] [
                                 text "스크랩한 게시물이 없습니다."
                             ]
-                    ]
-                }
-            else
-                if model.infiniteLoading then
-                { title = "나의 스크랩"
-                , content = 
-                        div [][
-                            appHeaderRDetail "나의 스크랩리스트" "myPageHeader  whiteColor" Route.MyPage "fas fa-angle-left" ,
-                            div [ class "scrollheight", scrollEvent ScrollEvent ] (
+                        , div [ class "scrollheight", scrollEvent ScrollEvent ] (
                                 List.map listappDetail model.dataList
                             )
-                            , div [class "loadingPosition"] [
+                        , div [class "loadingPosition", style "display" (if model.infiniteLoading then "block" else "none")] [
                             infiniteSpinner
                             ]
-                    ]
-                }
-                else
-                { title = "나의 스크랩"
-                , content = 
-                        div [][
-                            appHeaderRDetail "나의 스크랩리스트" "myPageHeader  whiteColor" Route.MyPage "fas fa-angle-left" ,
-                            div [ class "scrollheight", scrollEvent ScrollEvent ] (
-                                List.map listappDetail model.dataList
-                            )
-                    ]
-                }
-    else
-        if model.data.data == [] then
-        { title = "나의 스크랩"
-        , content = 
-            div [ class "container" ]
-                [
-                    commonJustHeader "/image/icon_list.png" "나의 스크랩",
-                    div [ class "yf_yfworkout_search_wrap" ]
-                    [
-                        div [class "noResult"] [
-                            text "스크랩한 게시물이 없습니다."
                         ]
-                    ]
+                        , div [class ("myaccountStyle myScrapStyle " ++ (if model.showDetail then "account" else "")) ][MyD.app model BackBtn GoVideo]
                 ]
-        }
+            }
         else
         { title = "나의 스크랩"
         , content = 

@@ -10,6 +10,7 @@ import Route exposing(..)
 import Api as Api
 import Page as P
 import Html.Lazy exposing (lazy)
+import Page.Common exposing (..)
 type alias Model 
     = {
         session : Session,
@@ -25,7 +26,7 @@ init session mobile=
         , title = "" 
         , check = mobile
         , image = "/image/lazy_bg_back.jpg"}
-       , Cmd.none
+       , scrollToTop NoOp
     )
 type Msg 
     = NoOp 

@@ -64,6 +64,7 @@ view maybeViewer checkB  page { title, content}  =
         { title = title 
         , body = viewHeader page maybeViewer:: webContents content page maybeViewer:: []
         }
+        
 
 
 

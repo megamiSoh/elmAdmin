@@ -13,6 +13,8 @@ import Http as Http
 import Api.Endpoint as Endpoint
 import Api.Decoder as Decoder
 import Page.Detail.FaqDetail as FaqDetail
+import Page.Detail.FaqWrite as Fw
+
 type alias Model 
     = {
         session : Session
@@ -28,6 +30,10 @@ type alias Model
         , screenInfo : ScreenInfo
         , ofheight : Bool
         , appFaqData : List Data
+        , title : String
+        , content : String
+        , showWrite : Bool
+        , showDetail : Bool
     }
 
 type alias Faq =
@@ -78,6 +84,9 @@ init session mobile
         , per_page = 10
         , ofheight = False
         , appFaqData = []
+        , title = ""
+        , content = ""
+        , showWrite = False
         , screenInfo = 
             { scrollHeight = 0
             , scrollTop = 0
@@ -103,14 +112,16 @@ init session mobile
             , is_answer = False
             , title = ""
             , username = "" }
-        
+        , showDetail = False
         }
-        , faqEncode 1 10 session
+        , Cmd.batch[faqEncode 1 10 session
+        , scrollToTop NoOp]
     )
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Api.successSave GetDetail
+    Sub.batch[Api.successSave GetDetail
+    , Session.changes GotSession (Session.navKey model.session)]
 
 faqEncode page per_page session =
     let
@@ -136,6 +147,16 @@ type Msg
     | GoDelete Int
     | DeleteSuccess (Result Http.Error Decoder.Success)
     | ScrollEvent ScreenInfo
+    | GotSession Session
+    | GoRegist
+    | GoBack String
+    | Title String
+    | Content String
+    | RegistSuccess (Result Http.Error Decoder.Success)
+    | DetailData (Result Http.Error FaqDetail.Data)
+    | GoEdit
+    | EditComplete (Result Http.Error Decoder.Success)
+    | NoOp
 
 toSession : Model -> Session
 toSession model =
@@ -145,6 +166,8 @@ toCheck : Model -> Bool
 toCheck model =
     model.check
 
+regist model = 
+    Fw.faqEncode model.title model.content model.session
 
 scrollEvent msg = 
     on "scroll" (Decode.map msg scrollInfoDecoder)
@@ -155,20 +178,61 @@ scrollInfoDecoder =
         (Decode.at [ "target", "scrollTop" ] Decode.int)
         (Decode.at [ "target", "offsetHeight" ] Decode.int)
 
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        NoOp ->
+            (model, Cmd.none)
+        EditComplete (Ok ok) ->
+            ({model | showDetail = False}, Cmd.batch[Api.showToast (E.string "수정이 완료 되었습니다."), faqEncode model.page model.per_page model.session])
+        EditComplete (Err err) ->
+            (model, Cmd.none)
+        GoEdit ->
+            (model , FaqDetail.editEncoder model.title model.content model.session (String.fromInt model.getId) EditComplete)
+        DetailData (Ok ok) ->
+            ({model | detail = ok.data, title = ok.data.title, content = ok.data.content}, Cmd.none)
+        DetailData (Err err) ->
+            (model, Cmd.none)
+        RegistSuccess (Ok ok) ->
+            ({model | title = "" , content = "", showWrite = False}, Cmd.batch [
+                Api.showToast (E.string "문의가 등록 되었습니다.")
+                , faqEncode model.page model.per_page model.session
+            ])
+        RegistSuccess (Err err) ->
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model,(Session.changeInterCeptor (Just serverErrors) model.session))
+            else
+            (model, Cmd.none)
+        Title titleStr ->
+            ({model | title = titleStr}, Cmd.none)
+        Content contentStr ->
+            ({model | content = contentStr }, Cmd.none)
+        GoBack whereIs ->
+            case whereIs of
+                "home" ->
+                    (model, Route.pushUrl (Session.navKey model.session) Route.MyPage)
+                "write" ->
+                    ({model | showWrite = True, title = "", content = ""}, Cmd.none)
+                "list" ->
+                    ({model | showWrite = False, showDetail = False, title = "" , content = ""}, Cmd.none)
+                _ ->
+                    ({model | showWrite = False}, Cmd.none)
+        GoRegist ->
+            (model, 
+            Fw.faqEncode model.title model.content model.session RegistSuccess
+            )
+        GotSession session ->
+            ({model | session = session}, faqEncode  (model.page + 1) model.per_page model.session)
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
-            let _ = Debug.log "scroll" scrollTop
+            let 
                 endOfPage =  model.faq.paginate.total_count // model.per_page 
             in
              if (scrollHeight - scrollTop) <= offsetHeight then
                 if model.page < (endOfPage + 1) then
-                let _ = Debug.log "scroll" scrollTop
-                    
-                in
-                
                 ({model | page = model.page + 1}, faqEncode  (model.page + 1) model.per_page model.session )
                 else
                 ({model | ofheight = True}, Cmd.none)
@@ -180,12 +244,24 @@ update msg model =
                 , faqEncode model.page model.per_page model.session
             ])
         DeleteSuccess (Err err) ->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
             (model, Cmd.none)
         GoDelete id ->
             ({model | getId = id}, Api.get DeleteSuccess (Endpoint.faqDelete (String.fromInt id)) (Session.cred model.session) (Decoder.resultD) )
         AppDetail (Ok ok) ->
             ({model | detail = ok.data}, Cmd.none)
         AppDetail (Err err) ->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
             (model, Cmd.none)
         PageBtn (idx, str) ->
             let
@@ -204,12 +280,15 @@ update msg model =
         GetDetail str ->
             (model, Route.pushUrl (Session.navKey model.session) Route.FaqD )
         DetailGo id ->
+            if model.check then
+            ({model | getId = id, showDetail = True}, FaqDetail.detailApi (String.fromInt id) model.session DetailData)
+            else
             ({model | getId = id}, Api.saveKey (E.string (String.fromInt id)))
         FaqList (Ok ok) ->
-            -- if model.check then
+            if model.check then
             ({model | faq = ok, appFaqData = model.appFaqData ++ ok.data}, Cmd.none)
-            -- else
-            -- ({model | faq = ok}, Cmd.none)
+            else
+            ({model | faq = ok}, Cmd.none)
         FaqList (Err err) ->
             let 
                 serverErrors = Api.decodeErrors err
@@ -242,6 +321,8 @@ view model =
     , content = 
         div [] [
             app model
+            , appDetail model
+            , floating
         ]
     }
     else
@@ -268,20 +349,14 @@ web model =
             faqWrite
         ]
 app model = 
-    div [class "container"] [
-        appHeaderConfirmDetail "1:1문의" "myPageHeader" Route.MyPage "fas fa-angle-left" Route.FaqW "글쓰기" , 
-        appContentsBody model,
-        floating
+    div [class ("container topSearch_container " ++ (if model.showWrite || model.showDetail then "fadeContainer" else ""))] [
+        appHeaderConfirmDetailleft "1:1문의" "myPageHeader" (GoBack "home") (GoBack "write") "글쓰기" 
+        , appContentsBody model
 
     ]
 appContentsBody model=
-    div [class (
-            if model.ofheight then
-            "m_faqEndScrollBox"
-            else
-            "m_fqaScrollbox"
-    ) , scrollEvent ScrollEvent] [
-        div [class "m_loadlistbox", scrollEvent ScrollEvent] (List.indexedMap (\idx x ->  itemLayout idx x model) model.appFaqData)
+    div [class "table scrollHegiht" , scrollEvent ScrollEvent] [
+        div [class "m_loadlistbox"] (List.indexedMap (\idx x ->  itemLayout idx x model) model.appFaqData)
     ]
 itemLayout idx item model =
         div [class "eventArea" ,onClick (Show idx item.id)] [
@@ -414,7 +489,7 @@ faqWrite =
             [ text "글쓰기" ]
         ]
 floating = 
-    a [ Route.href Route.FaqW, class "float" ]
+    div[ onClick (GoBack "write"), class "float" ]
         [ i [ class "fas fa-pen icon_pen" ]
             []
         ]
@@ -430,3 +505,28 @@ decodeChar char =
     char
         |> String.replace  "%26" "&"
         |> String.replace  "%25" "%"
+
+
+appDetail model =
+    div [class ("container faqcontainer myaccountStyle " ++ (if model.showWrite || model.showDetail then "account" else "" ))] [
+       
+       if model.showDetail then
+       div [] [
+           appHeaderConfirmDetailR "문의하기" "myPageHeader" (GoBack "list") GoEdit "수정" 
+           , FaqDetail.apptitle model.title Title
+           , div [classList [("appFaqleft", True)
+           , ("display", model.detail.is_answer == True)
+           ] ][text "답변완료"]
+           , div [classList 
+           [ ("appFaqleft", True)
+           , ("red", True)
+           , ("display", model.detail.is_answer == False)]
+           ][text "답변 대기 중"]
+           , FaqDetail.apptextArea model.content Content
+       ]
+        else
+        div [][appHeaderConfirmDetailR "문의하기" "myPageHeader" (GoBack "list") GoRegist "등록" 
+        , Fw.apptitle Title model
+        , Fw.apptextArea Content model
+        ]
+    ]

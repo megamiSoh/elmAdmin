@@ -14,7 +14,16 @@ import Api as Api
 import Http as Http
 import Api.Endpoint as Endpoint
 import Api.Decoder as Decoder
+import Markdown.Block as Block exposing (Block)
+import Markdown.Config exposing (HtmlOption(..),  defaultSanitizeOptions)
+import Markdown.Inline as Inline
+import Page.InfoEditor exposing (..)
 
+
+defaultOptions =
+    { softAsHardLineBreak = False
+    , rawHtml = ParseUnsafe
+    }
 -- import Regex exposing (Regex)
 
 
@@ -31,6 +40,13 @@ type alias Model =
     , screenInfo : ScreenInfo
     , dataList :List DataList
     , checkList : List String
+    , detailData : DetailData
+    , textarea : String
+    , detailShow : Bool
+    , onDemandText : String
+    , options : Markdown.Config.Options
+    , selectedPreviewTab : PreviewTab
+    , showToC : Bool
     }
 
 type alias ScreenInfo = 
@@ -58,6 +74,21 @@ type alias Paginate =
     , total_count : Int
     }
 
+type alias DetailDataWrap =
+    { data : DetailData }
+
+type alias DetailData = 
+    { content : String
+    , id : Int
+    , title : String }
+
+type EditorTab
+    = Editor
+
+
+type PreviewTab
+    = RealTime
+
 infoEncoder : Int -> Int -> Session -> Cmd Msg
 infoEncoder page per_page session = 
     let
@@ -81,6 +112,11 @@ init session mobile
         , per_page = 10
         , dataList = []
         , pageNum = 1
+        , detailShow = False
+        , onDemandText = ""
+        , options = defaultOptions
+        , showToC = False
+        , selectedPreviewTab = RealTime
         , screenInfo = 
             { scrollHeight = 0
             , scrollTop = 0
@@ -97,7 +133,12 @@ init session mobile
                 , total_count = 0
                 }
                 } 
-        ,  check = mobile}
+        , detailData = 
+            { content = ""
+            , id = 0
+            , title = "" }
+        ,  check = mobile
+        , textarea = ""}
         , Cmd.batch[ 
             -- Api.getCookie()
             -- ,
@@ -120,6 +161,7 @@ subscriptions model =
     Sub.batch[
     Api.getPageId GetPageId
     , Api.successId SaveComplete
+    , Session.changes GotSession (Session.navKey model.session)
     ]
 
 type Msg 
@@ -131,6 +173,8 @@ type Msg
     | ScrollEvent ScreenInfo
     | NoOp 
     | GetPageId Encode.Value
+    | GotSession Session
+    | GetDetail (Result Http.Error DetailDataWrap)
 
 toSession : Model -> Session
 toSession model =
@@ -144,6 +188,18 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GetDetail (Ok ok)->
+            ({model | detailData = ok.data, textarea = ok.data.content}, Cmd.none)
+        GetDetail (Err err)->
+            let
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
+            (model, Cmd.none)
+        GotSession session ->
+            ({model | session = session}, infoEncoder (model.page) model.per_page model.session)
         GetPageId str ->
             let
                 decodeV = Decode.decodeValue Decode.int str
@@ -186,6 +242,9 @@ update msg model =
                 _ ->
                     (model, Cmd.none)
         SaveComplete str ->
+            if model.check then
+            (model, Cmd.none)
+            else
             let
                 suc = Decode.decodeValue Decode.string str
             in
@@ -204,12 +263,24 @@ update msg model =
             else
             ({model | data = ok, dataList = model.dataList ++ ok.data, page = model.page + 1, infiniteLoading = False}, (scrollToTop NoOp))
         GetList (Err err)->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
             (model, Cmd.none)
         DetailGo id ->  
             let
                 encodeId = 
                     Encode.string (String.fromInt(id))
             in
+            if model.check then
+                if id == 0 then
+                ({model | detailShow = False}, Cmd.none)
+                else
+                ({model | detailShow = True},  Api.get GetDetail (Endpoint.detailInfo (String.fromInt id)) (Session.cred model.session) (Decoder.detailInfo DetailDataWrap DetailData))
+            else
             (model, Api.saveId encodeId)
         BackBtn ->
             (model , 
@@ -224,6 +295,7 @@ view model =
         , content = 
         div [] [
                 app model
+                , appDetail model.detailData model
         ]
         }
     else
@@ -256,7 +328,7 @@ web model=
                 model.pageNum
         ]
 app model = 
-    div [class "container"] [
+    div [class ("container topSearch_container " ++ if model.detailShow then "fadeContainer" else "")] [
         appHeaderRDetail "공지사항" "myPageHeader whiteColor" Route.MyPage "fas fa-angle-left",
         div ([ class "table scrollHegiht" ] ++ [scrollEvent ScrollEvent])
         [ 
@@ -276,6 +348,7 @@ app model =
         else
         span [] []
     ]
+    
     ]
 
 appContentsBody item =
@@ -319,3 +392,26 @@ contentsBodyLayout idx item model =
                 div [class "tableCell info_date_text"] [text (String.dropRight 10 (item.inserted_at))]
             ]
 
+appDetail data model =
+    div [class ("container myaccountStyle " ++ if model.detailShow then "account" else "")] [
+        appHeaderRDetailClick (
+            if String.length( data.title ) > 10 then
+                (String.dropRight (String.length data.title - 9) data.title) ++ "..."
+            else 
+            data.title
+        ) "myPageHeader whiteColor" (DetailGo 0) "fas fa-times",
+        appContentsBox data model
+    ]
+
+appContentsBox item model= 
+    div [ class "mediabox" ]
+        [ div [ class "titlebox" ]
+            [ 
+                --  div [ class "m_infoDetail_yf_date" ]
+                -- [ text item.createDate ]
+            ]
+        , div [ class "m_infoDetail_textbox" ]
+            [ 
+                markdownView model
+            ]
+        ]

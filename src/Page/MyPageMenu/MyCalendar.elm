@@ -30,6 +30,9 @@ type alias Model =
     , afterImg : List Files.File
     , currentDay : Date
     , today : String
+    , exerPage : Int
+    , exerPer_page : Int
+    , completeExerciseList : List ExerciseList
     }
 
 type alias Meal = 
@@ -77,6 +80,25 @@ type alias BodyImg =
     , origin_name : String
     , path : String }
 
+type alias CompleteExerciseList = 
+    { data : List ExerciseList 
+    , paginate : ExercisePaginate }
+
+type alias ExerciseList = 
+    { exercise_no : Int
+    , exercise_id : Int
+    , mediaid : String
+    , thembnail : String
+    , title : String }
+
+type alias ExercisePaginate = 
+    { date : String
+    , exercise_date : String
+    , page : Int
+    , per_page : Int
+    , total_count : Int
+    , user_id : Int }
+
 diaryApi date session = 
     Api.get GetData (Endpoint.diary date) (Session.cred session) (Decoder.diaryData Meal MealData Body Kcal Photo Bmi)
 
@@ -87,6 +109,17 @@ imgEncoder img date session whatKindOf endpoint=
     in
     Api.post (endpoint date) (Session.cred session) ImgUploadComplete body (Decoder.myBodyImg ImgData BodyImg)
 
+exerciseCompleteList page per_page date session = 
+    let
+        body = 
+            E.object
+                [ ("page", E.int page)
+                , ("per_page", E.int per_page)]
+                    |> Http.jsonBody
+    in
+    Api.post (Endpoint.exerciseCompleteList date) (Session.cred session) GetExerciseCompleteList body (Decoder.exerciseCompleteList CompleteExerciseList ExerciseList ExercisePaginate)
+    
+
 init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
@@ -96,6 +129,8 @@ init session mobile
         , date = ""
         , beforeImg = []
         , afterImg = []
+        , exerPage = 1
+        , exerPer_page = 10
         , data = 
             { body = 
                 { age = 0
@@ -120,13 +155,16 @@ init session mobile
             }
         , currentDay = Date.fromCalendarDate 2019 Jan 1
         , today = ""
+        , completeExerciseList = []
         }
-        , Cmd.batch[Date.today |> Task.perform ReceiveDate]
+        , Cmd.batch[Date.today |> Task.perform ReceiveDate
+        , scrollToTop NoOp]
     )
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Api.successSave SaveKey
+    Sub.batch [Api.successSave SaveKey
+    , Session.changes GotSession (Session.navKey model.session)]
 
 type Msg 
     = BackBtn
@@ -138,6 +176,9 @@ type Msg
     | SaveKey E.Value
     | ReceiveDate Date
     | ChangeDate String
+    | GetExerciseCompleteList (Result Http.Error CompleteExerciseList)
+    | GotSession Session
+    | NoOp
 
 toSession : Model -> Session
 toSession model =
@@ -157,6 +198,20 @@ justToint int =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        NoOp -> 
+            (model, Cmd.none)
+        GotSession session ->
+            ({model | session = session}, diaryApi model.date model.session)
+        GetExerciseCompleteList (Ok ok) ->
+            ({model | completeExerciseList = ok.data}, Cmd.none)
+        GetExerciseCompleteList (Err err) ->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
+            (model, Cmd.none)
         ChangeDate when ->
             let
                 formatDate day =
@@ -182,10 +237,18 @@ update msg model =
                     (model, Cmd.none)
                     
         ReceiveDate date ->
-            ({model | date = getFormattedDate Nothing (Just date), currentDay = date, today = getFormattedDate Nothing (Just date)}, 
-            diaryApi (getFormattedDate Nothing (Just date)) model.session
+            let
+                dateString = getFormattedDate Nothing (Just date)
+            in
+            
+            ({model | date = getFormattedDate Nothing (Just date), currentDay = date, today = dateString}, 
+            Cmd.batch[diaryApi dateString model.session
+            ,exerciseCompleteList model.exerPage model.exerPer_page dateString model.session]
             )
         SaveKey success ->
+            if model.check then
+            (model, Route.pushUrl (Session.navKey model.session) Route.MealRM)
+            else
             (model, Route.pushUrl (Session.navKey model.session )Route.MealR)
         GoMealRecord code ->
             (model,Api.saveKey (E.string code))
@@ -196,14 +259,22 @@ update msg model =
         ImgUploadComplete (Ok ok) ->
             (model, Cmd.batch[Api.showToast (E.string "등록 되었습니다."), diaryApi model.date model.session]) 
         ImgUploadComplete (Err err) ->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
             (model, Cmd.none)
         GetData (Ok ok)->
             ({model | data = ok.data}, Cmd.none)
         GetData (Err err)->
-            let _ = Debug.log "err" err
-                
+            let 
+                serverErrors = Api.decodeErrors err
             in
-            
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
             (model, Cmd.none)
         BackBtn ->
             (model, Route.backUrl (Session.navKey model.session) 1)
@@ -211,20 +282,20 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    if model.check then
+    -- if model.check then
     { title = "YourFitExer"
     , content =
        div [] [
            app model
        ]
     }
-    else
-    { title = "YourFitExer"
-    , content =
-       div [] [
-           web model
-       ]
-    }
+    -- else
+    -- { title = "YourFitExer"
+    -- , content =
+    --    div [] [
+    --        web model
+    --    ]
+    -- }
 
 web model= 
         div [ class "container" ]
@@ -237,21 +308,21 @@ web model=
                         weightResult model,
                         bodyPhoto model,
                         bodyInfo model ,
-                        workoutSum model
-                        -- doneWorkOut
+                        workoutSum model,
+                        doneWorkOut model
                     ]
             ]
 
 app model =
     div [class "container"] [
-        appHeaderback "캘린더" "myPageHeader" BackBtn,
+        appHeaderRDetail "캘린더" "myPageHeader  whiteColor" Route.MyPage "fas fa-angle-left",
         appcalendarDate model,
         appdietRecords model,
         appweightResult model ,
         appbodyPhoto model ,
         appbodyInfo model,
-        appworkoutSum model
-        -- appdoneWorkOut
+        appworkoutSum model,
+        appdoneWorkOut model
     ]
 calendarDate model = 
     div [ class "myCalendar_tapbox" ]
@@ -270,9 +341,12 @@ calendarDate model =
 appcalendarDate model  = 
     div [ class "m_myCalendar_tapbox" ]
         [ div [ class "m_myCalendar_datebox" ]
-            [ i [ class "fas fa-angle-left m_myCalendar_yf_left" ]
-                [], text model.date
-            , i [ class "fas fa-angle-right m_myCalendar_yf_right" ]
+            [ i [ class "fas fa-angle-left m_myCalendar_yf_left", onClick (ChangeDate "before") ]
+                [],if model.date == model.today then 
+                div [class "date_container"] [text model.date, span [class"today"] [text "today"] ]
+                else 
+                div [class "date_container"] [text model.date, span [class"today"] [] ]
+            , i [ class "fas fa-angle-right m_myCalendar_yf_right", onClick (ChangeDate "next") , style "color" (if model.date == model.today then "#d2caca" else "#000" ) ]
                 []
             ]
         ]
@@ -285,9 +359,10 @@ foodKcalLayout foodImg time kcal style code =
                 , li[]
                     [ 
                     if Basics.round (stringToFloat kcal) == 0 then
-                        span [class "RecordMeal"] [text "식단 기록 하기"]
+                        span [class "RecordMeal"] [text "식단기록"]
                     else
-                        span [class "RecordMeal"] [text (kcal ++ "Kcal") ]
+                        span [class "RecordMeal"] [text kcal
+                        , div [] [text ("단위 / Kcal")]]
                     ]
                 ]
             ]
@@ -341,11 +416,14 @@ appdietRecords model  =
     div [ class "myCalendar_ditebox" ]
         [ div [ class "m_myCalendar_goal" ]
             [ text ("목표체중" ++ model.data.body.goal_weight ++ "Kg") ]
-        , div [] (List.map (\x -> foodKcal x "m_myCalendar_food")model.data.kcal)
+        , div [class "m_myCalendar_food_container"] (List.map (\x -> foodKcal x "m_myCalendar_food")model.data.kcal)
         , div [ class "m_myCalendar_kcalbox" ]
-            [ text ("일일 섭취 칼로리 " ++ model.data.date_kcal ++ "Kcal / 기초대사량 "++ String.fromFloat model.data.body.bmr ++  " Kcal"),
-            progress [ class "progress is-medium is-primary yf_progress", value model.data.date_kcal , Attr.max (String.fromInt(Basics.round model.data.body.bmr))]
-                [], text ("일일 섭취 칼로리 " ++ String.fromFloat((stringToFloat model.data.date_kcal) / model.data.body.bmr * 100) ++ " %") 
+            [ text ("일일 섭취 칼로리 " ++ model.data.date_kcal ++ "Kcal ")
+            , div [] [
+                text (" 기초대사량 "++ String.fromFloat model.data.body.bmr ++  " Kcal")
+            ]
+            , progress [ class "progress is-medium is-primary yf_progress", value model.data.date_kcal , Attr.max (String.fromInt(Basics.round model.data.body.bmr))]
+                [], text ("일일 섭취 칼로리 " ++ String.fromInt(Basics.round((stringToFloat model.data.date_kcal) / model.data.body.bmr * 100)) ++ " %") 
             ]
         ]
 
@@ -365,7 +443,7 @@ appweightResult model =
 
 bodyPhoto model = 
     div [ class "myCalendar_phototbox" ]
-        [ div [ class "myCalendar_boxtitle" ]
+        [ div [ class "boxtitle" ]
             [ text "신체변화기록" ]
         , div [ class "photobtnbox" ]
             [ div [ class "myCalendar_photo1" ]
@@ -428,8 +506,8 @@ appbodyPhoto model =
                             "/image/photo.png"
                 ) ]
                     []
-               ,p[] [text"Before"] 
                 ]
+                
             , div [ class "m_myCalendar_photo1" ]
                 [ img [ src (
                     case model.data.photo.after of
@@ -440,15 +518,18 @@ appbodyPhoto model =
                             "/image/photo.png"
                 ) ]
                     []
-                ,p[] [text "After"]
+                
                 ]
-            
+            ]
+            , div [class "photoText_container"] [
+                p[] [text"Before"] 
+                ,p[] [text "After"]
             ]
         ]
 
 bodyInfo model = 
     div [ class "myCalendar_inforbox" ]
-        [ div [ class "myCalendar_boxtitle" ]
+        [ div [ class "boxtitle" ]
             [ text "신체정보" ]
         , ul []
             [ li [class"myCalendar_infotitle"]
@@ -474,15 +555,15 @@ bodyInfo model =
             , li [class"myCalendar_infotitle"]
                 [ 
                 if changeWeight model < 0 then
-                p[][text (String.fromFloat(Basics.negate (changeWeight model)))
+                p[][text (String.fromFloat(Basics.negate (changeWeight model)) ++ "Kg ")
                 , i [ class "fas fa-caret-down" , style "font-size" "2rem", style "color" "green"][]
                 ]
                 else if changeWeight model == 0 then
-                p[][text (String.fromFloat(Basics.negate(changeWeight model)))
-                , i [ class "fas fa-caret-up" , style "font-size" "2rem", style "color" "red"] []
+                p[][text (String.fromFloat(Basics.negate(changeWeight model)) ++ "Kg ")
+                , i [ class "fas fa-minus" , style "font-size" "1rem", style "color" "skyblue"] []
                 ]
                 else
-                p[][text (String.fromFloat(Basics.negate(changeWeight model)))
+                p[][text (String.fromFloat(Basics.negate(changeWeight model)) ++ "Kg ")
                 , i [ class "fas fa-caret-up" , style "font-size" "2rem", style "color" "red"] []
                 ]
                 
@@ -538,87 +619,56 @@ appworkoutSum model =
               [], text ( model.data.date_exercise ++ " 분")
             ]
 
-doneWorkOut = 
+doneWorkOutItem item = 
+    div [class"myCalendar_container_doneWork"] [
+        div [ class "myCalendar_iconbox" ]
+                [ img [ src item.thembnail ]
+                    []
+                ]
+            , div [ class "myCalendar_textbox" ]
+                [ text item.title ]
+    ]
+
+doneWorkOut model = 
     div [ class "myCalendar_finshbox" ]
         [ div [ class "boxtitle" ]
             [ text "완료한 운동목록" ]
-        , div [ class "workbox" ]
-            [ div [ class "myCalendar_iconbox" ]
-                [ img [ src "/image/m_workicon.png" ]
-                    []
-                ]
-            , div [ class "myCalendar_textbox" ]
-                [ ul []
-                    [ li [ class "work1" ]
-                        [ text "와이드 레그드 포워드 밴드 위드 핸즈 온 힙" ]
-                    , li [ class "work2" ]
-                        [ text "엉덩이 -하 -바벨 -요가" ]
-                    , li [ class "work3" ]
-                        [ text "30초" ]
-                    ]
-                ]
-            ]
-        , div [ class "myCalendar_workbox" ]
-            [ div [ class "myCalendar_iconbox" ]
-                [ img [ src "/image/m_workicon.png" ]
-                    []
-                ]
-            , div [ class "myCalendar_textbox" ]
-                [ ul []
-                    [ li [ class "work1" ]
-                        [ text "와이드 레그드 포워드 밴드 위드 핸즈 온 힙" ]
-                    , li [ class "work2" ]
-                        [ text "엉덩이 -하 -바벨 -요가" ]
-                    , li [ class "work3" ]
-                        [ text "30초" ]
-                    ]
-                ]
-            ]
-        , div [ class "myCalendar_addbtn" ]
-            [ a [ class "button is-dark" ]
-                [ text "더보기" ]
+        , div [style "display" ( if List.isEmpty model.completeExerciseList then "none" else "block")] [
+         div [ class "myCalendar_workbox" ]
+            (List.map doneWorkOutItem model.completeExerciseList)
+        -- , div [ class "myCalendar_addbtn" ]
+        --     [ a [ class "button is-dark" ]
+        --         [ text "더보기" ]
+        --     ]
+        ]
+        , div [style "display" (if List.isEmpty model.completeExerciseList then "block" else "none"), class "noExerciseResult"] [
+                text "완료한 운동이 없습니다."
             ]
         ]
 
-appdoneWorkOut = 
+appdoneWorkOut model = 
     div [ class "m_myCalendar_finshbox" ]
         [ div [ class "m_myCalendar_boxtitle" ]
             [ text "완료한 운동목록" ]
-
-        , div [ class "m_myCalendar_workbox" ]
-            [ div [ class "m_myCalendar_iconbox" ]
-                [ img [ src "/image/m_workicon.png" ]
-                    []
-                ]
-            , div [ class "m_myCalendar_textbox" ]
-                [ ul []
-                    [ li [ class "m_work1" ]
-                        [ text "와이드 레그드 포워드 밴드 위드 핸즈 온 힙" ]
-                    , li [ class "m_work2" ]
-                        [ text "엉덩이 -하 -바벨 -요가" ]
-                    , li [ class "m_work3" ]
-                        [ text "30초" ]
-                    ]
-                ]
+            , div [style "display" ( if List.isEmpty model.completeExerciseList then "none" else "block")] [
+         div [ class "m_myCalendar_workbox" ]
+            (List.map appdoneWorkOutItem model.completeExerciseList)
+        -- , div [ class "m_myCalendar_addbtn" ]
+        --     [ a [ class "button is-dark m_myCalendar_addbtnbtn" ]
+        --         [ text "더보기" ]
+        --     ]
             ]
-        , div [ class "m_myCalendar_workbox" ]
-            [ div [ class "m_myCalendar_iconbox" ]
-                [ img [ src "/image/m_workicon.png" ]
-                    []
-                ]
-            , div [ class "m_myCalendar_textbox" ]
-                [ ul []
-                    [ li [ class "m_work1" ]
-                        [ text "와이드 레그드 포워드 밴드 위드 핸즈 온 힙" ]
-                    , li [ class "m_work2" ]
-                        [ text "엉덩이 -하 -바벨 -요가" ]
-                    , li [ class "m_work3" ]
-                        [ text "30초" ]
-                    ]
-                ]
-            ]
-        , div [ class "m_myCalendar_addbtn" ]
-            [ a [ class "button is-dark m_myCalendar_addbtnbtn" ]
-                [ text "더보기" ]
+            , div [style "display" (if List.isEmpty model.completeExerciseList then "block" else "none"), class "noExerciseResult"] [
+                text "완료한 운동이 없습니다."
             ]
         ]
+
+appdoneWorkOutItem item = 
+    div [class "appdoneWorkOut_container"] [
+         div [ class "m_myCalendar_iconbox" ]
+            [ img [ src item.thembnail ]
+                []
+            ]
+        , div [ class "m_myCalendar_textbox" ]
+            [ text item.title ]
+    ]

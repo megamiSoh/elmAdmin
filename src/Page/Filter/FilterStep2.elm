@@ -384,7 +384,7 @@ update msg model =
                 else if model.setData > 5 then
                 ({model | cannotSave = "6 이상의 값은 저장 할 수 없습니다."}, Cmd.none)
                 else
-                ( {model | addData = result, cannotSave  ="", style = "" },  Cmd.none)
+                ( {model | addData = result, cannotSave  ="", style = "", sbuttonHidden = "" },  Cmd.none)
         UpdateSet str->
             let 
                 data = String.toInt str

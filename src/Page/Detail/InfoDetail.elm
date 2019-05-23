@@ -41,6 +41,7 @@ type alias Model
 
 type alias Data =
     { data : DetailData }
+
 type alias DetailData = 
     { content : String
     , id : Int
@@ -75,10 +76,12 @@ type PreviewTab
 type Msg 
     = CheckDevice E.Value
     | GetDetail (Result Http.Error Data)
+    | GotSession Session
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Api.receiveId CheckDevice
+    Sub.batch[Api.receiveId CheckDevice
+    , Session.changes GotSession (Session.navKey model.session)]
 
 toSession : Model -> Session
 toSession model =
@@ -92,9 +95,17 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GotSession session ->
+            ({model | session = session },Api.get GetDetail (Endpoint.detailInfo model.checkDevice) (Session.cred model.session) (Decoder.detailInfo Data DetailData))
         GetDetail (Ok ok)->
             ({model | data = ok.data, textarea = ok.data.content}, Cmd.none)
         GetDetail (Err err)->
+            let
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
             (model, Cmd.none)
         CheckDevice str ->
             let

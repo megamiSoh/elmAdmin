@@ -73,7 +73,24 @@ bodyInfo model inputTagger bodySave ismale  datePicker firstdate datepickerShow 
         [
             p [class "bodyRecordsstyle"] [
                 if String.isEmpty cannotSave then
-                text "자신의 신체정보를 기록합니다."
+                    case model.protain.need of
+                        Just ok ->
+                            div [] [
+                            span [style "font-weight" "bold"][text ( "단백질 평균필요량 (per day) : ")]
+                            , span [] [text (String.fromInt ok ++ "g")]
+                            , div [][
+                                span [style "font-weight" "bold"] [text ( "단백질 권장섭취량 (per day) : ")]
+                                , span [] [text ((case model.protain.recommend of
+                                    Just recom ->
+                                        String.fromInt recom
+                                
+                                    Nothing ->
+                                        ""
+                                ) ++ "g")]
+                                ]
+                            ]
+                        Nothing ->
+                            text "신체 정보를 기록 해 주세요."
                 else
                 span [class "red"] [text cannotSave]
                 ]

@@ -158,22 +158,26 @@ update msg model =
         GetList(Ok ok) ->
             ({model | getData = ok.data}, Cmd.none)
         GetList(Err err) ->
-            let
-                serverErrors =
-                    Api.decodeErrors err
-            in  
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
+            (model, Cmd.none)
         ShareComplete (Ok ok) -> 
             let
                 text = Encode.string "공유되었습니다."
             in
             (model, Cmd.batch[Route.pushUrl (Session.navKey model.session) Route.Together,  Api.showToast text])
         ShareComplete (Err err) -> 
-             let
-                serverErrors =
-                    Api.decodeErrors err
-            in  
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
+            (model, Cmd.none)
         Content str ->
             ({model | content = str}, Cmd.none)
         GoRegist ->

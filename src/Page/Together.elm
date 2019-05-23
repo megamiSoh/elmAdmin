@@ -431,14 +431,7 @@ update msg model =
             ({model | loading = False}, Cmd.none)
         
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
-            let _ = Debug.log "scroll" scrollTop
-                
-            in
-            
              if (scrollHeight - scrollTop) <= (offsetHeight + 77) then
-                let _ = Debug.log "complete" (model.togetherData.paginate.total_count // model.per_page + 1)
-                    
-                in 
                 if model.togetherData.paginate.total_count // model.per_page + 1 > model.page then
                 ({model | infiniteLoading = True, ofheight = 
                 case model.ofheight of
@@ -617,13 +610,13 @@ app model =
      
     div [class "container scrollContainer"] [
         justappHeader "함께해요" "togetherHeader",
-        appStartBtn,
         div [class "scroll", id "scrollE" ] [
             if model.need2login then
             need2loginAppDetailRoute Route.Together
             else
             div [  scrollEvent ScrollEvent, class "hereScrl"] [
                 -- appTab model,
+                appStartBtn,
                 div [class "togetherscrollContent", 
                     case model.ofheight of
                         Just a ->

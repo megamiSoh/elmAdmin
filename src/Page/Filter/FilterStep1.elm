@@ -139,6 +139,7 @@ init session mobile
         Api.sendData ()
         , Api.getfilter ()
         , Api.scrollControl ()
+        , scrollToTop NoOp
         ]
     )
 
@@ -172,6 +173,7 @@ subscriptions model =
     , Api.receiveData ReceiveDataFromStorage
     , Session.changes GotSession (Session.navKey model.session)
     , Api.onSucceesSession SessionCheck
+    
     ]
 
 type Msg 
@@ -282,7 +284,8 @@ update msg model =
             else
                 (model, Cmd.none)
         Search ->
-            ({model | filterData = []} , Cmd.batch[filterEncoder model.getFilter model.session model.page model.per_page, unfocus ])
+            ({model | filterData = []} , Cmd.batch[filterEncoder model.getFilter model.session model.page model.per_page, unfocus
+            , scrollToTop NoOp ])
         ScrInfo ->
              (model, Cmd.none)
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
@@ -476,21 +479,25 @@ justIntData data =
 view : Model -> {title : String , content : Html Msg}
 view model =
     if model.check then
-        if model.loading then
+        -- if model.loading then
         { title = "맞춤운동 필터 Step 1"
         , content = 
                 div [] [
-                    div [class "spinnerBack"] [spinner]
-                ]
-            }
-        else
-        { title = "맞춤운동 필터 Step 1"
-        , content = 
-                div [] [
+                    div [class "spinnerBack", style "display" (if model.loading then "block" else "none")] [spinner]
+                    , div [] [
                     appHeader model
                     , appitemContainer model
                 ]
+                ]
             }
+        -- else
+        -- { title = "맞춤운동 필터 Step 1"
+        -- , content = 
+        --         div [] [
+        --             appHeader model
+        --             , appitemContainer model
+        --         ]
+        --     }
     else
     { title = "맞춤운동 필터 Step 1"
     , content = 

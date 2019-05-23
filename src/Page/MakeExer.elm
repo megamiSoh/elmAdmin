@@ -126,6 +126,7 @@ init session mobile =
         Cmd.batch 
         [ bodyEncode 1 10 "" session
         , Api.removeJw ()
+        , scrollToTop NoOp
         ]
     )
 
@@ -142,7 +143,6 @@ type Msg
     | ScrollEvent ScreenInfo
     | NoOp
     | DeleteConfirm Int
-    
 
 
 toSession : Model -> Session
@@ -461,7 +461,7 @@ bodyItem item=
     in
     div [ class "make_box_card_wrap" ]
 
-    [div [ class "make_videoboxwrap"]
+    [div [ class "make_videoboxwrap cursor", onClick (CheckId item.id "")]
 
       [div [class"make_overlay"]
      [i [ class "fas fa-play overlay_makeplay" ][]],

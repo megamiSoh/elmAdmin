@@ -36,10 +36,10 @@ type alias Detail =
     , title : String
     , username : String }
 
-detailApi id session = 
-    Api.get GetDetail (Endpoint.faqDetail id) (Session.cred session) (Decoder.faqdetail Data Detail)
+detailApi id session msg= 
+    Api.get msg (Endpoint.faqDetail id) (Session.cred session) (Decoder.faqdetail Data Detail)
 
-editEncoder title content session id =
+editEncoder title content session id msg =
     let
         new string = 
             string
@@ -53,7 +53,7 @@ editEncoder title content session id =
             )
             |> Http.stringBody "application/x-www-form-urlencoded"
     in
-    Api.post (Endpoint.faqeidt id)(Session.cred session) EditComplete body (Decoder.resultD)
+    Api.post (Endpoint.faqeidt id)(Session.cred session) msg body (Decoder.resultD)
     
 init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile = 
@@ -72,7 +72,8 @@ init session mobile =
             , title = ""
             , username = "" }
         }
-        , Api.getKey ()
+        , Cmd.batch[Api.getKey ()
+        , scrollToTop NoOp]
     )
 
 type Msg 
@@ -88,6 +89,7 @@ type Msg
     | EditComplete(Result Http.Error Decoder.Success)
     | GotSession Session
     | GoBack
+    | NoOp
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -117,10 +119,12 @@ update msg model =
     in
     
     case msg of
+        NoOp ->
+            (model, Cmd.none)
         GoBack ->
             (model, Route.pushUrl(Session.navKey model.session) Route.Faq)
         GotSession session ->
-            ({model | session = session},detailApi model.getId session)
+            ({model | session = session},detailApi model.getId session GetDetail)
         EditComplete (Ok ok) ->
             if model.check then
             (model, Cmd.batch[
@@ -136,9 +140,10 @@ update msg model =
         Content content ->
             ({model | detail = (recordsUpdateContent content)}, Cmd.none)
         ChangeEdit ->
-            ({model | edit = not model.edit}, Cmd.none)
+            ({model | edit = not model.edit}, scrollToTop NoOp)
         GoEdit ->
-            (model , editEncoder model.detail.title model.detail.content model.session model.getId)
+            (model , Cmd.batch[editEncoder model.detail.title model.detail.content model.session model.getId EditComplete
+            , scrollToTop NoOp])
         DeleteSuccess (Ok ok) ->
             (model, Cmd.batch[Api.showToast (E.string "문의가 삭제되었습니다.")
             , Route.pushUrl (Session.navKey model.session) Route.Faq])
@@ -162,7 +167,7 @@ update msg model =
             in
             case get of
                 Ok ok ->
-                    ({model | getId = ok}, detailApi ok model.session)
+                    ({model | getId = ok}, detailApi ok model.session GetDetail)
                 Err err ->
                     (model, Cmd.none)
         CheckDevice str ->
@@ -180,13 +185,13 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    if model.check then
-    { title = "YourFitExer"
-    , content = 
-        div [] [
-        app model
-    ]}
-    else
+    -- if model.check then
+    -- { title = "YourFitExer"
+    -- , content = 
+    --     div [] [
+    --     app model
+    -- ]}
+    -- else
     { title = "YourFitExer"
     , content = 
         div [] [
@@ -264,22 +269,22 @@ backBtn =
         [ text "뒤로" ]
     ]       
 
-app model = 
-    div [class "container"] [
-        appHeaderConfirmDetailleft "문의 하기" "myPageHeader" GoBack GoEdit "수정" 
-        , apptitle model.detail.title
-        , if model.detail.is_answer then
-            div [class "appFaqleft"][text "답변완료"]
-        else
-            div [class "appFaqleft red"][text "답변 대기 중"]
-        , apptextArea model.detail.content
-    ]
+-- app model = 
+--     div [class "container"] [
+--         appHeaderConfirmDetailleft "문의 하기" "myPageHeader" GoBack GoEdit "수정" 
+--         , apptitle model.detail.title
+--         , if model.detail.is_answer then
+--             div [class "appFaqleft"][text "답변완료"]
+--         else
+--             div [class "appFaqleft red"][text "답변 대기 중"]
+--         , apptextArea model.detail.content
+--     ]
 
-apptitle title = 
-        input [ class "input", type_ "text", placeholder "제목을 입력해주세요" , maxlength 50, onInput Title , value (decodeChar title) ]
+apptitle title titleInput = 
+        input [ class "input", type_ "text", placeholder "제목을 입력해주세요" , maxlength 50, onInput titleInput , value (decodeChar title) ]
                 []
-apptextArea content =
-        textarea [ class "textarea", placeholder "내용을 입력해주세요", rows 10, maxlength 250 , onInput Content, value (decodeChar content)]
+apptextArea content contentInput =
+        textarea [ class "textarea", placeholder "내용을 입력해주세요", rows 10, maxlength 250 , onInput contentInput, value (decodeChar content)]
         []
 
 
