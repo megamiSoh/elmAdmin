@@ -7,9 +7,9 @@ html, body, h1, h2 {
   margin: 0;
   /* overflow-x: hidden;
   overflow-y: auto; */
-  height: 100%;
+  /* height: 100%; */
+  overscroll-behavior-y: contain;
   width: 100%;
-  -webkit-overflow-scrolling: touch;
 }
 body {
   font-family: 'Noto Sans KR', sans-serif;
@@ -38,6 +38,7 @@ a {
   overflow: hidden;
   height: 110px;
   position: relative;
+  transition: height .3s;
 }
 .haderIconWrap {
   background-color: #EEFCFB;
@@ -45,10 +46,13 @@ a {
   margin: 0 auto;
   width: 100%;
   clear: both;
+  /* height: 0; */
   overflow-x: auto;
   white-space: nowrap;
   overflow-y: hidden;
-  padding-bottom: 50px;
+  transition: height .3s;
+  position: fixed;
+  z-index: 9999999999999999999999999999;
 }
 .leftBtn, .rightBtn, .scrStyle {
   position: absolute;
@@ -145,7 +149,7 @@ a {
     bottom: 0;
     border-radius: 50px 0 0 50px;
     width: 40%;
-    bottom: 5vh;
+    bottom: 20px;
 }
 .selectedleft {
   background-color: gray;
@@ -1500,7 +1504,7 @@ margin:  0 0 2.8rem 0;
   background: url(/image/play-solid.svg) no-repeat center center #c1c1c152;
   background-size: 3rem;
   width: 100%;
-  height: 45vh;
+  height: 343px;
   opacity: 0;
   position: absolute;
   transition: opacity .5s ease-in-out;
@@ -1545,9 +1549,10 @@ height: 2.5rem;
  display: flex;
 }
 
-.together_imgbox
+.together_imgbox.image.is-64x64
 {
   float: left;
+  z-index: 1;
 }
 
 .to_yf_more
@@ -1725,6 +1730,35 @@ height: 2.5rem;
   margin-bottom: 1.5rem;
 }
 
+.gender_title, .myPage2_title
+{
+  height: 6rem;
+  display: flex;
+  padding: 1rem;
+  border-bottom: solid #cbcbcb .1px;
+  
+}
+
+.label
+{
+  width: 30%;
+  text-align: right;
+}
+
+
+.myPage2_title p,.field.datepickerOn
+{
+  text-align: left;
+  padding-left: 10%;
+}
+
+.gender_title p
+{
+  width: 450px;
+  float: left;
+}
+
+
 .myPage2_yf_input_box
 {
   width: 6rem;
@@ -1792,6 +1826,7 @@ margin: 30px 0px 0px 0px;
   min-height: 150px;
   display: flex;
   flex-direction: column;
+  padding-top: 1rem;
 }
 .myCalendar_food:hover {
   background-color: #f9f9f9;
@@ -1806,6 +1841,7 @@ margin: 30px 0px 0px 0px;
 
 .myCalendar_food img{
   width: 2rem;
+  margin: 0 auto;
 }
 
 
@@ -1818,11 +1854,32 @@ margin: 30px 0px 0px 0px;
   padding: 1rem;
   display: inline-block;
   vertical-align:top; 
-  margin: 1rem auto;
+  margin: 1rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  letter-spacing: -1px;
+}
+
+.gloa_weight
+{
+  margin-top: .5rem;
+  font-size: 1.4rem;
+  letter-spacing: -1px;
+}
+
+.bodyInfo_ul
+{
+  display: inline-block;
+  border:  solid .1px #E4E4E4;
+  width: 20%;
+  height: 5rem;
+  margin-bottom: 1rem;
+}
+.bodyInfo_li
+{
+margin-top: 1rem;
 }
 
 .myCalendar_weightbox
@@ -1886,6 +1943,8 @@ width: 180px;
 .myCalendar_infotitle
 {
   font-size: 1.2rem;
+  letter-spacing: -1px;
+  background-color: #b7dee8;
 }
 
 .myCalendar_info_data
@@ -1934,19 +1993,19 @@ font-size: 1rem;
   position: relative;
   margin-right: .5rem;
 }
-.myCalendar_container_doneWork::after {
+/* .myCalendar_container_doneWork::after {
   content: '';
   display: inline-block;
   background: url(/image/play-solid.svg) no-repeat center center #c1c1c152;
   background-size: 2rem;
   width: 100%;
-  height: 26vh;
+  height: 191px;
   opacity: 0;
   position: absolute;
   transition: opacity .5s ease-in-out;
   left: 0;
   top: 0;
-}
+} */
 .myCalendar_container_doneWork:hover::after {
   opacity: 1
 }
@@ -2013,9 +2072,10 @@ font-size: 1rem;
 .yf_food_searchwindow
 {
   background-color: #FE9A29;
-  color: block;
+  color: #3d3d3d;
   border: none;
-
+  margin-left: 1rem;
+  font-weight: 550;
 }
 
 .mealRecord_searchbox,.mealRecord_searchbox2
@@ -2094,14 +2154,21 @@ margin: 30px 0px 0px 0px;
 
 .myStatistical_inbox
 {
-  border:solid;
+  border: solid;
   border-width: .1rem;
   padding: 10px;
   border-style: solid;
-  border-color: #E4E4E4; 
+  border-color: #E4E4E4;
   margin-top: 3rem;
-  height: 20rem;
+  height: 100%;
   text-align: left;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.myStatistical_inbox:first-child {
+  margin: 0;
+  padding: 0 0 0 10px;
 }
 
 /* myScrap */
@@ -2919,6 +2986,7 @@ input.vaidColor2:focus {
   z-index: 1;
   left: 50%; 
   top: 10vh;
+  z-index: 9999999999999999999999999999999999999999999999999999999;
 }
 
 #webToast.show {
@@ -3011,7 +3079,7 @@ input.vaidColor2:focus {
   max-height: 800px;
 }
 .scroll {
-  -webkit-overflow-scrolling: touch;
+  
   /* overflow: auto; */
   /* height: 100%; */
   /* max-height: 683px; */
@@ -3096,11 +3164,28 @@ font-size: .9rem;}
  font-size: 15px;
 }
 
+.boxtitle_clock
+{
+  margin-right: .5rem;
+}
 .yf_container
 {overflow: auto;
 text-align: center;
 padding: .3rem;}
 
+.put_menu,.in_menu
+{
+  font-weight: 550;
+  letter-spacing: -2px;
+}
+
+
+.bodyInfo_boxs{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
 
 .con_filterStep1
 {
@@ -3859,6 +3944,9 @@ float: left;
   bottom: 0;
   width: 100%;
   padding: 2rem 1.5rem 2rem;
+  background-color: #3d3d3d;
+  color: white;
+  letter-spacing: -1px;
 }
 
 
@@ -4328,7 +4416,9 @@ width: 100px;
 .home_last_title
 {
   margin-top: 1rem;
-  font-size: 1.5rem;
+  font-size: 2rem;
+  font-weight: 550;
+  color: #3d3d3d;
 }
 
 #mlogoutPop{
@@ -4385,6 +4475,7 @@ width: 100px;
   position: fixed;
   top: 0;
   -webkit-backface-visibility: hidden;
+  z-index: 99999999999999999999999999999999999999;
   left: 0;
   background-color: rgba(152, 152, 152, 0.4117647058823529);
 }
@@ -4810,6 +4901,22 @@ color: red;
   font-size: 1.5rem;
   font-weight: bold;
 }
+
+.RecordMeal
+{
+  font-weight: 550;
+}
+
+.kcal_text
+{
+  font-size: 1rem;
+}
+
+.daytime
+{
+  margin-top: .5rem;
+}
+
 table td.tablenoResult {
   width: 100%;
   padding: 3rem;
@@ -4937,7 +5044,18 @@ table td.tablenoResult {
 .date_container {
   min-width: 300px;
   position: relative;
+  font-weight: 550;
+  letter-spacing: -1px;
 }
+
+.myCalendar_goal
+{
+  font-weight: 550;
+  letter-spacing: 1px;
+  color: #3d3d3d;
+  margin-bottom: 1rem;
+}
+
 li.myCalendar_infotitle .fas.fa-caret-up, li.myCalendar_infotitle .fas.fa-caret-down {
   vertical-align: bottom;
 }
@@ -4963,4 +5081,355 @@ li.myCalendar_infotitle .fas.fa-caret-up, li.myCalendar_infotitle .fas.fa-caret-
   /* display: inline-block;
   float: left; */
   word-break: break-all;
+}
+.mypageHiddenMenu {
+  width: 28%;
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 999999;
+  height: 45px;
+  cursor: pointer;
+  display: none;
+}
+
+.input[disabled], .textarea[disabled] {
+  background-color: rgba(245, 245, 245, 0.57);
+  border-color: rgba(245, 245, 245, 0.57);
+  box-shadow: none;
+  color: #000;
+}
+
+.detailyf {
+  /* position: absolute;
+    top: 0;
+    background: #fff;
+    width: 100%;
+    height: 100%; */
+}
+.dispalyNO {
+  display: none;
+}
+.displayYes {
+  display: block;
+}
+.is-halfright {
+  text-align: right;
+}
+.is-halfright .fas.fa-question {
+  font-size: 2rem;
+}
+.barChart_container {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  width: 98%;
+  margin-left: 52px;
+
+
+}
+.barChart_item {}
+.barChart {
+  width: 90%;
+  background-color: #0da993;
+  
+}
+.chartDate {}
+.barchartWrap {
+    display: flex;
+    align-items: flex-end;
+}
+.barChartWeight svg {
+  width: 100%;
+  height: 100%;
+}
+
+
+#q-graph {
+  display: flex;
+  /* position: relative; */
+  width: 100%;
+  height: 100%;
+  /* margin: 1.1em 0 0; */
+  padding: 0;
+  background: transparent;
+  font-size: 11px;
+  /* align-items: center; */
+  /* justify-content: center; */
+  flex-direction: column;
+  position: relative;
+}
+#q-graph tbody {
+  height: 85%;
+}
+#q-graph tbody td {
+  /* width: 3%; */
+  text-align: center;
+}
+#q-graph tfoot {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  /* border-bottom: 1px solid black; */
+}
+#q-graph tfoot tr {
+  padding-top: 2px;
+  border-right: 1px dotted #C4C4C4;
+  color: #AAA;
+  display: flex;
+  align-items: flex-end;
+  justify-items: center;
+  border-left: 1px dotted #c4c4c4;
+  width: 100%;
+  justify-content: space-around;
+}
+#q-graph tfoot tr td {
+  width: 3.3%;
+  text-align: center;
+  font-weight: bold;
+  font-size: 10px;
+}
+#q-graph caption {
+  caption-side: top;
+  width: 600px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  top: -40px;
+  position: relative;
+  z-index: 10;
+  font-weight: bold;
+}
+
+/* #q-graph tr, #q-graph th, #q-graph td {
+  bottom: 0;
+  width: 15%;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+} */
+
+#q-graph td {
+  transition: all .3s ease;
+}
+#q-graph td.sent:hover {
+  background-color: #4d4d4d;
+  opacity: .9;
+  transition: .6s;
+  -webkit-transition: .6s;
+  /* color: white; */
+}
+
+#q-graph thead tr {
+  left: 100%;
+  top: 50%;
+  bottom: auto;
+  margin: -2.5em 0 0 5em;
+}
+
+#q-graph thead th {
+  width: 7.5em;
+  height: auto;
+  padding: 0.5em 1em;
+}
+
+#q-graph thead th.sent {
+  top: 0;
+  left: 0;
+  line-height: 2;
+}
+
+#q-graph thead th.paid {
+  top: 2.75em;
+  line-height: 2;
+  left: 0;
+}
+
+#q-graph tbody tr {
+  /* height: 296px; */
+  padding-top: 2px;
+  border-right: 1px dotted #C4C4C4;
+  color: #AAA;
+  display: flex;
+  align-items: flex-end;
+  justify-items: center;
+  border-left: 1px dotted #c4c4c4;
+  justify-content: space-around;
+}
+
+#q-graph tbody tr:first-child {
+  border-left: 1px solid black;
+}
+
+#q-graph tbody th {
+  bottom: -1.75em;
+  vertical-align: top;
+  font-weight: normal;
+  color: #333;
+}
+
+#q-graph .bar {
+  border: 1px solid #fff;
+  color: #000;
+}
+
+#q-graph .bar p {
+  margin: 5px 0 0;
+  padding: 0;
+  opacity: .4;
+}
+
+#q-graph .sent {
+  justify-items: center;
+  /* margin: 0 1rem; */
+  background-color: #39cccc;
+  /* border: 3px solid #fff; */
+  border-bottom: 0;
+  border-top: 0;
+  transition: height .6s;
+  -webkit-transition: height .6s;
+  border-radius: 5px 5px 0 0;
+  box-shadow: 3px 0 0 0 rgba(0, 0, 0, 0.1);
+  z-index: 9999;
+}
+
+#q-graph .paid {
+  left: 77px;
+  background-color: #7fdbff;
+  border-color: transparent;
+}
+
+#ticks {
+  display: flex;
+  flex-direction: column;
+  justify-items: stretch;
+  justify-content: space-between;
+  width: 39px;
+  height: auto;
+  padding: 0;
+  opacity: .4;
+  font-size: 12px;
+  align-items: flex-end;
+  margin-right: 2px;
+  margin-bottom: 25px;
+}
+
+#ticks .tick {
+  /* position: relative;
+  border-bottom: 1px dotted #C4C4C4;
+  width: 600px; */
+}
+
+#ticks .tick p {
+  /* position: absolute;
+  left: -5em;
+  top: -0.8em;
+  margin: 0 0 0 0.5em; */
+  font-size: 12px;
+  font-weight: bold;
+}
+
+#q-graph tbody {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  border-bottom: 1px solid black;
+}
+.barChartcontainer {
+  display: flex;
+  flex-direction: column;
+  height: 15rem;
+  width: 100%;
+  padding: 1rem;
+}
+.webbarChartcontainer {
+  display: flex;
+  /* flex-direction: column; */
+  height: 15rem;
+  width: 100%;
+  padding: 1rem;
+}
+.staticsTitle {
+  /* height: 100%; */
+  display: flex;
+  writing-mode: vertical-lr;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+.chart__tick, .chart__title {
+  opacity: .4;
+  font-size: 12px;
+}
+.p-20 {
+  padding: 1rem!important;
+}
+.chart__legends {
+  display: none;
+}
+.chart__tick, .chart__title {
+  text-align: center;
+  font-weight: bold;
+  color: #AAA;
+  /* font-size: 1.5rem; */
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.graphGrid {
+  width: 100;
+    width: 100%;
+    position: abosolute;
+    height: 30%;
+    position: absolute;
+    top: 28%;
+    /* background-color: green; */
+    border: 1px dotted #c3c3c3;
+    border-left: 0;
+    border-right: 0;
+}
+
+.columnStatisc {
+  flex-direction: column;
+}
+
+.appTitleStatic {
+  font-weight: bold;
+    background-color: #eae6e6;
+    padding: .5rem;
+    box-shadow: 0px 3px 3px rgba(24, 23, 23, 0.11);
+    margin-bottom: 1rem;
+    width: 100%;
+    text-align: center;
+}
+.statisticInfo {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-size: 12px;
+  margin-bottom: 1rem;
+}
+.graphInfoUsageText {
+  display: flex;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+    font-size: 12px;
+    margin-bottom: 1rem;
+}
+.selectedChart {
+  background-color: #148ACD !important;
+}
+.statisticalMonth {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  align-items: center;
+  font-weight: bold;
+  font-size: 1.4rem;
+  margin: .5rem;
+}
+
+.web_inbox table#q-graph tfoot td {
+  width: 15%;
+  font-size: 12px;
 }

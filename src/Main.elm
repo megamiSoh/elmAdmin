@@ -30,7 +30,7 @@ import Page.MyPageMenu.MyCalendar as MyC
 import Page.MyPageMenu.MyPost as MyPost
 import Page.MyPageMenu.MyScrap as MyScrap
 import Page.MyPageMenu.MyStatistical as MyS
-import Json.Encode exposing (Value)
+import Json.Encode as Encode exposing (Value) 
 import Json.Decode as Decode
 import Page.Detail.MakeExerDetail as MakeDetail
 import Page.Detail.MyAccount as MyAccount
@@ -52,7 +52,8 @@ import Page.Edit.MakeExerEditStepLast as MakeEditLast
 import Page.Private as Private
 import Page.SetPwd as SetPwd
 import Page.ForgotPwd as FPwd
-
+import Page.MyPageMenu.Contact as C
+import Page.Detail.ContactDetail as CD
 import TextApi as TA
 
 -- type alias Check = 
@@ -101,6 +102,8 @@ type Model
      | SetPwdModel SetPwd.Model
      | FPwdModel FPwd.Model
      | TAModel TA.Model
+     | CModel C.Model
+     | CDModel CD.Model
     --  | PageModel Page.Model
     --  | CheckDevice Check
     
@@ -150,6 +153,8 @@ type Msg
     | SetPwdMsg SetPwd.Msg
     | FPwdMsg FPwd.Msg
     | TAMsg TA.Msg
+    | CMsg C.Msg
+    | CDMsg CD.Msg
 
 subscriptions model = 
     case model of
@@ -233,6 +238,10 @@ subscriptions model =
             Sub.none
         TAModel item ->
             Sub.none
+        CModel item ->
+            Sub.map CMsg (C.subscriptions item)
+        CDModel item ->
+            Sub.map CDMsg (CD.subscriptions item)
 
 init : Maybe Cred -> Bool -> Url -> Key -> ( Model, Cmd Msg )
 init maybeViewer check url navKey =
@@ -372,7 +381,13 @@ changeRouteTo maybeRoute model =
             TA.init session check
                 |> updateWith TAModel TAMsg model
         Just Route.MyPageBottomMenu ->
-            (model, Api.mypageMenu () )
+            (model, Api.mypageMenu (Encode.bool True) )
+        Just Route.C ->
+            C.init session check
+                |> updateWith CModel CMsg model
+        Just Route.CD ->
+            CD.init session check
+                |> updateWith CDModel CDMsg model
             
 
 
@@ -456,6 +471,10 @@ toCheck page =
             FPwd.toCheck item
         TAModel item ->
             TA.toCheck item
+        CModel item ->
+            C.toCheck item
+        CDModel item ->
+            CD.toCheck item
 
 
 toSession : Model -> Session
@@ -539,6 +558,10 @@ toSession page =
             FPwd.toSession item
         TAModel item ->
             TA.toSession item
+        CModel item ->
+            C.toSession item
+        CDModel item ->
+            CD.toSession item
         
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -689,6 +712,12 @@ update msg model =
         (TAMsg subMsg, TAModel tmodel) ->
             TA.update subMsg tmodel
                 |> updateWith TAModel TAMsg tmodel
+        (CMsg subMsg, CModel cmodel) ->
+            C.update subMsg cmodel
+                |> updateWith CModel CMsg cmodel
+        (CDMsg subMsg, CDModel cmodel) ->
+            CD.update subMsg cmodel
+                |> updateWith CDModel CDMsg cmodel
         ( _, _ ) ->
             ( model, Cmd.none )  
         
@@ -804,6 +833,10 @@ view model =
             viewPage Page.FPwd FPwdMsg (FPwd.view item)
         TAModel item ->
             viewPage Page.TA TAMsg (TA.view item)
+        CModel item ->
+            viewPage Page.C CMsg (C.view item)
+        CDModel item ->
+            viewPage Page.CD CDMsg (CD.view item)
 
 
 main : Program Value Model Msg

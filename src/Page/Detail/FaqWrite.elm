@@ -57,6 +57,9 @@ type Msg
     | GoRegist
     | GoBack
     | GotSession Session
+    | ClickRight
+    | ClickLeft
+    | GoAnotherPage
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -74,16 +77,24 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GoAnotherPage ->
+            (model, Cmd.batch [
+                 Api.setCookie (E.int 1)
+            ])
+        ClickRight ->
+            ( model, Api.scrollRight () )
+        ClickLeft ->
+            (model , Api.scrollLeft ())
         GotSession session ->
             ({model | session = session },faqEncode model.title model.content model.session RegistSuccess)
         GoBack ->
-            (model, Route.pushUrl (Session.navKey model.session) Route.Faq)
+            (model, Route.pushUrl (Session.navKey model.session) Route.C)
         GoRegist ->
             (model, faqEncode model.title model.content model.session RegistSuccess)
         RegistSuccess (Ok ok) ->
             (model, Cmd.batch [
                 Api.showToast (E.string "문의가 등록 되었습니다.")
-                , Route.pushUrl (Session.navKey model.session) Route.Faq
+                , Route.pushUrl (Session.navKey model.session) Route.C
             ])
         RegistSuccess (Err err) ->
             let
@@ -122,8 +133,9 @@ view model =
     -- else
         { title = "1:1문의"
         , content = 
-            div [] [
-                web
+                div [] [
+                    div[][myPageCommonHeader ClickRight ClickLeft GoAnotherPage False]
+                , web
             ]
         }
 
@@ -154,7 +166,7 @@ uploadBtn =
         ]
 backBtn = 
     div [ class "faqWrite_backbtn" ]
-        [ a [ class "button yf_back",Route.href Route.Faq]
+        [ a [ class "button yf_back",Route.href Route.C]
             [ text "뒤로" ]
         ]
 

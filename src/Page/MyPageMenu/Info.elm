@@ -47,6 +47,8 @@ type alias Model =
     , options : Markdown.Config.Options
     , selectedPreviewTab : PreviewTab
     , showToC : Bool
+    , scrollCount : Float
+    , showMenu : Bool
     }
 
 type alias ScreenInfo = 
@@ -117,6 +119,8 @@ init session mobile
         , options = defaultOptions
         , showToC = False
         , selectedPreviewTab = RealTime
+        , scrollCount = 0
+        , showMenu = False
         , screenInfo = 
             { scrollHeight = 0
             , scrollTop = 0
@@ -143,6 +147,7 @@ init session mobile
             -- Api.getCookie()
             -- ,
             infoEncoder 1 10 session
+            , Api.mypageMenu (Encode.bool False)
         ]
     )
 
@@ -162,6 +167,7 @@ subscriptions model =
     Api.getPageId GetPageId
     , Api.successId SaveComplete
     , Session.changes GotSession (Session.navKey model.session)
+    , Api.touch ReceiveScr
     ]
 
 type Msg 
@@ -175,6 +181,10 @@ type Msg
     | GetPageId Encode.Value
     | GotSession Session
     | GetDetail (Result Http.Error DetailDataWrap)
+    | ReceiveScr Encode.Value
+    | ClickRight
+    | ClickLeft
+    | GoAnotherPage
 
 toSession : Model -> Session
 toSession model =
@@ -188,6 +198,27 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GoAnotherPage ->
+            (model, Cmd.batch [
+                 Api.setCookie (Encode.int 1)
+            ])
+        ClickRight ->
+            ( model, Api.scrollRight () )
+        ClickLeft ->
+            (model , Api.scrollLeft ())
+        ReceiveScr scr ->
+            case Decode.decodeValue Decode.float scr of
+                Ok ok ->
+                    if model.scrollCount /= ok then
+                        if List.length model.checkList > 0 then
+                            ({model | scrollCount = ok}, Cmd.none)
+                        else
+                            ({model | infiniteLoading = True, scrollCount = ok, page = model.page + 1}, infoEncoder (model.page + 1) model.per_page model.session)
+                    else
+                        ({model | scrollCount = ok}, Cmd.none)
+            
+                Err err ->
+                    (model, Cmd.none)
         GetDetail (Ok ok)->
             ({model | detailData = ok.data, textarea = ok.data.content}, Cmd.none)
         GetDetail (Err err)->
@@ -212,20 +243,20 @@ update msg model =
         NoOp ->
             (model, Cmd.none)
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
-             if (scrollHeight - scrollTop) <= offsetHeight then
-                -- case toInt of
-                --     Just val ->
-                        -- if (val  < (model.takeList + 10)) then
-                        --     ({model | takeList = val, infiniteLoading = False},Cmd.none)
-                        -- else 
-                if List.length model.checkList > 0 then
-                (model, Cmd.none)
-                else
-                ({model | infiniteLoading = True}, infoEncoder (model.page) model.per_page model.session)
-                    -- Nothing ->
-                    --     (model, Cmd.none)
+            --  if (scrollHeight - scrollTop) <= offsetHeight then
+            --     -- case toInt of
+            --     --     Just val ->
+            --             -- if (val  < (model.takeList + 10)) then
+            --             --     ({model | takeList = val, infiniteLoading = False},Cmd.none)
+            --             -- else 
+            --     if List.length model.checkList > 0 then
+            --     (model, Cmd.none)
+            --     else
+            --     ({model | infiniteLoading = True}, infoEncoder (model.page) model.per_page model.session)
+            --         -- Nothing ->
+            --         --     (model, Cmd.none)
                 
-            else
+            -- else
                 (model, Cmd.none)
         PageBtn (idx, str) ->
             let
@@ -261,7 +292,7 @@ update msg model =
             if ok.data == [] then
             ({model | infiniteLoading = False, checkList = ["empty"]}, Cmd.none)
             else
-            ({model | data = ok, dataList = model.dataList ++ ok.data, page = model.page + 1, infiniteLoading = False}, (scrollToTop NoOp))
+            ({model | data = ok, dataList = model.dataList ++ ok.data,  infiniteLoading = False}, (scrollToTop NoOp))
         GetList (Err err)->
             let 
                 serverErrors = Api.decodeErrors err
@@ -301,8 +332,8 @@ view model =
     else
         { title = "공지사항"
         , content = 
-        div [] [
-                web model
+        div [] [ div[][myPageCommonHeader ClickRight ClickLeft GoAnotherPage False]
+            , web model
         ]
         }
 editorView md textAreaInput readOnly=
@@ -330,7 +361,7 @@ web model=
 app model = 
     div [class ("container topSearch_container " ++ if model.detailShow then "fadeContainer" else "")] [
         appHeaderRDetail "공지사항" "myPageHeader whiteColor" Route.MyPage "fas fa-angle-left",
-        div ([ class "table scrollHegiht" ] ++ [scrollEvent ScrollEvent])
+        div ([ class "table scrollHegiht", id "searchHeight" ] ++ [scrollEvent ScrollEvent])
         [ 
             if List.length (model.data.data) > 0 then
             tbody [class ""] 

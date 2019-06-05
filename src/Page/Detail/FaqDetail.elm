@@ -11,8 +11,16 @@ import Page.Common exposing (..)
 import Api as Api
 import Http as Http
 import Api.Endpoint as Endpoint
-import Api.Decoder as Decoder 
+import Api.Decoder as Decoder
+import Markdown.Block as Block exposing (Block)
+import Markdown.Config exposing (HtmlOption(..),  defaultSanitizeOptions)
+import Markdown.Inline as Inline
+import Page.InfoEditor exposing (..)
 
+defaultOptions =
+    { softAsHardLineBreak = False
+    , rawHtml = ParseUnsafe
+    }
 
 type alias Model 
     = {
@@ -22,22 +30,31 @@ type alias Model
         , getId : String
         , detail : Detail
         , edit : Bool
+        , onDemandText : String
+        , options : Markdown.Config.Options
+        , selectedPreviewTab : PreviewTab
+        , showToC : Bool
+        , textarea : String
     }
+
+type PreviewTab
+    = RealTime
+
+
+type EditorTab
+    = Editor
+
 
 type alias Data = 
     { data : Detail }
 
 type alias Detail = 
-    { answer : Maybe String
-    , asked_id : Int
-    , content : String
+    { content : String
     , id : Int
-    , is_answer : Bool
-    , title : String
-    , username : String }
+    , title : String}
 
 detailApi id session msg= 
-    Api.get msg (Endpoint.faqDetail id) (Session.cred session) (Decoder.faqdetail Data Detail)
+    Api.get msg (Endpoint.faqfaqDetail id) (Session.cred session) (Decoder.faqfaqDetail Data Detail)
 
 editEncoder title content session id msg =
     let
@@ -63,14 +80,15 @@ init session mobile =
         , check = mobile
         , getId = ""
         , edit = True
+        , textarea = ""
+        , onDemandText = ""
+        , options = defaultOptions
+        , showToC = False
+        , selectedPreviewTab = RealTime
         , detail = 
-            { answer = Nothing
-            , asked_id = 0
-            , content = ""
-            , id = 0
-            , is_answer = False
-            , title = ""
-            , username = "" }
+            { content = ""
+            , id = 0 
+            , title = "" }
         }
         , Cmd.batch[Api.getKey ()
         , scrollToTop NoOp]
@@ -90,6 +108,9 @@ type Msg
     | GotSession Session
     | GoBack
     | NoOp
+    | ClickRight
+    | ClickLeft
+    | GoAnotherPage
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -119,17 +140,25 @@ update msg model =
     in
     
     case msg of
+        GoAnotherPage ->
+            (model, Cmd.batch [
+                 Api.setCookie (E.int 1)
+            ])
+        ClickRight ->
+            ( model, Api.scrollRight () )
+        ClickLeft ->
+            (model , Api.scrollLeft ())
         NoOp ->
             (model, Cmd.none)
         GoBack ->
-            (model, Route.pushUrl(Session.navKey model.session) Route.Faq)
+            (model, Route.pushUrl(Session.navKey model.session) Route.C)
         GotSession session ->
             ({model | session = session},detailApi model.getId session GetDetail)
         EditComplete (Ok ok) ->
             if model.check then
             (model, Cmd.batch[
                 Api.showToast (E.string "수정이 완료 되었습니다.")
-                , Route.pushUrl (Session.navKey model.session) Route.Faq
+                , Route.pushUrl (Session.navKey model.session) Route.C
             ])
             else
             ({model | edit = not model.edit}, Api.showToast (E.string "수정이 완료 되었습니다."))
@@ -146,13 +175,13 @@ update msg model =
             , scrollToTop NoOp])
         DeleteSuccess (Ok ok) ->
             (model, Cmd.batch[Api.showToast (E.string "문의가 삭제되었습니다.")
-            , Route.pushUrl (Session.navKey model.session) Route.Faq])
+            , Route.pushUrl (Session.navKey model.session) Route.C])
         DeleteSuccess (Err err) ->
             (model, Api.showToast (E.string "문의를 삭제 할 수 없습니다."))
         GoDelete ->
             (model, Api.get DeleteSuccess (Endpoint.faqDelete model.getId) (Session.cred model.session) (Decoder.resultD) )
         GetDetail (Ok ok) ->
-            ({model | detail = ok.data}, Cmd.none)
+            ({model | detail = ok.data, textarea = ok.data.content}, Cmd.none)
         GetDetail (Err err) ->
             let 
                 serverErrors = Api.decodeErrors err
@@ -195,7 +224,8 @@ view model =
     { title = "YourFitExer"
     , content = 
         div [] [
-        web model
+        div[][myPageCommonHeader ClickRight ClickLeft GoAnotherPage False]
+        , web model
     ]}
     
 
@@ -209,60 +239,33 @@ justString item =
 
 web model =
     div [class "container"] [
-        commonJustHeader "/image/icon_qna.png" "1:1문의",
-        ques model.detail model.edit,
-        answer model.detail,
+        commonJustHeader "/image/icon_qna.png" "자주묻는 질문",
+        ques model.detail model.edit model ,
+        -- answer model.detail,
         backBtn
     ]
 
 
 
-ques item edit = 
+ques item edit model = 
         div [ class "info_mediabox contentsH" ]
             [ div [ class "infoDetail_titlebox" ]
                 [ div []
-                    [ input [class "infoDetail_titleweb", value (decodeChar item.title), disabled edit, maxlength 50, onInput Title] [] ,
-                    if item.is_answer then
-                        span [class "faqisAnswer"][text "답변완료"]
-                    else
-                        span [class "faqisAnswer red"][text "답변 대기 중"]
-                    ]
+                    [ input [class "infoDetail_titleweb", value (decodeChar item.title), disabled edit, maxlength 50, onInput Title] [] 
                 ]
-            , textarea [ class "infoDetail_textboxweb" , value (decodeChar item.content), disabled edit, maxlength 250, onInput Content]
-                []
-            , if item.is_answer then
-            div [] []
-            else
-            p [class"faqDetail_btnbox"]
-                [ 
-                    if edit then
-                    div [ class "button faqDetail_edit" , onClick ChangeEdit]
-                    [ 
-                        i [ class "fas fa-edit" ]
-                        [], text "수정" 
-                    ]
-                    else
-                    div [ class "button faqDetail_edit" , onClick GoEdit]
-                    [ 
-                        i [ class "fas fa-edit" ]
-                        [], text "저장" 
-                    ]
-                    , div [ class "button" , onClick GoDelete]
-                    [ i [ class "far fa-trash-alt" ]
-                        [], text "삭제" 
-                    ]
+            , div [style "min-height" "500px"] [
+                markdownView model
+            ]
                 ]
             ]
 
-answer item= 
-    div [ class "info_mediabox contentsH" ]
-        [ div [ class "infoDetail_titlebox", style "background" "#e4e4e4" ]
-            [ div [ class "infoDetail_titleweb" ]
-                [ text ("Re : " ++ (decodeChar item.title)) ]
-            ]
-        , div [ class "infoDetail_textboxweb" ]
-            [text (justString item.answer)]
-            ]
+-- answer item= 
+--     div [ class "info_mediabox contentsH" ]
+--         [ div [ class "infoDetail_titlebox", style "background" "#e4e4e4" ]
+--             [ div [ class "infoDetail_titleweb" ]
+--                 [ text ("Re : " ++ (decodeChar item.title)) ]
+--             ]
+--             ]
 backBtn =
     div [ class "make_yf_butbox" ]
     [ a [ class "button infoDetail_yf_back", Route.href Route.Faq ]

@@ -34,6 +34,7 @@ type alias Model
         , scrap : Bool
         , showDetail : Bool
         , videoId : String
+        , showMenu : Bool
     }
 
 type alias ScreenInfo = 
@@ -82,6 +83,7 @@ init session mobile
         , scrap = False
         , videoId = ""
         , infiniteLoading = False
+        , showMenu = False
         , screenInfo = 
             { scrollHeight = 0
             , scrollTop = 0
@@ -112,6 +114,7 @@ init session mobile
         , Cmd.batch [
             scrapDataEncoder 1 10 session
             , Api.removeJw ()
+            , Api.mypageMenu (Encode.bool False)
         ]
     )
 
@@ -131,6 +134,10 @@ type Msg
     | BackBtn
     | VideoEnd Encode.Value
     | VideoRecordComplete (Result Http.Error Decoder.Success)
+    | ClickRight
+    | ClickLeft
+    | GoAnotherPage
+    | ShowMenu
 
 toSession : Model -> Session
 toSession model =
@@ -173,6 +180,16 @@ subscriptions model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ShowMenu ->
+            ({model | showMenu = not model.showMenu}, Cmd.none)
+        GoAnotherPage ->
+            (model, Cmd.batch [
+                 Api.setCookie (Encode.int 1)
+            ])
+        ClickRight ->
+            ( model, Api.scrollRight () )
+        ClickLeft ->
+            (model , Api.scrollLeft ())
         VideoRecordComplete (Ok ok) ->
             (model, Cmd.none)
         VideoRecordComplete (Err err) ->
@@ -188,7 +205,7 @@ update msg model =
                     Err err ->
                         (model, Cmd.none)
         BackBtn ->
-            ({model | showDetail = False, zindex = "" }, Cmd.none)
+            ({model | showDetail = False, zindex = "" }, Api.hideFooter ())
         GoVideo pairing ->
             let 
                 videoList = 
@@ -324,9 +341,12 @@ view model =
         else
         { title = "나의 스크랩"
         , content = 
-            div [ class "container" ]
+            div [  ]
                 [
-                    commonJustHeader "/image/icon_list.png" "나의 스크랩",
+                    div [class "mypageHiddenMenu", onClick ShowMenu] []
+                    , div[][myPageCommonHeader ClickRight ClickLeft GoAnotherPage model.showMenu]
+                    ,div [class "container"]
+                    [ commonJustHeader "/image/icon_list.png" "나의 스크랩",
                     div [ class "yf_yfworkout_search_wrap" ]
                     [
                         div [] [
@@ -339,7 +359,7 @@ view model =
                         model.pageNum
                         ]
                     ]
-                ]
+                ]]
         }
 
 listwebDetail item = 

@@ -16,6 +16,8 @@ import Task exposing (Task)
 import Time exposing(Month(..))
 import Page.MyPageMenu.MyPageInfoLayout exposing (..)
 import Route as Route
+import Task exposing(Task)
+import Browser.Dom as Dom
 
 type alias Model = 
     { session : Session
@@ -43,6 +45,9 @@ type alias Model =
     , directRegist : Bool
     , registFood : String
     , registKcal : String
+    , showMenu : Bool
+    , currentDay : Date
+    , today : String
     }
 
 type alias Data = 
@@ -110,12 +115,13 @@ init session mobile =
     , per_page = 10
     , pageNum = 1
     , mealPage = 1
+    , showMenu = False
     , mealPer_page = 50
     , date = ""
     , code = "10"
     , name = ""
     , kcal = ""
-    , quantityValue = ""
+    , quantityValue = "1"
     , activeQuantity = ""
     , quantityShow = False
     , totalKcal = ""
@@ -125,6 +131,8 @@ init session mobile =
     , directRegist = False
     , registFood = ""
     , registKcal = ""
+    , currentDay = Date.fromCalendarDate 2019 Jan 1
+    , today = ""
     -- , today = Date.fromCalendarDate 2019 Jan 1
     , data = 
         { data = []
@@ -221,6 +229,7 @@ subscriptions model =
     Sub.batch[Api.receiveKey ReceiveKey
     , Session.changes GotSession (Session.navKey model.session)]
 
+
 type Msg 
     = ActiveTab String
     | ReceiveKey Encode.Value
@@ -241,6 +250,12 @@ type Msg
     | DirectMealInput String String
     | ReceiveDate Date
     | GotSession Session
+    | Blur Int
+    | ClickRight
+    | ClickLeft
+    | GoAnotherPage
+    | ShowMenu
+    | ChangeDate String
 
 toSession : Model -> Session
 toSession model =
@@ -250,6 +265,9 @@ toCheck : Model -> Bool
 toCheck model =
     model.check
 
+onKeyDown:(Int -> msg) -> Attribute msg
+onKeyDown tagger = 
+    on "keyup" (Decode.map tagger keyCode)
 
 justToint string =
     case String.toFloat string of
@@ -262,10 +280,53 @@ justToint string =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ChangeDate when ->
+            let
+                formatDate day =
+                    Date.add Date.Days day model.currentDay
+
+                formatDateString day = 
+                    getFormattedDate Nothing (Just (formatDate day))
+            in
+            
+            case when of
+                "next" ->
+                    let
+                        date = String.dropLeft 8 model.date
+                        today = String.dropLeft 8 model.today
+                    in
+                    if justToint date >= justToint today  then
+                    (model, Cmd.none)
+                    else
+                    ({model | date = formatDateString 1, currentDay = formatDate 1}, dayKindOfMealEncode model.mealPage model.mealPer_page model.session model.code (formatDateString 1))
+                "before" ->
+                    ({model | date = formatDateString -1, currentDay = formatDate -1}, dayKindOfMealEncode model.mealPage model.mealPer_page model.session model.code (formatDateString -1))
+                _ ->
+                    (model, Cmd.none)
+            
+        ShowMenu ->
+            ({model | showMenu = not model.showMenu}, Cmd.none)
+        GoAnotherPage ->
+            (model, Cmd.batch [
+                 Api.setCookie (Encode.int 1)
+            ])
+        ClickRight ->
+            ( model, Api.scrollRight () )
+        ClickLeft ->
+            (model , Api.scrollLeft ())
+        Blur id->
+            (model, foodEncode 1 model.per_page model.foodSearch model.session )
+            -- let _ = Debug.log "blur" id
+                
+            -- in
+            -- update (SearchInput model.foodSearch) model
         GotSession session ->
             ({model | session = session }, dayKindOfMealEncode model.mealPage model.mealPer_page model.session model.code model.date)
         ReceiveDate today ->
-            ({model | date = getFormattedDate Nothing (Just today)} , dayKindOfMealEncode 1 10 model.session "10" (getFormattedDate Nothing (Just today)))
+            let 
+                dateString = getFormattedDate Nothing (Just today)
+            in
+            ({model | date = getFormattedDate Nothing (Just today), currentDay = today, today = dateString} , dayKindOfMealEncode 1 10 model.session "10" (getFormattedDate Nothing (Just today)))
         DirectMealInput category contents->
             ( case category of
                 "food" ->
@@ -367,6 +428,7 @@ update msg model =
         RegistMealComplete (Ok ok)->
             ({model | quantityShow = False }, Cmd.batch[dayKindOfMealEncode model.mealPage model.mealPer_page model.session model.code model.date
             , Api.showToast (Encode.string "등록 되었습니다.")
+            , Api.getscrollHeight (Encode.bool (not model.quantityShow))
             ]) 
         RegistMealComplete (Err err)->
             let 
@@ -377,7 +439,7 @@ update msg model =
             else
             (model, Cmd.none)
         FoodQuantityClose ->
-                ({model | quantityShow = False}                   , Cmd.none
+                ({model | quantityShow = False}, Api.getscrollHeight (Encode.bool (not model.quantityShow))
                 -- , Api.getscrollHeight (Encode.bool (not model.quantityShow))
                 )       
             
@@ -411,11 +473,21 @@ update msg model =
                 Just ok ->
                   ({model | name = item.foodName , kcal = item.kcal, quantityShow = True, category = category, quantityValue = ok, diary_no = String.fromInt (item.diaryNo), activeQuantity = ""}, Api.getscrollHeight (Encode.bool (not model.quantityShow)))  
                 Nothing ->
-                    ({model | name = item.foodName , kcal = item.kcal, quantityShow = True, category = category, quantityValue = "", activeQuantity = ""}, Api.getscrollHeight (Encode.bool (not model.quantityShow)))
+                    ({model | name = item.foodName , kcal = item.kcal, quantityShow = True, category = category, quantityValue = "1", activeQuantity = ""}, Api.getscrollHeight (Encode.bool (not model.quantityShow)))
             
         SearchInput foodname ->
-            ({model | foodSearch = foodname}, foodEncode model.page model.per_page foodname model.session)
+            -- let _ = Debug.log "foodname" foodname
+                
+            -- in
+            
+            ({model | foodSearch = foodname, page = 1}, Cmd.none)
         GetFoodData (Ok ok) ->
+            -- let _ = Debug.log "ok" ok.data
+                
+            -- in
+            -- if model.food /= ok && model.page == 1 then
+            -- update (SearchInput model.foodSearch) {model | food = ok}
+            -- else
             ({model | food = ok}, Cmd.none)
         GetFoodData (Err err) ->
             let 
@@ -442,7 +514,7 @@ update msg model =
         ReceiveKey code ->
             case Decode.decodeValue Decode.string code of
                 Ok ok ->
-                    ({model | code = ok, activeBtn = Just ok}, dayKindOfMealEncode model.mealPage model.mealPer_page model.session ok model.date)
+                    ({model | code = String.left 2 ok, activeBtn = Just (String.left 2 ok), date = String.dropLeft 3 ok}, dayKindOfMealEncode model.mealPage model.mealPer_page model.session ok model.date)
                 Err err ->
                     (model, Cmd.none)
         ActiveTab item ->
@@ -452,9 +524,11 @@ view : Model -> {title : String , content : Html Msg}
 view model =
     { title = "YourFitExer"
     , content =
-        div [ class "container" ]
+        div []
             [
-                -- contentsHere
+                div[][myPageCommonHeader ClickRight ClickLeft GoAnotherPage model.showMenu]
+                , div [ class "container" ] [
+                calendarDate model,
                 tabMenu model,
                 searchBox model,
                 registMeal model ,
@@ -484,7 +558,22 @@ view model =
                 ]
                         
             ]
+        ]
     }
+
+calendarDate model = 
+    div [ class "myCalendar_tapbox" ]
+        [ div [ class "myCalendar_datebox" ]
+            [ i [ class "fas fa-angle-left myCalendar_yf_left", onClick (ChangeDate "before") ]
+                [], 
+                if model.date == model.today then 
+                div [class "date_container"] [text model.date, span [class"today"] [text "today"] ]
+                else 
+                div [class "date_container"] [text model.date, span [class"today"] [] ]
+            , i [ class "fas fa-angle-right myCalendar_yf_right", onClick (ChangeDate "next") , style "color" (if model.date == model.today then "#d2caca" else "#000" )]
+                []
+            ]
+        ]
 
 directRegistMeal model = 
     div [ class "inputkaclbox" ]
@@ -544,7 +633,7 @@ tabMenu model =
 searchBox model = 
     div [ class "mealRecord_searchbox" ]
         [ div [ class "field mealRecord_yf_field" ]
-            [ input [ class "input yf_food_input", type_ "text", placeholder "음식을 검색하세요", onInput SearchInput ]
+            [ input [ class "input yf_food_input", type_ "text", placeholder "음식을 검색하세요", onInput SearchInput,onKeyDown Blur, value model.foodSearch ]
                 []
             , div [ class "button yf_food_searchwindow", href "yf_mypage_dite2.html", onClick (DirectRegistMeal "justshowNCancle")  ]
                 [ text "음식 칼로리 직접입력" ]
@@ -605,6 +694,7 @@ foodQuantity model =
             input [type_ "text", class "input", placeholder "음식 수량을 입력 해 주세요.", type_ "number"
             , value model.quantityValue
             , onInput QuantityInput
+            , disabled True
             ] []
          ]
         , ul [class"foodquantity_btn"] 

@@ -59,7 +59,11 @@ module Api.Endpoint exposing
     , mealRegistInfo
     , mealDelete
     , mealEditInfo
-    , exerciseCompleteList)
+    , exerciseCompleteList
+    , faqfaqList
+    , faqfaqDetail
+    , statisticalweek
+    , statisticalMonth)
 
 import Http
 import Url.Builder exposing (QueryParameter)
@@ -86,6 +90,7 @@ unwrap (Endpoint str) =
 url : List String -> List QueryParameter -> Endpoint
 url paths queryParams =
     Url.Builder.crossOrigin "http://13.209.49.169:4000/api"
+    -- Url.Builder.crossOrigin "https://api.yfit.co.kr/api"
         ("v1" :: paths)
         queryParams
         |> Endpoint
@@ -295,3 +300,15 @@ mealEditInfo date no =
 
 exerciseCompleteList date = 
     url ["front", "diary", "exercises", date] []
+
+faqfaqList =
+    url ["front", "faqs"][]
+
+faqfaqDetail id = 
+    url ["front", "faqs", id] []
+
+statisticalweek = 
+    url ["front", "statistics" , "week"][]
+
+statisticalMonth date = 
+    url ["front", "statistics", "month" , date][]

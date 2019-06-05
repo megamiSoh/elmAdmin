@@ -51,7 +51,8 @@ type Page
     | SetPwd
     | FPwd
     | TA
-
+    | C
+    | CD
 
 -- view:Maybe Cred -> Api.Check  -> Page -> {check : String , title : String, content: Html msg} -> Browser.Document msg
 view maybeViewer checkB  page { title, content}  =
@@ -64,7 +65,7 @@ view maybeViewer checkB  page { title, content}  =
         { title = title 
         , body = viewHeader page maybeViewer:: webContents content page maybeViewer:: []
         }
-        
+
 
 
 
@@ -118,6 +119,7 @@ webContents content page maybeViewer=
             need2login
             else if page == MyPage then
             need2login
+            
             else 
             div [] [content, webtoastPop]
   
@@ -143,7 +145,12 @@ appContents content page maybeViewer=
                 , div [](List.map menuBottom (menu))
 
             ]
-            
+            else if page == C then
+            div [][ 
+                justappHeader "1:1문의" "myPageHeader"
+                , need2loginApp
+
+            ]
             else
             div [] [content, apptoastPop]
   
@@ -197,7 +204,7 @@ viewHeader page maybeViewer =
                         [ 
                         a [ class "navbar-item yf_logoRight", Route.href Route.Home ]
                         []
-                        ,a [ class "navbar-item yf_item", Route.href Route.Logout ]
+                        , a [ class "navbar-item yf_item", Route.href Route.Logout ]
                             [ text "로그아웃" ]
                         , a [ class "navbar-item yf_item", Route.href Route.YourFitExer ]
                             [ text "유어핏운동" ]
@@ -205,8 +212,37 @@ viewHeader page maybeViewer =
                             [ text "맞춤운동" ]
                         , a [ class "navbar-item yf_item", Route.href Route.Together ]
                             [ text "함께해요" ]
-                        , a [ class "navbar-item yf_item",Route.href Route.MyPage ]
-                            [ text "마이페이지"]
+                        , 
+                        case page of
+                            MyPage ->
+                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            Faq ->
+                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            MyC ->
+                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            Info ->
+                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            ScrapD ->
+                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            PostD ->
+                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            FaqW ->
+                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            FaqD ->
+                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            InfoD ->
+                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            MealR ->
+                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            MyPost ->
+                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            MyScrap  ->
+                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            C  ->
+                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            _ ->
+                                a [ class "navbar-item yf_item",Route.href Route.MyPage ]
+                                [ text "마이페이지"]
                         ]
                     ]
                 ]
@@ -246,7 +282,7 @@ viewHeader page maybeViewer =
 
 appFooter : Page -> Html msg
 appFooter page= 
-    footer [ class "m_yf_navfooter" ]
+    footer [ class "m_yf_navfooter", id "footer" ]
         [ a [ class "m_appmanu" , Route.href Route.Home,classList [("bgFooter", page == Home) ]]
             [ img [ src "/image/m.icon.home.png"]
                 []

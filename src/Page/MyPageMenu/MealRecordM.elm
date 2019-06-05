@@ -52,6 +52,8 @@ type alias Model =
     , diary_no :String
     , registOrEdit : Maybe String
     , btnDisabled : Bool
+    , scrHeight : Float
+    , scrCount : Int
     }
 
 type alias Food = 
@@ -161,6 +163,11 @@ mealEditInfo foodInfo session diaryNo =
     in
     Api.post (Endpoint.mealEditInfo foodInfo.date diaryNo) (Session.cred session) RegistMealComplete body (Decoder.resultD)
 
+onKeyDown:(Int -> msg) -> Attribute msg
+onKeyDown tagger = 
+    on "keyup" (Decode.map tagger keyCode)
+
+
 init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile = (
     { session = session
@@ -178,8 +185,9 @@ init session mobile = (
     , kcal = ""
     , detailShow = False
     , active = ""
+    , scrHeight = 0
     , foodQuantity = 0
-    , foodQuantityString = ""
+    , foodQuantityString = "0"
     , date = ""
     , meal_page = 1
     , meal_per_page = 20
@@ -188,6 +196,7 @@ init session mobile = (
     , directFoodName = ""
     , directKcal = ""
     , totalKcal = ""
+    , scrCount = 0
     , editShow = False
     , diary_no = ""
     , registOrEdit = Nothing
@@ -240,7 +249,8 @@ scrollInfoDecoder =
 subscriptions : Model -> Sub Msg
 subscriptions model =
    Sub.batch[Api.receiveKey SaveKey
-   , Session.changes GotSession (Session.navKey model.session)]
+   , Session.changes GotSession (Session.navKey model.session)
+   , Api.touch ReceiveHeight]
 
 type Msg 
     = CheckDevice E.Value
@@ -268,6 +278,9 @@ type Msg
     | GoDirectRegist
     | GoEdit Bool
     | GotSession Session
+    | SearchKeyUp Int
+    | ReceiveHeight E.Value
+
 
 toSession : Model -> Session
 toSession model =
@@ -288,6 +301,24 @@ justToFloat item =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of    
+        ReceiveHeight scrHeight ->
+            case Decode.decodeValue Decode.int scrHeight of
+                Ok ok ->
+                    if ok /= model.scrCount then
+                        if (model.foodData.paginate.total_count // model.per_page ) + 1 >= model.page then
+                            if List.isEmpty model.foodData.data then
+                            ({model | scrCount = ok }, Api.unfocus NoOp)
+                            else
+                            ({model | scrCount = ok , page = 1 + model.page}, foodEncode (1 + model.page) model.per_page model.searchFoodName model.session AddFoodData)
+                        else
+                        (model, Cmd.none)
+                    else
+                        (model, Cmd.none)
+                Err err ->
+                    (model, Cmd.none)
+        SearchKeyUp id -> 
+            (model, Cmd.batch[foodEncode model.page model.per_page model.searchFoodName model.session GetFoodData
+            , (scrollToTop NoOp)])
         GotSession session ->
             ({model | session = session}, dayKindOfMealEncode model.meal_page model.meal_per_page model.session model.key model.date )
         GoEdit is_direct ->
@@ -379,7 +410,7 @@ update msg model =
         ReceiveDate today ->
             ({model | date = getFormattedDate Nothing (Just today)} , dayKindOfMealEncode 1 10 model.session "10" (getFormattedDate Nothing (Just today)))
         RegistMealComplete (Ok ok) ->
-            ({model | detailShow = False, foodQuantity = 0, foodQuantityString = "", derectRegistShow = False, directFoodName = "", directKcal = "", active = ""}, Cmd.batch[Api.showToast (E.string "등록되었습니다.")
+            ({model | detailShow = False, foodQuantity = 0, foodQuantityString = "0", derectRegistShow = False, directFoodName = "", directKcal = "", active = ""}, Cmd.batch[Api.showToast (E.string "등록되었습니다.")
             , dayKindOfMealEncode model.meal_page model.meal_per_page model.session model.key model.date])
         RegistMealComplete (Err err) ->
             let 
@@ -404,34 +435,34 @@ update msg model =
             ({model | active = "", btnDisabled = True}, Cmd.batch[mealRegistInfo result model.session
             ])
         PlusOrMinus what ->
-            case String.toFloat model.foodQuantityString of
-                Just a ->
+            -- case String.toFloat model.foodQuantityString of
+            --     Just a ->
                     case what of
                         "plus" ->
                             ({model | foodQuantity = justToFloat model.foodQuantityString + justToFloat model.active, foodQuantityString = String.fromFloat(justToFloat model.foodQuantityString + justToFloat model.active)
                             , btnDisabled = False}, Cmd.none)
                         "minus" ->
-                            if model.foodQuantity - justToFloat model.active <= 0 then
-                                ({model | btnDisabled = True}, Cmd.none)
+                            if model.foodQuantity <= justToFloat model.active then
+                                ({model | btnDisabled = True, foodQuantity = 0, foodQuantityString = "0"} , Cmd.none)
                             else
-                                ({model | foodQuantity = justToFloat model.foodQuantityString, foodQuantityString = String.fromFloat(model.foodQuantity - justToFloat model.active)
+                                ({model | foodQuantity = model.foodQuantity - justToFloat model.active, foodQuantityString = String.fromFloat(model.foodQuantity - justToFloat model.active)
                                 , btnDisabled = False}, Cmd.none)
                         _ ->
                             (model, Cmd.none)
-                Nothing ->
-                    case what of
-                        "plus" ->
-                            ({model | foodQuantity = 0 + justToFloat model.active, foodQuantityString = String.fromFloat(0 + justToFloat model.active)
-                            , btnDisabled = False}, Cmd.none)
-                        "minus" ->
-                           ({model | btnDisabled = True}, Cmd.none)
-                        _ ->
-                            (model, Cmd.none)
+                -- Nothing ->
+                --     case what of
+                --         "plus" ->
+                --             ({model | foodQuantity = 1 + justToFloat model.active, foodQuantityString = String.fromFloat(1 + justToFloat model.active)
+                --             , btnDisabled = False}, Cmd.none)
+                --         "minus" ->
+                --            ({model | btnDisabled = True}, Cmd.none)
+                --         _ ->
+                --             (model, Cmd.none)
     
         Active active ->
             ({model | active = active}, Cmd.none)
         QuantityFood quantity ->
-            if justToFloat quantity <= 0 || quantity == ""  then
+            if justToFloat quantity <= 1 || quantity == "1"  then
             ({model | btnDisabled = True, foodQuantityString = quantity }, Cmd.none)    
             
             else
@@ -462,19 +493,24 @@ update msg model =
         NoOp ->
             (model, Cmd.none)
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
-             if (scrollHeight - scrollTop) <= offsetHeight  then
-                if (model.foodData.paginate.total_count // model.per_page ) + 1 >= model.page then
-                   if List.isEmpty model.foodData.data then
-                    (model, Cmd.none)
-                    else
-                    ({model | page = 1 + model.page, offsetHeight = String.fromInt offsetHeight}, foodEncode (1 + model.page) model.per_page model.searchFoodName model.session AddFoodData) 
-                else
-                    (model, Cmd.none)
-            else
-                ({model | offsetHeight = String.fromInt offsetHeight}, Cmd.none)
+            
+            -- let _ = Debug.log "hellow" scrollHeight
+                
+            -- in
+            
+            --  if (scrollHeight - Basics.round model.scrHeight) <= offsetHeight  then
+            --     if (model.foodData.paginate.total_count // model.per_page ) + 1 >= model.page then
+            --        if List.isEmpty model.foodData.data then
+            --         (model, Api.unfocus NoOp)
+            --         else
+            --         ({model | page = 1 + model.page, offsetHeight = String.fromInt offsetHeight}, foodEncode (1 + model.page) model.per_page model.searchFoodName model.session AddFoodData) 
+            --     else
+                    (model, Api.unfocus NoOp)
+            -- else
+            --     ({model | offsetHeight = String.fromInt offsetHeight}, Cmd.batch[Api.unfocus NoOp
+            --     ])
         SearchFood food ->
-            ({model | searchFoodName = food, page = 1}, Cmd.batch[foodEncode model.page model.per_page food model.session GetFoodData
-            , (scrollToTop NoOp)])
+            ({model | searchFoodName = food, page = 1}, Cmd.none)
         GetFoodData (Ok ok) ->
             ({model | foodData = ok, foodListData = ok.data}, Cmd.none)
         GetFoodData (Err err) ->
@@ -538,7 +574,7 @@ stepDetailItem meal model=
         ))] [
             appHeaderConfirmDetailR (meal ++ "검색") "myPageHeader whiteColor" BackBtn ShowRegistList  "다음"
         ,
-        searchInput model DirectRegist SearchFood(scrollEvent ScrollEvent) GoDetail
+        searchInput model DirectRegist SearchFood(scrollEvent ScrollEvent) GoDetail SearchKeyUp
         ]
         , selectedFood model (String.fromInt model.mealDataList.paginate.total_count ++" 개의 음식") "selectedFood" ShowRegistList 
         , div [class ("registListContainer " ++ (if model.showList then "registNewOne" else "") ++
@@ -558,7 +594,7 @@ stepDetailItem meal model=
                 
                 selectedItem model.mealDataList.data DeleteItem model.totalKcal GoDetail DirectRegist
             ]
-            , div [class "backToRegist", onClick ShowRegistList] [text "계속 등록하기"]
+            -- , div [class "backToRegist", onClick ShowRegistList] [text "계속 등록하기"]
         ]
         
         , div [class ("m_mealRecordDetail  " ++ (if model.derectRegistShow then "newOne" else ""))]
@@ -612,9 +648,9 @@ registLayout meal model =
                     ]
                     ]
             , div [class "m_food_title" ] [ text (model.foodName ++  model.kcal ++ "Kcal") ]
-            , div [] [
-                input [class "input", type_ "number", onInput QuantityFood, placeholder "수량을 입력 해 주세요.", value model.foodQuantityString , id (if model.detailShow then "noScrInput" else "")][] 
-            ]
+            ,
+                input [class "input",  value (String.fromFloat model.foodQuantity), disabled True][] 
+            
             , ul [class "m_quantity_btn_wrpa"] 
                 [ li [class "button fas fa-plus", onClick (PlusOrMinus "plus")] []
                 , li [classList 
@@ -649,7 +685,7 @@ allStep model =
             stepDetailItem "간식식단" model
         _ ->
             div [] [
-                appHeaderRDetail "식단기록" "myPageHeader  whiteColor" Route.MyC "fas fa-angle-left"
+                appHeaderRDetail "식단기록" "myPageHeader  whiteColor" Route.MyPage "fas fa-angle-left"
                 , whatKindOfMeal 
             ]
     ]   

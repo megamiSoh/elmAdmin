@@ -45,6 +45,7 @@ type alias Model =
     , zindex : String
     , cnt : Int
     , webtogetherData : WebToghtherDataWrap
+    , scrollCount : Float
     }
 
 type alias WebToghtherDataWrap =
@@ -145,6 +146,7 @@ init session mobile
         , height = ""
         , zindex = ""
         , cnt = 0
+        , scrollCount = 1
         , oneOfdata = 
             {content = Nothing
             , detail = Nothing
@@ -164,7 +166,7 @@ init session mobile
         , check = mobile
         , page = 1
         , videoStart = ""
-        , per_page = 9
+        , per_page = if mobile then 2 else 9
         , loading = True
         , showAllText = False
         , like = 0
@@ -188,7 +190,7 @@ init session mobile
         ,  Cmd.batch 
         [ (
             if mobile then
-            dataEncoder 1 9 session
+            dataEncoder 1 2 session
             else
             webDataEncoder 1 9 session
         )
@@ -275,6 +277,7 @@ type Msg
     | ShowAllTextApp Int
     | VideoEnd Encode.Value
     | VideoRecordComplete (Result Http.Error Decoder.Success)
+    | ReceiveScroll Encode.Value
 
 mydata session = 
     Decoder.sessionCheckMydata
@@ -293,12 +296,28 @@ subscriptions :Model -> Sub Msg
 subscriptions model=
     Sub.batch[Api.getHeightValue GetHeight
     , Session.changes GotSession (Session.navKey model.session)
-    , Api.videoWatchComplete VideoEnd]
+    , Api.videoWatchComplete VideoEnd
+    , Api.touch ReceiveScroll]
     -- Api.videoSuccess Loading
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ReceiveScroll scr ->
+            case Decode.decodeValue Decode.float scr of
+                Ok ok ->
+                    let 
+                        endOfPage =  model.togetherData.paginate.total_count // model.per_page + 1 > model.page  
+                    in
+                        if ok /= model.scrollCount then
+                            if endOfPage then
+                            ({model | scrollCount = ok, page =  model.page + 1, infiniteLoading = True}, loadingEncoder (model.page + 1)  model.per_page model.session )
+                            else
+                            ({model | infiniteLoading = True}, Cmd.none)
+                        else
+                        (model, Cmd.none)
+                Err err ->
+                    (model, Cmd.none)
         VideoRecordComplete (Ok ok) ->
             (model, Cmd.none)
         VideoRecordComplete (Err err) ->
@@ -348,7 +367,7 @@ update msg model =
             (model, Cmd.none)
         TogetherDetail id ->
             if id == 0 then
-            ({model | showDetail = not model.showDetail, showAllText = False}, Cmd.batch[ Api.getscrollHeight (Encode.bool (not model.showDetail))])
+            ({model | showDetail = not model.showDetail, showAllText = False}, Cmd.none)
             else
              ({model | showDetail = not model.showDetail, showAllText = False}, Cmd.batch[likeApi model.session (String.fromInt id), Api.getscrollHeight (Encode.bool (not model.showDetail))])
         LikeUpdate (Ok ok) ->
@@ -424,27 +443,27 @@ update msg model =
             if ok.data == [] then
             ({model| infiniteLoading = False, loading = False}, Cmd.none)
             else
-            ({model | appData = model.appData ++ ok.data, page = model.page + 1, infiniteLoading = False, loading = False}, Cmd.none
+            ({model | appData = model.appData ++ ok.data, infiniteLoading = False, loading = False}, Cmd.none
             -- , Api.togetherDataList page 
             )
         LoadingGetData (Err err) ->
             ({model | loading = False}, Cmd.none)
         
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
-             if (scrollHeight - scrollTop) <= (offsetHeight + 77) then
-                if model.togetherData.paginate.total_count // model.per_page + 1 > model.page then
-                ({model | infiniteLoading = True, ofheight = 
-                case model.ofheight of
-                    Just a ->
-                        Just (a + 200)
+            --  if (scrollHeight - scrollTop) <= (offsetHeight + 77) then
+            --     if model.togetherData.paginate.total_count // model.per_page + 1 > model.page then
+            --     ({model | infiniteLoading = True, ofheight = 
+            --     case model.ofheight of
+            --         Just a ->
+            --             Just (a + 200)
                 
-                    Nothing ->
-                        Nothing
-                        }, Cmd.batch[loadingEncoder (model.page + 1)  model.per_page model.session])
-                else
-                ({model | ofheight = Nothing}, Cmd.none)
+            --         Nothing ->
+            --             Nothing
+            --             }, Cmd.batch[loadingEncoder (model.page + 1)  model.per_page model.session])
+            --     else
+            --     ({model | ofheight = Nothing}, Cmd.none)
                 
-            else
+            -- else
                 (model, Cmd.none)
                 -- ({model | ofheight = scrollHeight}, Cmd.none)
         PageBtn (idx, str) ->
@@ -500,7 +519,7 @@ update msg model =
             in
                 if serverErrors == "401" then
                     if model.checkauth then 
-                        ({model | need2login = True, checkauth = False}, Cmd.none )
+                        ({model | need2login = True, checkauth = False}, Api.getscrollHeight (Encode.bool False))
                     else
                         ({model | checkauth = True}, (Session.changeInterCeptor (Just serverErrors) model.session))
             else
@@ -589,7 +608,7 @@ web model contentsItem=
     div [
         ] [
                 div [class "container",
-                scrollEvent ScrollEvent][
+                scrollEvent ScrollEvent, id "searchHeight"][
                     if model.need2login then
                     need2loginAppDetailRoute Route.Together
                      else
@@ -614,23 +633,24 @@ app model =
             if model.need2login then
             need2loginAppDetailRoute Route.Together
             else
-            div [  scrollEvent ScrollEvent, class "hereScrl"] [
+            div [  scrollEvent ScrollEvent, class "scrollHegiht", id "searchHeight"] [
                 -- appTab model,
                 appStartBtn,
-                div [class "togetherscrollContent", 
-                    case model.ofheight of
-                        Just a ->
-                            (style "height" ((String.fromInt a) ++ "vh"))
+                div [class "togetherscrollContent"
+                -- , 
+                --     case model.ofheight of
+                --         Just a ->
+                --             (style "height" ((String.fromInt a) ++ "vh"))
                     
-                        Nothing ->
-                            (style "overflow" "hidden")
+                --         Nothing ->
+                --             (style "overflow" "hidden")
                             
                 ] (List.indexedMap (
                         \idx x -> appContentsItem idx x model ) model.appData )
                 -- ,if model.infiniteLoading then
-                -- div [class "loadingPosition"] [
-                -- infiniteSpinner
-                -- ]
+                , div [class "loadingPosition", style "display" (if model.infiniteLoading then "block" else "none")] [
+                infiniteSpinner
+                ]
                 -- else
                 -- span [] []
             ]

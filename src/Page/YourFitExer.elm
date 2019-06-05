@@ -17,7 +17,7 @@ import Json.Encode as Encode
 import Swiper
 import Html.Lazy exposing (lazy, lazy2, lazy3)
 import Page.Common exposing (..)
-
+import Page.Detail.YourFitDetail as YfD
 type alias Model 
     = {
         session : Session
@@ -33,6 +33,12 @@ type alias Model
         , leftWidth : Int
         , lazyImg : String
         , count : Int
+        , scrap : Bool
+        , need2login : Bool
+        , videoId : String
+        , zindex : String
+        , listData : YfD.DetailData
+        , detailShow : Bool
     }
 
 type alias YourFitList =
@@ -63,11 +69,28 @@ init session mobile =
         , checkDevice = ""
         , data = []
         , swipeCode = ""
+        , scrap = False
         , loading = True
+        , zindex = ""
         , sumCount = 0
         , menuOpen = False
         , count = 1
         , leftWidth = 0
+        , videoId = ""
+        , detailShow = False
+        , need2login = False
+        , listData = 
+            { difficulty_name = Nothing
+            , duration = ""
+            , exercise_items = []
+            , exercise_part_name = Nothing
+            , id = 0
+            , inserted_at = ""
+            , pairing = []
+            , title = ""
+            , nickname = Nothing
+            , thumbnail = ""
+            , description = Nothing}
         , lazyImg = "../image/05iu6bgl-320.jpg"
         , swipingState = Swiper.initialSwipingState
         }
@@ -99,6 +122,11 @@ type Msg
     | MoveMore Int
     | MoveLeft Int
     | NoOp
+    | Scrap
+    | ScrapComplete (Result Http.Error Decoder.Success)
+    | BackPage
+    | GoVideo (List YfD.Pairing)
+    | GetListData (Result Http.Error YfD.GetData)
 
 toSession : Model -> Session
 toSession model =
@@ -121,6 +149,58 @@ subscriptions model=
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GetListData (Ok ok) -> 
+             ({model | listData = ok.data, scrap = False, loading = False}, scrollToTop NoOp)
+        GetListData (Err err) -> 
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
+            (model, Cmd.none)
+        GoVideo pairing->
+            let
+                videoList = 
+                    Encode.object 
+                        [("pairing", (Encode.list videoEncode) pairing) ]
+
+                videoEncode p=
+                    Encode.object
+                        [ ("file", Encode.string p.file)
+                        , ("image", Encode.string p.image)
+                        , ("title", Encode.string p.title)
+                        ]
+            in
+             ({model | zindex = "zindex"}, Api.videoData videoList)
+        BackPage ->
+            if model.need2login then
+            ({model |  need2login = False, zindex = ""}, Cmd.none)
+            else
+            ({model | detailShow = False, zindex = "", need2login = False}, Api.hideFooter ())
+        ScrapComplete (Ok ok) ->
+            let
+                text = Encode.string "스크랩 되었습니다."
+            in
+            
+            ({model | scrap = not model.scrap}, Api.showToast text )
+        ScrapComplete (Err err) ->
+            let
+                error = Api.decodeErrors err
+                cannotScrap = Encode.string "이미 스크랩 되었습니다."
+            in
+            if error == "401" then
+                ({model | need2login = True, detailShow = False}, 
+                Cmd.batch [
+                    Api.hideFooter () 
+                    , scrollToTop NoOp
+                ])
+            else
+                (model, Api.showToast cannotScrap)
+        Scrap ->
+            (model, 
+            Decoder.resultD
+            |> Api.get ScrapComplete (Endpoint.scrap model.videoId)(Session.cred model.session) )
         NoOp ->
             (model, Cmd.none)
         MyInfoData (Ok ok) ->
@@ -155,15 +235,23 @@ update msg model =
             )
         SuccessId str ->  
             (model, 
+            -- Cmd.none
             Route.pushUrl (Session.navKey model.session) Route.YourfitDetail
             -- Api.historyUpdate (Encode.string "yourfitDetail")
             )
 
         GoContentsDetail id ->
-            let
+            let 
                 encodeId = Encode.int id
+                stringId = String.fromInt id
             in
-            
+            if model.check then
+                    ({model | detailShow = True,  videoId = stringId}, 
+                    Cmd.batch[(Decoder.yfDetailDetail YfD.GetData YfD.DetailData YfD.DetailDataItem YfD.Pairing)
+                    |>Api.get GetListData (Endpoint.yfDetailDetail (stringId) ) (Session.cred model.session) 
+                    , Api.hideFooter () ]
+                    )
+            else
             (model, Api.saveId (encodeId))
         Success str ->
             (model,
@@ -222,15 +310,25 @@ view model =
     if model.check then
             { title = "유어핏 운동"
             , content = 
-            div [class "appWrap container" ] [
-                            justappHeader "유어핏운동" "yourfitHeader",
-                            div [][
-                                div [class "spinnerBack", style "display" (if model.loading then "block" else "none")] [
-                                    spinner
-                                    ]
-                                , div [] [app model]
+            div [][
+                div [class (if model.detailShow then "eventDefault" else "")] []
+                , div [class ("container topSearch_container " ++ if model.detailShow then "fadeContainer" else "")] [
+                    
+                     justappHeader "유어핏운동" "yourfitHeader",
+                    div [][
+                        div [class "spinnerBack", style "display" (if model.loading then "flex" else "none")] [
+                            spinner
                             ]
+                        , div [] [app model]
                     ]
+                    
+                    ], 
+                   div [class ("container myaccountStyle dispalyNO " ++ if model.need2login then "account yfdetailShow displayYes" else ""), id (if model.need2login then "noScrInput" else "")] [
+                        appHeaderRDetailClick "로그인" "yourfitHeader" BackPage "fas fa-times"
+                        , need2loginAppDetail BackPage
+                    ]
+                    , YfD.app model BackPage Scrap GoVideo
+                ]
             }
     else
         { title = "유어핏 운동"
@@ -243,11 +341,6 @@ view model =
             ]
             
         }
-        -- else
-        --     { title = "유어핏 운동"
-        --     , content = 
-        --         div [] [ web model ]
-        --     }
 
             
 web model =

@@ -102,6 +102,9 @@ type Msg
     | GoVideo
     | Loading E.Value
     | VideoCall (List Pairing)
+    | ClickRight
+    | ClickLeft
+    | GoAnotherPage
 
 toSession : Model -> Session
 toSession model =
@@ -130,6 +133,14 @@ justList item =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GoAnotherPage ->
+            (model, Cmd.batch [
+                 Api.setCookie (E.int 1)
+            ])
+        ClickRight ->
+            ( model, Api.scrollRight () )
+        ClickLeft ->
+            (model , Api.scrollLeft ())
         VideoCall pairing ->
             let
                 encodePairing pair= 
@@ -224,7 +235,8 @@ view model =
         { title = "내 게시물 관리"
         , content = 
             div [] [
-                web BackPage model
+                div[][myPageCommonHeader ClickRight ClickLeft GoAnotherPage False]
+                , web BackPage model
             ]
         }
 web msg model= 

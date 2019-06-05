@@ -10,6 +10,9 @@ import Json.Decode as Decode
 import Route exposing(..)
 import Page.Common exposing(..)
 
+onKeyDown:(Int -> msg) -> Attribute msg
+onKeyDown tagger = 
+    on "keyup" (Decode.map tagger keyCode)
 
 searchResult model scrollEvent detail = 
     div [ class "searchbox"]
@@ -93,16 +96,16 @@ directRegist model directinput=
                     [], text "Kcal" 
             ]
         ]
-searchInput model step search  scrollEvent detail=
-    div [class "m_meal_box_container scrollHegiht", scrollEvent
+searchInput model step search  scrollEvent detail event = 
+    div [ id "searchHeight", class "m_meal_box_container scrollHegiht", scrollEvent
     -- , scrollEvent, style "height" (model.offsetHeight ++ "px")
     ] [
         div  [class "m_meal_box"]
-        [ input [ class "input m_meal_yf_input", type_ "text", placeholder "음식을 검색하세요" , onInput search]
+        [ input [ class "input m_meal_yf_input", type_ "text", placeholder "음식을 검색하세요" , onInput search, onKeyDown event, id "keyboardBlur"]
             []
         , p [ class "help_searchresult" ]
             [ text (String.fromInt model.foodData.paginate.total_count ++ "개의 검색결과") ]
-        , div [ class "button m_meal_direct", onClick (step("","","")) ]
+        , div [ class "button m_meal_direct", onClick (step("","",""))  ]
             [ text "음식 칼로리 직접입력" ]
         ]
     , searchResult model scrollEvent detail

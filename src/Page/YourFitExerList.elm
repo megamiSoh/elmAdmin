@@ -16,12 +16,14 @@ import Json.Encode as Encode
 import Api.Decoder as Decoder
 import Page.Common exposing (..)
 import Page.YourFitExer as YfE
+import Page.Detail.YourFitDetail as YfD
+
 type alias Model  = 
     { session : Session
     , isActive : String
     , exercise_part_code : String
     , difficulty_code : List String
-    , listData : List DetailData
+    , listyourfitData : List DetailData
     , levelData : List Level
     , check : Bool
     , screenInfo : ScreenInfo
@@ -29,12 +31,32 @@ type alias Model  =
     , infiniteLoading : Bool
     , takeList : Int
     , resultLen : Int
+    , page : Int
+    , per_page : Int
+    , pageNum : Int
+    , paginate : Paginate
+    , scrollCount : Float
+    , scrap : Bool
+    , zindex : String
+    , need2login : Bool
+    , detailShow : Bool
+    , videoId : String
+    , listData : YfD.DetailData
+    , loading : Bool
     }
 
 
 
 type alias ListData = 
-    { data : List DetailData }
+    { data : List DetailData 
+    , paginate : Paginate }
+
+type alias Paginate = 
+    { difficulty_code : List String
+    , exercise_part_code : String
+    , page : Int
+    , per_page : Int
+    , total_count : Int }
 
 type alias DetailData = 
     { difficulty_name : String
@@ -58,18 +80,20 @@ type alias ScreenInfo =
     , offsetHeight : Int}
 -- levelDecoder
 
-detailEncoder part level session = 
+detailEncoder part level session page per_page= 
     let
         list = 
             Encode.object
                 [ ("exercise_part_code", Encode.string part)
-                , ("difficulty_code", (Encode.list Encode.string) level)]
+                , ("difficulty_code", (Encode.list Encode.string) level)
+                , ("page", Encode.int page)
+                , ("per_page", Encode.int per_page)]
     
         body =
             list
                 |> Http.jsonBody
     in
-    (Decoder.yourfitDetailListData ListData DetailData)
+    (Decoder.yourfitDetailListData ListData DetailData Paginate)
     |> Api.post Endpoint.yfDetail (Session.cred session) GetList body 
 
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
@@ -82,18 +106,45 @@ init session mobile =
         , resultLen = 0
         , exercise_part_code = ""
         , difficulty_code = []
+        , videoId = ""
         , infiniteLoading = False
+        , page = 1
+        , scrap = False
+        , need2login = False
+        , detailShow = False
+        , zindex = ""
+        , per_page = 10
+        , scrollCount = 0
+        , loading = False
+        , listData = 
+            { difficulty_name = Nothing
+            , duration = ""
+            , exercise_items = []
+            , exercise_part_name = Nothing
+            , id = 0
+            , inserted_at = ""
+            , pairing = []
+            , title = ""
+            , nickname = Nothing
+            , thumbnail = ""
+            , description = Nothing}
+        , paginate = 
+            { difficulty_code = []
+            , exercise_part_code = ""
+            , page = 0
+            , per_page = 0
+            , total_count = 0 }
+        , pageNum = 1
         , screenInfo = 
             { scrollHeight = 0
             , scrollTop = 0
             , offsetHeight = 0}
-        , listData = []
+        , listyourfitData = []
         , levelData = []
         , partDataName = []
         },
          Cmd.batch
-            [ Api.getKey () 
-            , Decoder.levelDecoder LevelData Level
+            [ Decoder.levelDecoder LevelData Level
             |> Api.get GetLevel Endpoint.level (Session.cred session) 
             ,Decoder.yourfitList YfE.YourFitList YfE.ListData YfE.ExerciseList 
             |> Api.get GetPart Endpoint.yourfitVideoList (Session.cred session)
@@ -109,7 +160,8 @@ subscriptions model =
     Sub.batch
     [ Api.receiveKey ReceiveId
     , Api.successId Success
-    , Session.changes GotSession (Session.navKey model.session)]
+    , Session.changes GotSession (Session.navKey model.session)
+    , Api.touch ReceiveScroll]
 
 type Msg 
     = IsActive String
@@ -123,9 +175,14 @@ type Msg
     | GetPart (Result Http.Error YfE.YourFitList)
     | ScrollEvent ScreenInfo
     | MyInfoData (Result Http.Error Decoder.DataWrap)
-    -- | ReceiveId Encode.Value
-
-
+    | PageBtn (Int, String)
+    | ReceiveScroll Encode.Value
+    | Scrap
+    | ScrapComplete (Result Http.Error Decoder.Success)
+    | NoOp
+    | GoVideo (List YfD.Pairing)
+    | GetListData (Result Http.Error YfD.GetData)
+    | DetailBack
 
 toSession : Model -> Session
 toSession model =
@@ -150,6 +207,85 @@ scrollInfoDecoder =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        DetailBack ->
+            if model.need2login then
+                ({model |  need2login = False}, Cmd.none)
+            else
+            ({model | detailShow = False, need2login = False, zindex = ""}, Api.hideFooter ())
+        GetListData (Ok ok) -> 
+             ({model | listData = ok.data, scrap = False, loading = False}, scrollToTop NoOp)
+        GetListData (Err err) -> 
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
+            (model, Cmd.none)
+        NoOp ->
+            (model, Cmd.none)
+        ScrapComplete (Ok ok) ->
+            let
+                text = Encode.string "스크랩 되었습니다."
+            in
+            
+            ({model | scrap = not model.scrap}, Api.showToast text )
+        ScrapComplete (Err err) ->
+            let
+                error = Api.decodeErrors err
+                cannotScrap = Encode.string "이미 스크랩 되었습니다."
+            in
+            if error == "401" then
+                ({model | need2login = True, detailShow = False}, 
+                Cmd.batch [
+                    Api.hideFooter () 
+                    , scrollToTop NoOp
+                ])
+            else
+                (model, Api.showToast cannotScrap)
+        Scrap ->
+            (model, 
+            Decoder.resultD
+            |> Api.get ScrapComplete (Endpoint.scrap model.videoId)(Session.cred model.session) )
+        GoVideo pairing->
+            let
+                videoList = 
+                    Encode.object 
+                        [("pairing", (Encode.list videoEncode) pairing) ]
+
+                videoEncode p=
+                    Encode.object
+                        [ ("file", Encode.string p.file)
+                        , ("image", Encode.string p.image)
+                        , ("title", Encode.string p.title)
+                        ]
+            in
+             ({model | zindex = "zindex"}, Api.videoData videoList)
+        ReceiveScroll scr ->
+            case Decode.decodeValue Decode.float scr of
+                Ok ok ->
+                    let 
+                        endOfPage =  model.paginate.total_count // model.per_page 
+                    in
+                    if model.scrollCount /= ok then
+                        if model.page < (endOfPage + 1) then
+                        ({model | scrollCount = ok, infiniteLoading = True, page = model.page + 1}, detailEncoder model.exercise_part_code model.difficulty_code model.session (model.page + 1) model.per_page)
+                        else
+                        ({model | scrollCount = ok }, Cmd.none)
+                    else
+                        ({model | scrollCount = ok }, Cmd.none)
+                Err err ->
+                    (model, Cmd.none)
+        PageBtn (idx, str) ->
+            case str of
+                "prev" ->
+                    ({model | page = idx, pageNum = model.pageNum - 1}, detailEncoder model.exercise_part_code model.difficulty_code model.session idx model.per_page)
+                "next" ->
+                    ({model | page = idx, pageNum = model.pageNum + 1}, detailEncoder model.exercise_part_code model.difficulty_code model.session idx model.per_page)
+                "go" -> 
+                    ({model | page = idx}, detailEncoder model.exercise_part_code model.difficulty_code model.session idx model.per_page)
+                _ ->
+                    (model, Cmd.none)
         MyInfoData (Ok ok) ->
             (model, Cmd.none) 
         MyInfoData (Err err) ->
@@ -161,22 +297,10 @@ update msg model =
         GotSession session ->
             ({model | session = session}
             , Cmd.batch[mydata session
-            , detailEncoder model.exercise_part_code model.difficulty_code model.session
+            , detailEncoder model.exercise_part_code model.difficulty_code model.session model.page model.per_page
              ]
             )
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
-             if (scrollHeight - scrollTop) <= offsetHeight then
-                    if model.takeList < model.resultLen then
-                        if model.isActive == "" then
-                            ({model | takeList = model.takeList + 3, infiniteLoading = True}, detailEncoder model.exercise_part_code model.difficulty_code model.session)
-                        else
-                            ({model | takeList = model.takeList + 3, infiniteLoading = True}, detailEncoder model.exercise_part_code [model.isActive] model.session )
-                    else
-                        if model.isActive == "" then
-                            ({model | takeList = model.takeList, infiniteLoading = False}, detailEncoder model.exercise_part_code model.difficulty_code model.session)
-                        else
-                            ({model | takeList = model.takeList, infiniteLoading = False}, detailEncoder model.exercise_part_code [model.isActive] model.session )
-            else
                 (model, Cmd.none)
         GetPart (Ok ok) ->
             ({model | partDataName = ok.data}, Cmd.none)
@@ -187,7 +311,6 @@ update msg model =
         BackPage ->
             (model, 
             Route.pushUrl (Session.navKey model.session) Route.YourFitExer
-            -- Api.historyUpdate (Encode.string "yourfitExercise")
             )
         Success str ->
             (model, 
@@ -197,59 +320,79 @@ update msg model =
         DetailGo id ->
             let
                 encodeId = Encode.int id
+                stringId = String.fromInt id
             in
-            
+            if model.check then
+                ({model | detailShow = True,  videoId = stringId}, 
+                    Cmd.batch[(Decoder.yfDetailDetail YfD.GetData YfD.DetailData YfD.DetailDataItem YfD.Pairing)
+                    |>Api.get GetListData (Endpoint.yfDetailDetail (stringId) ) (Session.cred model.session) 
+                    , Api.hideFooter () ]
+                    )
+            else
             (model, Api.saveId (encodeId))
         GetLevel (Ok ok) ->
-            ({model | levelData = ok.data}, Cmd.none)
+            ({model | levelData = ok.data}, Api.getKey () )
         GetLevel (Err err) ->
             (model, Cmd.none)
         ReceiveId id ->
-            let
+            let 
                 idDecode = Decode.decodeValue Decode.string id
             in
                 case idDecode of
                     Ok ok ->
-                        ({model | exercise_part_code = ok}, detailEncoder ok model.difficulty_code model.session ) 
+                        ({model | exercise_part_code = ok}, detailEncoder ok model.difficulty_code model.session model.page model.per_page ) 
                 
-                    Err _ ->
-                         (model, Cmd.none)
+                    Err err ->
+                         (model, Api.getKey ())
             
         GetList (Ok ok) ->
             let
                 makeList = 
                     List.take model.takeList ok.data
             in
-            ({model | listData = makeList, infiniteLoading = False, resultLen = List.length (ok.data)}, Cmd.none)
+            if model.check then
+            ({model | listyourfitData = ok.data ++ model.listyourfitData, infiniteLoading = False, resultLen = List.length (ok.data), paginate = ok.paginate}, Cmd.none)
+            else
+            ({model | listyourfitData = ok.data, infiniteLoading = False, resultLen = List.length (ok.data), paginate = ok.paginate}, Cmd.none)
         GetList (Err err) ->
             (model, Cmd.none)
         IsActive level ->
             if level == "" then
-            ( {model | isActive = level}, detailEncoder model.exercise_part_code [] model.session )
+            ( {model | isActive = level}, detailEncoder model.exercise_part_code [] model.session model.page model.per_page)
             else
-            ( {model | isActive = level}, detailEncoder model.exercise_part_code [level] model.session )
+                if model.check then
+                ( {model | isActive = level, listyourfitData = []}, detailEncoder model.exercise_part_code [level] model.session 1 model.per_page )
+                else
+                ( {model | isActive = level}, detailEncoder model.exercise_part_code [level] model.session 1 model.per_page )
 
 
 findFilterName model=
     List.head (
         List.filter (\x -> 
             x.code == model.exercise_part_code
-        )model.partDataName
+        ) model.partDataName
     )
 view : Model -> {title : String , content : Html Msg}
 view model =
     case findFilterName model of
         Just result ->
             if model.check then
-                if List.length(model.listData) > 0 then
+                if List.length(model.listyourfitData) > 0 then
                 { title = "유어핏 운동"
                 , content = 
+                   div [] [ 
                     div [] [
                     appHeaderRDetailClick result.name "yourfitListDetail yourfitHeader" BackPage "fas fa-angle-left"
                     , div [class "heightFix"] [
                         apptapbox model
                     ]  
                     , app model
+                    ]
+                    ,div [class ("container myaccountStyle " ++ if model.need2login then "account yfdetailShow" else ""), id (if model.need2login then "noScrInput" else "")] [
+                        appHeaderRDetailClick "로그인" "yourfitHeader" DetailBack "fas fa-times"
+                        , need2loginAppDetail DetailBack
+                    ]
+                    , YfD.app model DetailBack Scrap GoVideo
                     ]
                 } 
                 else
@@ -261,7 +404,7 @@ view model =
                     ]
                 } 
             else
-                if List.length(model.listData) > 0 then
+                if List.length(model.listyourfitData) > 0 then
                     { title = "유어핏 운동"
                     , content = 
                      div [ class "containerwrap" ]
@@ -275,9 +418,13 @@ view model =
                                     div [ class "earchbox_wrap" ]
                                         [ 
                                             div [ class "yf_searchbox" ]
-                                            (List.map contentsLayout model.listData)
+                                            (List.map contentsLayout model.listyourfitData)
                                         ]
-                                ]                                   
+                                    ,pagination
+                                    PageBtn
+                                    model.paginate
+                                    model.pageNum
+                                            ]                                   
                             ]
                         ] 
                     ]}
@@ -316,22 +463,19 @@ view model =
                 
             else
                 { title = "유어핏 운동"
-                , content = 
-                    div [][text "컨텐츠를 불러올수 없습니다."]
+                , content = div [class "spinnerBackWeb"] [spinner]
                 }
                 
     
 app model =    
-    div ([ class "container" ] ++ [style "max-height" "100%", style "min-height" (String.fromInt(200 * List.length model.listData) ++ "px")])
+    div ([ class "container" ] )
     [    
-        div ([ class "searchbox" ] ++ [scrollEvent ScrollEvent])
-        (List.indexedMap contentsLayout2 model.listData)
-        , if model.infiniteLoading then
-        div [class "loadingPosition"] [
+        div ([ class "searchbox scrollHegiht", id "searchHeight" ] ++ [scrollEvent ScrollEvent])
+        [ div [class " togetherscrollContent"] (List.indexedMap contentsLayout2 model.listyourfitData)
+        , div [class "loadingPosition", style "display" (if model.infiniteLoading then "block" else "none")] [
         spinner
         ]
-        else
-        span [] [] 
+        ]
                                             
     ]
 

@@ -38,6 +38,7 @@ type alias Model
         , postId : String
         , zindex : String
         , showDetail : Bool
+        , showMenu : Bool
     }
 
 type alias ScreenInfo = 
@@ -79,6 +80,7 @@ init session mobile
         , infiniteLoading = False
         , per_page = 10
         , postId = ""
+        , showMenu = False
         , zindex = ""
         , showDetail = False
         , getData = 
@@ -106,6 +108,7 @@ init session mobile
         , Cmd.batch [
             mypostList 1 10 session
             , Api.removeJw ()
+            , Api.mypageMenu (Encode.bool False)
         ]
     )
 
@@ -152,6 +155,10 @@ type Msg
     | GetDetailList  (Result Http.Error MyD.TogetherDataWrap)
     | VideoCall (List MyD.Pairing)
     | GoBack
+    | ClickRight
+    | ClickLeft
+    | GoAnotherPage
+    | ShowMenu
 
 toSession : Model -> Session
 toSession model =
@@ -165,8 +172,18 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ShowMenu ->
+            ({model | showMenu = not model.showMenu}, Cmd.none)
+        GoAnotherPage ->
+            (model, Cmd.batch [
+                 Api.setCookie (Encode.int 1)
+            ])
+        ClickRight ->
+            ( model, Api.scrollRight () )
+        ClickLeft ->
+            (model , Api.scrollLeft ())
         GoBack ->
-            ({model | showDetail = False}, Cmd.none)
+            ({model | showDetail = False, zindex = ""}, Api.hideFooter ())
         VideoCall pairing->
             let
                 encodePairing pair= 
@@ -310,7 +327,9 @@ view model =
         { title = "내 게시물"
         , content = 
             div [] [
-                div [ class "container" ]
+                div [class "mypageHiddenMenu", onClick ShowMenu] []
+                    , div[][myPageCommonHeader ClickRight ClickLeft GoAnotherPage model.showMenu]
+                , div [ class "container" ]
             [
                 commonJustHeader "/image/icon_management.png" "나의 게시물관리"
                 , div [style "display" (if List.isEmpty model.data.data then "none" else "block")] [contentsBody model.data model.pageNum model.show]

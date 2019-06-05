@@ -3,6 +3,7 @@ import './main.css';
 import './css/all.min.css'
 import './css/app.css'
 import './css/datepicker.css'
+
 import { Elm } from './Main.elm';
 import registerServiceWorker from './registerServiceWorker';
 
@@ -18,6 +19,7 @@ if (agent.indexOf("msie") != -1) {
   }
   
 const url ='http://13.209.49.169:4000/api/v1/'
+// const url = 'https://api.yfit.co.kr/api/v1/'
 var filter = "win16|win32|win64|mac|macintel"; 
 var flags = 
   { token : 
@@ -103,6 +105,19 @@ app.ports.sendData.subscribe(function () {
  
 });
 
+app.ports.hideFooter.subscribe(function () {
+  if (document.getElementById("myElement") == null) { return; 
+  } else {
+    document.getElementById("myElement").innerHTML = "";
+    document.getElementById("myElement").classList.remove(document.getElementById("myElement").classList[0], document.getElementById("myElement").classList[1])
+  }
+  if (document.getElementById("footer") == null) {
+    return;
+  } else {
+    var footer = document.getElementById("footer")
+    footer.style.display == "" ? footer.style.display = "none" : footer.style.display = ""
+  }
+})
 
 app.ports.deleteData.subscribe(function() {
   localStorage.removeItem ("addItem")
@@ -146,8 +161,16 @@ localStorage.setItem("contentsKey", key)
 })
 
 app.ports.getKey.subscribe(function () {
-  var get = localStorage.getItem ("contentsKey")
+  var get = localStorage.getItem ("contentsKey") 
+  if (window.location.hash == "#/mealRecord" ||  window.location.hash == "#/mealRecordM")
+  {
+    var list = get.split(',')
+    // console.log(
   app.ports.receiveKey.send(get)
+  // console.log({code : list[0], date : list[1]})
+  } else {
+  app.ports.receiveKey.send(get)
+}
 })
     
 app.ports.saveId.subscribe(function (id) {
@@ -338,14 +361,23 @@ app.ports.showToast.subscribe(function (text) {
 // })
 
 app.ports.getscrollHeight.subscribe(function(data) {
-  // alert( data)
   var heightValue = document.documentElement.scrollTop
   if (data){
-    document.documentElement.style.position = "fixed"
-    document.documentElement.style.top = '-' + String(heightValue) + 'px'
-  } else {
-    document.documentElement.style.position = ""
-    document.documentElement.style.top = ''
+    if (document.getElementById("calendarImg") ) {
+      document.getElementById("calendarImg").style.top =  String(heightValue) + 'px' 
+    
+    }
+    else {
+    //   console.log (heightValue)
+    // document.documentElement.style.top = '-' + String(heightValue) + 'px'
+    // document.documentElement.style.position = "fixed"
+  }
+  }  else {
+    if (document.getElementById("calendarImg")) {
+      document.getElementById("calendarImg").style.top = ""
+    } else
+    {document.documentElement.style.position = ""
+    document.documentElement.style.top = ''}
   }
 })
 
@@ -363,13 +395,36 @@ app.ports.scrollControl.subscribe (function () {
   //  document.documentElement.style.height = 0
   }
    else {
-    document.body.style.overflow = ("hidden", "auto")
+    document.body.style.overflow = "hidden"
   }
 })
 
+app.ports.mypageMenu.subscribe(function (val) {
+  if (filter.indexOf( navigator.platform.toLowerCase() ) < 0 )
+   { return ;
+  } 
+  else {
+  if (document.getElementById("mypageMenu") == null || document.getElementById("scrollCtr") == null) {
+    location.replace("#/myPage")
+  } else {
+  var item= document.getElementById("mypageMenu")
+  var secItem = document.getElementById("scrollCtr")
+  if (val) 
+    {
+      item.style.height == "110px"  ? item.style.height = "0px" : item.style.height = "110px" ;
+      secItem.style.height == "110px"  ? secItem.style.height = "0px" : secItem.style.height = "110px" ;
+    }
+  else {
+    secItem.style.height = "0px"
+    item.style.height = "0px" } }
+  }
+})
+
+
 app.ports.logoutpop.subscribe(function() {
-var heightValue = document.documentElement.offsetHeight
+var heightValue = document.documentElement.clientHeight
 var checkDisplay = document.getElementById("logoutPop") || document.getElementById("mlogoutPop");
+console.log(heightValue)
 if (checkDisplay.className == "logoutShow")  {
   checkDisplay.class = checkDisplay.classList.remove("logoutShow");
   checkDisplay.style.height = 0 +'px'
@@ -377,22 +432,52 @@ if (checkDisplay.className == "logoutShow")  {
   if (filter.indexOf( navigator.platform.toLowerCase() ) < 0 )
     {
       checkDisplay.className = "logoutShow";
-      checkDisplay.style.height = heightValue +'px'
+      checkDisplay.style.height = "100vh"
       document.body.style.overflow = ""
     } else {
       checkDisplay.className = "logoutShow";
-      checkDisplay.style.height = heightValue +'px'
-      document.body.style.overflow = "scroll"
+      checkDisplay.style.height = "100vh"
+      // document.body.style.overflow = "scroll"
     }
 }
 })
+// window.onscroll = function(ev) {
+//   if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
+//       alert("you're at the bottom of the page");
+//   }
+// };
+
+
+
+  document.addEventListener('touchmove', function(e) {
+    
+     if (document.getElementById("searchHeight"))  {
+      var scrTop = document.getElementById("searchHeight").scrollTop
+      var scrH = document.getElementById("searchHeight").scrollHeight
+      var scrofh = document.getElementById("searchHeight").offsetHeight
+      var total = scrTop + scrofh >= scrH
+      if (total) {
+          app.ports.touch.send(scrH)
+          console.log(scrH)
+      }
+     
+    }
+    else {
+      // console.log ("get outout")
+      return;
+    }
+  }, 
+  { capture: false });
+
+ 
 
 document.addEventListener('touchmove', function(e) {
   if (document.getElementById("noScrInput")){
-    console.log("getinin")
+    // document.body.setAttribute('style','overflow:hidden;');
   e.preventDefault();}
+  
   else {
-    console.log ("get outout")
+    // console.log ("get outout")
     return;
   }
 }, { passive: false });

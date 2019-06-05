@@ -235,9 +235,7 @@ update msg model =
             
         BackPage ->
             ( model, 
-            -- Route.pushUrl (Session.navKey model.session) Route.YourFitExer
-            Route.backUrl (Session.navKey model.session) 1
-            )
+            Route.backUrl (Session.navKey model.session) 1)
         -- CheckDevice str ->
         --    let 
         --         result =
@@ -252,37 +250,37 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    if model.check then
-        if model.loading then
-        { title = "유어핏 운동"
-        , content = 
-                    div [ class "container" ]
-                [
-                   appHeaderRDetailClick model.listData.title  "yourfitHeader" BackPage "fas fa-times"
-                   ,
-                    div [class "spinnerBack"] [
-                        spinner
-                        ]
-            ]   
-        }
-        else
-        { title = "유어핏 운동"
-        , content = 
-             div [ class "container yfDContainer" ]
-                [
-                   appHeaderRDetailClick model.listData.title  "yourfitHeader" BackPage "fas fa-times"
-                   ,
-                    div [] []
-                     , 
-                    div [][
-                        if model.need2login then
-                        need2loginAppDetail BackDetail
-                    else
-                    appcontentsItem model.listData model.loading Scrap model model.zindex
-                    ]
-                ]
-        }
-    else
+    -- if model.check then
+    --     if model.loading then
+    --     { title = "유어핏 운동"
+    --     , content = 
+    --                 div [ class "container" ]
+    --             [
+    --                appHeaderRDetailClick model.listData.title  "yourfitHeader" BackPage "fas fa-times"
+    --                ,
+    --                 div [class "spinnerBack"] [
+    --                     spinner
+    --                     ]
+    --         ]   
+    --     }
+    --     else
+    --     { title = "유어핏 운동"
+    --     , content = 
+    --          div [ class "container" ]
+    --             [
+    --                appHeaderRDetailClick model.listData.title  "yourfitHeader" BackPage "fas fa-times"
+    --                ,
+    --                 div [] []
+    --                  , 
+    --                 div [][
+    --                     if model.need2login then
+    --                     need2loginAppDetail BackDetail
+    --                 else
+    --                 appcontentsItem model.listData model.loading Scrap model model.zindex
+    --                 ]
+    --             ]
+    --     }
+    -- else
         { title = "유어핏 운동"
         , content = 
             div [] [
@@ -290,26 +288,13 @@ view model =
             ]   
         }
 
-app model= 
-        div [ class "container" ]
+app model backpage scrap goVideo= 
+        div [class ("container myaccountStyle " ++ if model.detailShow then "account yfdetailShow" else "")]
                 [
-                   appHeaderRDetailClick model.listData.title  "yourfitHeader" BackPage "fas fa-times"
+                   appHeaderRDetailClick model.listData.title  "yourfitHeader" backpage "fas fa-times"
                    ,
-                    div [] [
-                        if model.loading then
-                    div [class "spinnerBack"] [
-                        spinner
-                        ]
-                    else 
-                    div [] []
-                    ]
-                     , 
-                    div [][
-                        if model.need2login then
-                        need2loginAppDetail BackDetail
-                    else
-                    appcontentsItem model.listData model.loading Scrap model model.zindex
-                    ]
+                    appcontentsItem model.listData model.loading scrap model model.zindex goVideo
+                    
                 ]
 
 web msg model= 
@@ -390,20 +375,15 @@ justok casees =
         Nothing ->
             "  "
 
-appcontentsItem item loading scrap modelscrap zindex= 
+appcontentsItem item loading scrap modelscrap zindex goVideo = 
             div [ ]
-            [ div []
-                [ p [ class "m_yf_container" ]
+            [  p [ class "m_yf_container" ]
                     [ 
-                        div [ class ("appimagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") , onClick (GoVideo item.pairing) ][]
-                        -- , img [src item.thumbnail, onClick (GoVideo item.pairing)] []
+                        div [ class ("appimagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") , onClick (goVideo item.pairing) ][]
                         , videoCall
                     ]
-                ]
+                
             , 
-            -- if loading then 
-            -- spinner
-            -- else
             div [ class "m_yf_work_textbox" ]
                 [ div [ class "m_yf_work_time" ]
                     [ span []
@@ -426,9 +406,6 @@ appcontentsItem item loading scrap modelscrap zindex=
                     ]
                 ]
             , 
-            -- if loading then 
-            -- div [] []
-            -- else
             div [class"m_explanation"] [
                 pre [class "descriptionBackground"] [text (justok item.description)]
                 , div [ class "m_yfwork_script" ]

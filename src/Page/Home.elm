@@ -126,7 +126,7 @@ webOrApp model =
                         []
 
                     , h1 [ class "home_last_title" ]
-                     [text "사용자 커스텀 D.I.Y 트레이닝 유어핏,PC, 모바일 어디서나 접속하세요!"]
+                     [text "사용자 커스텀 D.I.Y 트레이닝 유어핏 PC나 모바일 어디서나 접속하세요!"]
 
                     
                     ]                       
@@ -210,6 +210,6 @@ menu =
         {
             thumb = "image/icon05.png",
             menuTitle = "1:1문의",
-            routing = Route.Faq
+            routing = Route.C
         }
     ]

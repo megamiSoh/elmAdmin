@@ -514,7 +514,7 @@ update msg model =
             , Cmd.batch[Api.scrollControl ()
             , scrollToTop NoOp])
             else
-            ({model | currentPage = str}, Cmd.batch [scrollToTop NoOp
+            ({model | currentPage = str, showbottomtoast = ""}, Cmd.batch [scrollToTop NoOp
             ])
         MyInfoData (Ok ok) ->
             ({model | mydata = ok.data}, Cmd.none)
@@ -536,63 +536,28 @@ view model =
     --     "nick" ->
             { title = "닉네임 변경"
             , content =
-                div [style "min-height" "750px"] [
-                    -- appHeaderConfirmDetailR "닉네임 변경" "myPageHeader whiteColor" (ChangePage "")  ChangeGo  "확인"
+                div [] [
                     div [] [
                          contents model
                         , nicknameContents model
                         , pwdContents model
                         , accountContents model
                         , bodyRecord model 
-                        , div [] (List.map previewLayout model.preview )
+                        , div [] (List.map (\x -> previewLayout x model) model.preview )
                     ] 
                 ]
             }
-        -- "pwd" ->
-        --     { title = "비밀번호 변경"
-        --     , content = 
-        --         div [] [
-        --                 appHeaderConfirmDetailR "비밀번호 변경" "myPageHeader  whiteColor" (ChangePage "")  ChangePwd "변경"
-        --                 , pwdContents model
-        --             ]
-        --     }
-        -- "account" ->
-        --     { title = "계정관리"
-        --     , content = 
-        --         div [] [
-        --             appHeaderRDetailClick "계정관리" "myPageHeader  whiteColor" (ChangePage "") "fas fa-angle-left"
-        --             , accountContents model
-        --         ]
-        --     }
-        -- "body" ->
-        --     { title = "신체정보관리"
-        --     , content = 
-        --         div [id "mypage_container"] [
-        --             bodyRecord model 
-        --         ]
-        --     }
-        
-        -- "image" ->
-        --     { title =" 프로필 사진"
-        --     , content = 
-        --         div [] [
-        --         appHeaderConfirmDetailR "프로필 사진 변경" "myPageHeader whiteColor" (ChangePage "")  ChangeProfile  "저장"
-        --         , div [] (List.map previewLayout model.preview )
-        --         ]
-        --     }
-        -- _ ->
-        --     { title ="마이페이지"
-        --     , content = 
-        --         div [] [
-        --             appHeaderRDetailClick "마이페이지" "myPageHeader whiteColor" BackBtn "fas fa-angle-left"
-        --             , contents model
-        --         ]
-        --     }
 
-    
-
-previewLayout item = 
-    div [] [
+previewLayout item model = 
+    div [class ("control has-icons-right myaccountStyle "  ++ (if model.currentPage == "image" then model.currentPage else ""))] [
+        ul [class "accountHeader"] 
+                [ li[onClick (ChangePage "")]
+                    [ span [class "fas fa-times"][] ]
+                , li[][text "프로필 사진"]
+                , li[onClick ChangeProfile][
+                   text "확인"
+                ]
+                ],
         img [src item] []
     ]
 justData cases = 
@@ -623,7 +588,7 @@ nicknameContents model =
 
 accountContents model = 
         div [ class ("container yf_container myaccountStyle "  ++ (if model.currentPage == "account" then model.currentPage else ""))]
-            [ ul [class "accountHeader"] 
+            [ ul [class "accountHeader", id (if model.currentPage == "account" then "noScrInput" else "" )] 
                 [ li[onClick (ChangePage "")]
                     [ span [class "fas fa-times"][] ]
                 , li[][text "계정관리"]
@@ -878,9 +843,9 @@ birth model =
 
 
 bodyRecord model = 
-   div [ class ("settingbox myaccountStyle " ++ (if model.currentPage == "body" then model.currentPage else "")) ]
+   div [ class ("settingboxes myaccountStyle " ++ (if model.currentPage == "body" then model.currentPage else "")) ]
     [ 
-        ul [class "accountHeader"] 
+        ul [class "accountHeader", id (if model.currentPage == "body" then "noScrInput" else "")] 
                 [ li[onClick (ChangePage "")]
                     [ span [class "fas fa-times"][] ]
                 , li[][text "신체정보"]

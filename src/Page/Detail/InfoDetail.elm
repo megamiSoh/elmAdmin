@@ -77,6 +77,9 @@ type Msg
     = CheckDevice E.Value
     | GetDetail (Result Http.Error Data)
     | GotSession Session
+    | ClickRight
+    | ClickLeft
+    | GoAnotherPage
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -95,6 +98,14 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GoAnotherPage ->
+            (model, Cmd.batch [
+                 Api.setCookie (E.int 1)
+            ])
+        ClickRight ->
+            ( model, Api.scrollRight () )
+        ClickLeft ->
+            (model , Api.scrollLeft ())
         GotSession session ->
             ({model | session = session },Api.get GetDetail (Endpoint.detailInfo model.checkDevice) (Session.cred model.session) (Decoder.detailInfo Data DetailData))
         GetDetail (Ok ok)->
@@ -132,7 +143,8 @@ view model =
     { title ="공지사항 상세페이지"
     , content =
         div [] [
-        web model.data model
+        div[][myPageCommonHeader ClickRight ClickLeft GoAnotherPage False]
+        , web model.data model
         ]
     }
 

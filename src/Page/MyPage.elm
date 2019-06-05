@@ -649,7 +649,9 @@ view model =
     
 app model = 
      div [class "container"] [
+        
          appTopMenu model,
+         
          div [class "myMenuStyle", style "min-height" (String.fromInt ((List.length menu) * 70 + 77) ++ "px")](List.map menuBottom (menu))
      ]
 appTopMenu model = 
@@ -661,8 +663,7 @@ appTopMenu model =
             
                 Nothing ->
                     img [src "../image/profile.png"] []
-            , p []
-                [ text (justData model.mydata.user.nickname) ]
+            
             ]
         -- , div [ class "m_mypage_subbox" ]
         --     [ p []
@@ -684,6 +685,10 @@ appTopMenu model =
             ]
         , a [ class "button is-dark m_mypage_mybtn" , Route.href Route.MyAccount]
                 [ text "내 정보설정" ]
+         ,  div [class "mypageIdContainer"]
+        [ strong [] [text "닉네임"] ,
+        p [] [text (justData model.mydata.user.nickname)] ]
+        
         ]
 menuBottom item = 
         a [ class "m_mypage_mypagemenu" , Route.href item.route]
@@ -699,7 +704,7 @@ justData cases =
             "닉네임 등록"
 web model= 
     div [] [
-            myPageCommonHeader ClickRight ClickLeft GoAnotherPage
+            myPageCommonHeader ClickRight ClickLeft GoAnotherPage True
             ,
             div [ class "containerwrap" ]
             [ div [ class "container" ]
@@ -779,11 +784,12 @@ menu =
         
             [
             {icon = "/image/icon_calendar.png", title ="캘린더", route = Route.MyC},
-            {icon = "/image/icon_diet.png", title ="식단기록", route = Route.MealRM},
-            -- {icon = "/image/icon_stats.png", title ="나의 통계", route = Route.MyS},
+            -- {icon = "/image/icon_diet.png", title ="식단기록", route = Route.MealRM},
+            {icon = "/image/icon_stats.png", title ="나의 통계", route = Route.MyS},
             {icon = "/image/icon_list.png", title ="스크랩리스트", route = Route.MyScrap},
             {icon = "/image/icon_management.png", title ="내 게시물 관리", route= MyPost},
             {icon = "/image/icon_notice.png", title ="공지사항", route = Route.Info},
-            {icon = "/image/icon_qna.png", title ="1:1 문의", route = Route.Faq},
-            {icon = "/image/icon_qna.png", title ="로그아웃", route = Route.Logout}
+            {icon = "/image/icon_qna.png", title ="1:1 문의", route = Route.C},
+            {icon = "/image/icon_qna.png", title ="로그아웃", route = Route.Logout} ,
+            {icon = "/image/icon_stats.png", title ="자주하는 질문", route = Route.Faq}
             ]

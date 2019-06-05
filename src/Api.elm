@@ -12,7 +12,7 @@ import Json.Decode.Pipeline as Pipeline exposing (optional, required)
 import Json.Encode as Encode
 import Url exposing (Url)
 import Task exposing (Task)
-
+import Browser.Dom as Dom
 
 type Cred
     = Cred String
@@ -74,6 +74,7 @@ port setCookieSuccess : (Value -> msg) -> Sub msg
 port getHeightValue : (Value -> msg) -> Sub msg
 port videoWatchComplete : (Value -> msg) -> Sub msg
 port sendHeight : (Value -> msg) -> Sub msg
+port touch : (Value -> msg) -> Sub msg
 viewerChanges toMsg decoder =
     onStoreChange (\value -> toMsg (decodeFromChange decoder value))
 
@@ -140,8 +141,9 @@ port removeJw : () -> Cmd msg
 port logoutpop : () -> Cmd msg
 port scrollControl : () -> Cmd msg
 port getHeight : Value -> Cmd msg
-port mypageMenu : () -> Cmd msg
+port mypageMenu : Value -> Cmd msg
 port bodyInfo : () -> Cmd msg
+port hideFooter : () -> Cmd msg
 -- port logout : () -> Cmd msg
 -- application :
     -- Decoder (Cred -> viewer)
@@ -158,6 +160,10 @@ type alias Flags =
     { token : String
     -- , checkBrowser : Bool
     }
+
+-- unfocus : Cmd msg
+unfocus noop =
+    Task.attempt(\_ -> noop) (Dom.blur "keyboardBlur")
 
 flagsDecoder flags = 
     Decode.succeed flags

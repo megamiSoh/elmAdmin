@@ -14,6 +14,15 @@ import Api.Endpoint as Endpoint
 import Api.Decoder as Decoder
 import Page.Detail.FaqDetail as FaqDetail
 import Page.Detail.FaqWrite as Fw
+import Markdown.Block as Block exposing (Block)
+import Markdown.Config exposing (HtmlOption(..),  defaultSanitizeOptions)
+import Markdown.Inline as Inline
+import Page.InfoEditor exposing (..)
+
+defaultOptions =
+    { softAsHardLineBreak = False
+    , rawHtml = ParseUnsafe
+    }
 
 type alias Model 
     = {
@@ -26,7 +35,7 @@ type alias Model
         , pageNum : Int
         , page : Int
         , per_page : Int
-        , detail : Detail
+        , detail : FaqDetail.Detail
         , screenInfo : ScreenInfo
         , ofheight : Bool
         , appFaqData : List Data
@@ -34,6 +43,12 @@ type alias Model
         , content : String
         , showWrite : Bool
         , showDetail : Bool
+        , scrollCount : Float
+        , onDemandText : String
+        , options : Markdown.Config.Options
+        , selectedPreviewTab : PreviewTab
+        , showToC : Bool
+        , textarea : String
     }
 
 type alias Faq =
@@ -43,7 +58,7 @@ type alias Faq =
 type alias Data = 
     { id : Int
     , inserted_at : String
-    , is_answer : Bool
+    , is_use : Bool
     , title : String }
 
 type alias Detail = 
@@ -56,20 +71,26 @@ type alias Detail =
     , username : String }
 
 type alias Page = 
-    { asked_id : Int
-    , end_date : String
-    , is_answer : Maybe Bool
+    {  end_date : String
+    , is_use : Bool
     , page : Int
     , per_page : Int
     , start_date : String
     , title : String
-    , total_count : Int
-    , username : String }
+    , total_count : Int  }
 
 type alias ScreenInfo = 
     { scrollHeight : Int
     , scrollTop : Int
     , offsetHeight : Int}
+
+type PreviewTab
+    = RealTime
+
+
+type EditorTab
+    = Editor
+
 
 init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
@@ -87,6 +108,12 @@ init session mobile
         , title = ""
         , content = ""
         , showWrite = False
+        , scrollCount = 0
+        , textarea = ""
+        , onDemandText = ""
+        , options = defaultOptions
+        , showToC = False
+        , selectedPreviewTab = RealTime
         , screenInfo = 
             { scrollHeight = 0
             , scrollTop = 0
@@ -94,34 +121,33 @@ init session mobile
         , faq = 
             { data = []
             , paginate =
-                { asked_id = 0
-                , end_date = ""
-                , is_answer = Nothing
-                , page = 1
-                , per_page = 10
+                { end_date = ""
+                , is_use = False
+                , page = 0
+                , per_page = 0
                 , start_date = ""
                 , title = ""
-                , total_count = 0
-                , username = ""}
+                , total_count = 0 
+                }
             }
         , detail = 
-            { answer = Nothing
-            , asked_id = 0
-            , content = ""
-            , id = 0
-            , is_answer = False
-            , title = ""
-            , username = "" }
+            { content = ""
+            , id = 0 
+            , title = "" }
         , showDetail = False
         }
         , Cmd.batch[faqEncode 1 10 session
-        , scrollToTop NoOp]
+        , scrollToTop NoOp
+        , Api.mypageMenu (E.bool False)
+        ]
     )
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch[Api.successSave GetDetail
-    , Session.changes GotSession (Session.navKey model.session)]
+    , Session.changes GotSession (Session.navKey model.session)
+    , Api.touch ReceiveScroll]
 
 faqEncode page per_page session =
     let
@@ -131,10 +157,10 @@ faqEncode page per_page session =
                 , ("per_page", E.int per_page)]
                     |> Http.jsonBody 
     in
-    Api.post Endpoint.faqlist (Session.cred session) FaqList body (Decoder.faqList Faq Data Page)
+    Api.post Endpoint.faqfaqList (Session.cred session) FaqList body (Decoder.faqfaqList Faq Data Page)
     
 detailApi id session = 
-    Api.get AppDetail (Endpoint.faqDetail id) (Session.cred session) (Decoder.faqdetail FaqDetail.Data Detail)
+    Api.get AppDetail (Endpoint.faqfaqDetail id) (Session.cred session) (Decoder.faqfaqDetail FaqDetail.Data FaqDetail.Detail)
 
 type Msg 
     = CheckDevice E.Value
@@ -157,6 +183,10 @@ type Msg
     | GoEdit
     | EditComplete (Result Http.Error Decoder.Success)
     | NoOp
+    | ReceiveScroll E.Value
+    | ClickRight
+    | ClickLeft
+    | GoAnotherPage
 
 toSession : Model -> Session
 toSession model =
@@ -181,6 +211,29 @@ scrollInfoDecoder =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GoAnotherPage ->
+            (model, Cmd.batch [
+                 Api.setCookie (E.int 1)
+            ])
+        ClickRight ->
+            ( model, Api.scrollRight () )
+        ClickLeft ->
+            (model , Api.scrollLeft ())
+        ReceiveScroll scr ->
+            case Decode.decodeValue Decode.float scr of
+                Ok ok ->
+                    let 
+                        endOfPage =  model.faq.paginate.total_count // model.per_page 
+                    in
+                        if ok /= model.scrollCount then
+                            if model.page < (endOfPage + 1) then
+                            ({model | scrollCount = ok, page =  model.page + 1}, faqEncode  (model.page + 1) model.per_page model.session )
+                            else
+                            ({model | ofheight = True}, Cmd.none)
+                        else
+                        (model, Cmd.none)
+                Err err ->
+                    (model, Cmd.none)
         NoOp ->
             (model, Cmd.none)
         EditComplete (Ok ok) ->
@@ -190,7 +243,7 @@ update msg model =
         GoEdit ->
             (model , FaqDetail.editEncoder model.title model.content model.session (String.fromInt model.getId) EditComplete)
         DetailData (Ok ok) ->
-            ({model | detail = ok.data, title = ok.data.title, content = ok.data.content}, Cmd.none)
+            ({model | detail = ok.data, title = ok.data.title, content = ok.data.content, textarea = ok.data.content}, Cmd.none)
         DetailData (Err err) ->
             (model, Cmd.none)
         RegistSuccess (Ok ok) ->
@@ -228,15 +281,15 @@ update msg model =
         GotSession session ->
             ({model | session = session}, faqEncode  (model.page + 1) model.per_page model.session)
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
-            let 
-                endOfPage =  model.faq.paginate.total_count // model.per_page 
-            in
-             if (scrollHeight - scrollTop) <= offsetHeight then
-                if model.page < (endOfPage + 1) then
-                ({model | page = model.page + 1}, faqEncode  (model.page + 1) model.per_page model.session )
-                else
-                ({model | ofheight = True}, Cmd.none)
-            else
+            -- let 
+            --     endOfPage =  model.faq.paginate.total_count // model.per_page 
+            -- in
+            --  if (scrollHeight - scrollTop) <= offsetHeight then
+            --     if model.page < (endOfPage + 1) then
+            --     ({model | page = model.page + 1}, faqEncode  (model.page + 1) model.per_page model.session )
+            --     else
+            --     ({model | ofheight = True}, Cmd.none)
+            -- else
                 (model, Cmd.none)
         DeleteSuccess (Ok ok) ->
             (model, Cmd.batch [
@@ -254,7 +307,7 @@ update msg model =
         GoDelete id ->
             ({model | getId = id}, Api.get DeleteSuccess (Endpoint.faqDelete (String.fromInt id)) (Session.cred model.session) (Decoder.resultD) )
         AppDetail (Ok ok) ->
-            ({model | detail = ok.data}, Cmd.none)
+            ({model | detail = ok.data, textarea = ok.data.content}, Cmd.none)
         AppDetail (Err err) ->
             let 
                 serverErrors = Api.decodeErrors err
@@ -290,7 +343,7 @@ update msg model =
             else
             ({model | faq = ok}, Cmd.none)
         FaqList (Err err) ->
-            let 
+            let
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
@@ -322,22 +375,22 @@ view model =
         div [] [
             app model
             , appDetail model
-            , floating
         ]
     }
     else
     { title = "YourFitExer"
     , content = 
         div [] [
-            web model
+            div[][myPageCommonHeader ClickRight ClickLeft GoAnotherPage False]
+            , web model
         ]
     }
 web model = 
     div [ class "container" ]
         [
-            commonJustHeader "/image/icon_qna.png" "1:1문의",
+            commonJustHeader "/image/icon_qna.png" "자주하는 질문",
             if List.isEmpty model.faq.data then
-            div [class "noResult"] [text "1:1 문의가 없습니다."]
+            div [class "noResult"] [text "문의가 없습니다."]
             else
             div [] [
                 contentsBody model,
@@ -345,34 +398,26 @@ web model =
                     PageBtn
                     model.faq.paginate
                     model.pageNum
-            ],
-            faqWrite
+            ]
         ]
 app model = 
     div [class ("container topSearch_container " ++ (if model.showWrite || model.showDetail then "fadeContainer" else ""))] [
-        appHeaderConfirmDetailleft "1:1문의" "myPageHeader" (GoBack "home") (GoBack "write") "글쓰기" 
-        , appContentsBody model
+        appHeaderConfirmDetailleft "자주하는 질문" "myPageHeader" (GoBack "home") (GoBack "write") "" 
+        , 
+        if List.isEmpty model.faq.data then
+        div [class "noResult"] [text "문의가 없습니다."]
+        else
+        appContentsBody model
 
     ]
 appContentsBody model=
-    div [class "table scrollHegiht" , scrollEvent ScrollEvent] [
+    div [class "table scrollHegiht" , scrollEvent ScrollEvent, id "searchHeight"] [
         div [class "m_loadlistbox"] (List.indexedMap (\idx x ->  itemLayout idx x model) model.appFaqData)
     ]
 itemLayout idx item model =
         div [class "eventArea" ,onClick (Show idx item.id)] [
-            div [class "eventAreaChild"] [
-                pre [class "titleLeft"] [text item.title],
-                div [class "qna_date inlineB"] [
-                    ul [] [
-                        li [] [text (String.dropRight 10 item.inserted_at)],
-                        li [] [
-                            if item.is_answer then
-                            span [class "faq_done"] [text "답변완료"]
-                            else
-                            span [class "faq_waiting"] [text "대기중"]
-                        ]
-                    ]
-                ]
+            div [class "eventAreaChild faqevent"] [
+                pre [class "titleLeft"] [text item.title]
             ]
             , expandQ idx model item.id
         ]
@@ -381,9 +426,8 @@ expandAnswer title =
             p[class"answerbox_text"][text ("Re: " ++  title)]
         ]
 showAnswer answer= 
-    tr [class"tr_showAnswer"]
-        [ td [ colspan 2 ]
-            [  pre [class "faq_q"][text (justString answer)] ]
+    div [class"tr_showAnswer"]
+        [  pre [class "faq_q"][text (justString answer)] 
         ]
 
 
@@ -393,32 +437,7 @@ expandQ idx model id =
         ("heightZero", True),
         ("heightShow", String.fromInt(idx)  == model.idx )
     ]] [
-        div [][
-            pre[class"faq_q"] [text ( model.detail.content)],
-            p [class"m_fnq_btn"  ]
-                [ 
-                    if model.detail.is_answer then
-                    div [] []
-                    else
-                    div [] [
-                        div [ class "button faq_q_btn ", onClick (DetailGo id)]
-                        [ i [ class "fas fa-edit " ]
-                            [], text "수정" 
-                        ]
-                        , div [ class "button faq_q_btn" , onClick (GoDelete id) ]
-                        [ i [ class "far fa-trash-alt " ]
-                            [], text "삭제" 
-                        ]
-                    ]
-                ]
-            ]
-            ,
-           
-                expandAnswer (decodeChar model.detail.title)
-                , showAnswer model.detail.answer
-
-                
-            
+        markdownView model
     ]
 
 
@@ -430,8 +449,8 @@ contentsBody model =
                         [ text "번호" ]
                     , div [class "tableCell faq_title"]
                         [ text "제목" ]
-                    , div [class "tableCell faq_ing"]
-                        [ text "진행사항" ]
+                    -- , div [class "tableCell faq_ing"]
+                    --     [ text "진행사항" ]
                     , div [class "tableCell faq_date"]
                         [ text "등록일" ]
                     ]
@@ -451,12 +470,12 @@ contentsLayout idx item model =
                     |> String.replace "%26" "&"
                     |> String.replace "%25" "%"
             ) ],
-        div [class "tableCell qna_ing_text"] [
-            if item.is_answer then
-            span [class "faq_done"] [text "답변 완료"]
-            else
-            span [class "faq_waiting"][text "대기중"]
-        ],
+        -- div [class "tableCell qna_ing_text"] [
+        --     if item.is_use then
+        --     span [class "faq_done"] [text "답변 완료"]
+        --     else
+        --     span [class "faq_waiting"][text "대기중"]
+        -- ],
         div [class "tableCell qna_title_date"] [text (String.dropRight 10 item.inserted_at)]
     ]
 
@@ -483,16 +502,8 @@ pagenation=
                 ]
             ]
         ]
-faqWrite = 
-    div [ class " yf_dark" ]
-        [ a [ class "button is-dark", Route.href Route.FaqW]
-            [ text "글쓰기" ]
-        ]
-floating = 
-    div[ onClick (GoBack "write"), class "float" ]
-        [ i [ class "fas fa-pen icon_pen" ]
-            []
-        ]
+
+
      
 justString item = 
     case item of
@@ -514,14 +525,14 @@ appDetail model =
        div [] [
            appHeaderConfirmDetailR "문의하기" "myPageHeader" (GoBack "list") GoEdit "수정" 
            , FaqDetail.apptitle model.title Title
-           , div [classList [("appFaqleft", True)
-           , ("display", model.detail.is_answer == True)
-           ] ][text "답변완료"]
-           , div [classList 
-           [ ("appFaqleft", True)
-           , ("red", True)
-           , ("display", model.detail.is_answer == False)]
-           ][text "답변 대기 중"]
+        --    , div [classList [("appFaqleft", True)
+        --    , ("display", model.detail.is_answer == True)
+        --    ] ][text "답변완료"]
+        --    , div [classList 
+        --    [ ("appFaqleft", True)
+        --    , ("red", True)
+        --    , ("display", model.detail.is_answer == False)]
+        --    ][text "답변 대기 중"]
            , FaqDetail.apptextArea model.content Content
        ]
         else

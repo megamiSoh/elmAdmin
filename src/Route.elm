@@ -59,6 +59,8 @@ type Route
     | LogoutConfirm
     | TA
     | MyPageBottomMenu
+    | C
+    | CD
 
 parser : Parser (Route -> a) a
 parser =
@@ -105,6 +107,9 @@ parser =
         , Parser.map FPwd (s "forgotpassword")
         , Parser.map LogoutConfirm (s "logoutcomplete")
         , Parser.map TA (s "test")
+        , Parser.map MyPageBottomMenu (s "open")
+        , Parser.map C (s "contact")
+        , Parser.map CD (s "contactDetail")
         ]
 
 
@@ -225,6 +230,10 @@ routeToString page =
                 TA ->
                     ["test"]
                 MyPageBottomMenu ->
-                    ["myPage"]
+                    ["open"]
+                C ->
+                    ["contact"]
+                CD ->
+                    ["contactDetail"]
     in
     "#/" ++ String.join "/" pages

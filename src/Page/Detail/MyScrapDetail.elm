@@ -113,6 +113,9 @@ type Msg
     | VideoCall (List Pairing)
     | VideoEnd Encode.Value
     | VideoRecordComplete (Result Http.Error Decoder.Success)
+    | ClickRight
+    | ClickLeft
+    | GoAnotherPage
     
 
 toSession : Model -> Session
@@ -126,6 +129,14 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GoAnotherPage ->
+            (model, Cmd.batch [
+                 Api.setCookie (Encode.int 1)
+            ])
+        ClickRight ->
+            ( model, Api.scrollRight () )
+        ClickLeft ->
+            (model , Api.scrollLeft ())
         VideoRecordComplete (Ok ok) ->
             (model, Cmd.none)
         VideoRecordComplete (Err err) ->
@@ -222,27 +233,11 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    -- if model.check then
-    --     if model.loading then
-    --         { title = "내 스크랩"
-    --         , content = 
-    --             div [] [
-    --                     div [class "spinnerBack"] [spinner]
-    --             ]
-            
-    --         }
-    --     else
-    --         { title = "내 스크랩"
-    --         , content = 
-    --             div [] [app model
-    --             ]
-            
-    --         }
-    -- else
         { title = "내 스크랩"
         , content = 
             div [] [
-                    web BackPage model
+                    div[][myPageCommonHeader ClickRight ClickLeft GoAnotherPage False]
+                    , web BackPage model
             ]
         
         }

@@ -51,9 +51,19 @@ exerciseList exerlist =
         |> required "thembnail" string 
         |> required "title" string
 
-yourfitDetailListData listdata detaildata=    
+yourfitDetailListData listdata detaildata page =    
     Decode.succeed listdata
         |> required "data" (Decode.list (yfDetail detaildata))
+        |> required "paginate" (paginateyoufitDetailList page)
+
+paginateyoufitDetailList page = 
+    Decode.succeed page
+        |> required "difficulty_code" (Decode.list string)
+        |> required "exercise_part_code" string
+        |> required "page" int
+        |> required "per_page" int
+        |> required "total_count" int
+
 
 yfDetail detaildata =
     Decode.succeed detaildata
@@ -693,3 +703,49 @@ exerciseCompleteListPaginate page =
         |> required "per_page" int
         |> required "total_count" int
         |> required "user_id" int
+
+
+faqfaqList datawrap data page = 
+    Decode.succeed datawrap
+        |> required "data" (Decode.list (faqfaqdata data))
+        |> required "paginate" (faqfaqpage page)
+
+faqfaqdata data = 
+    Decode.succeed data
+        |> required "id" int
+        |> required "inserted_at" string
+        |> required "is_use" bool
+        |> required "title" string
+
+
+faqfaqpage page = 
+    Decode.succeed page
+        |> required "end_date" string
+        |> required "is_use" bool
+        |> required "page" int
+        |> required "per_page" int
+        |> required "start_date" string
+        |> required "title" string
+        |> required "total_count" int
+
+faqfaqDetail data detail = 
+    Decode.succeed data
+        |> required "data" (faqfaqdetailData detail)
+
+faqfaqdetailData detail = 
+    Decode.succeed detail
+        |> required "content" string
+        |> required "id" int
+        |> required "title" string
+
+statisticalWeek data list= 
+    Decode.succeed data 
+        |> required "data" (Decode.list (statisticalWeekData list ))
+        
+    
+statisticalWeekData list = 
+    Decode.succeed list
+        |> required "date" string
+        |> optional "exercise" (Decode.map Just string) Nothing
+        |> optional "food" (Decode.map Just string) Nothing
+        |> optional "weight" (Decode.map Just string) Nothing
