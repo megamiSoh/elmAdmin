@@ -85,7 +85,13 @@ type alias Model
         , hoverWeight : Maybe Info
         , hoverExercise : Maybe Info
         , hoverCal : Maybe Info
+        , monthExerUnit : 
+            List UnitMonthExer
     }
+
+type alias UnitMonthExer =
+    { original : String
+    , format : Float}
 type alias BarChartForm = 
     { label : String
     , heights : List Float }
@@ -155,8 +161,10 @@ init session mobile
         , hoverWeight = Nothing
         , hoverExercise = Nothing
         , hoverCal = Nothing
+        , monthExerUnit = []
         }
-        , Cmd.batch[ Date.today |> Task.perform ReceiveDate]
+        , Cmd.batch[ Date.today |> Task.perform ReceiveDate
+        , Api.mypageMenu (E.bool False)]
     )
 
 
@@ -172,6 +180,9 @@ type Msg
     | ShowInfo String String String
     | ChangeDate String
     | GotSession Session
+    | ClickRight
+    | ClickLeft
+    | GoAnotherPage
 
 toSession : Model -> Session
 toSession model =
@@ -190,6 +201,14 @@ subscriptions model=
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GoAnotherPage ->
+            (model, Cmd.batch [
+                 Api.setCookie (E.int 1)
+            ])
+        ClickRight ->
+            ( model, Api.scrollRight () )
+        ClickLeft ->
+            (model , Api.scrollLeft ())
         GotSession session ->
             ({model | session = session}, 
             case model.activeTab of
@@ -273,6 +292,18 @@ update msg model =
                             (Basics.toFloat  (exerciseCase x.exercise 0 2) * 60) + Basics.toFloat (exerciseCase x.exercise 3 5) + (Basics.toFloat (exerciseCase x.exercise 6 8) / 100)
                         }
                      ) ok.data
+                monthExerUnit = 
+                    List.indexedMap (\i x ->
+                        { original = 
+                            case x.exercise of
+                                Just exer ->
+                                    exer
+                            
+                                Nothing ->
+                                    ""
+                         , format = (Basics.toFloat  (exerciseCase x.exercise 0 2) * 60) + Basics.toFloat (exerciseCase x.exercise 3 5) + (Basics.toFloat (exerciseCase x.exercise 6 8) / 100)
+                        }
+                    ) ok.data
                 monthCalLine = 
                     List.indexedMap (\i x -> 
                         {x = 
@@ -382,6 +413,7 @@ update msg model =
             , getCalInfo = ""
             , getExerciseInfo = ""
             , getWeightInfo = ""
+            , monthExerUnit = monthExerUnit
              }, Cmd.none)
         GetMonthList (Err err) ->
             let 
@@ -583,15 +615,13 @@ view model =
             if model.check then
                 app model BackBtn
             else
-                web model
-               
-                
+            web model
         ]
     }
 
 
-chart : Model -> String -> String -> List Info -> Maybe Info -> Html.Html Msg
-chart model xAcc yAcc data hover=
+chart : Model -> String -> String -> List Info -> Maybe Info -> String -> Html.Html Msg
+chart model xAcc yAcc data hover unit=
   LineChart.viewCustom
     { y = Axis.default 600 "" .y
     , x = 
@@ -621,11 +651,12 @@ chart model xAcc yAcc data hover=
         -- Junk.default
         if model.activeTab == "weekly" then
         Junk.hoverOne hover
-          [ ( xAcc, String.fromFloat << .y )
+          [ ( xAcc, unitDecoder unit model << .y )
           ]
         else
         Junk.hoverOne hover
-          [ ( xAcc, String.fromFloat << .y )
+          [ ( xAcc, unitDecoder unit model << .y  )
+        
           , ( yAcc, dateDecoder model << .x)
           ]
     , grid = Grid.default
@@ -688,7 +719,12 @@ listHeader item =
         Nothing ->
             ""
 
-
+listHeaderExer item = 
+    case List.head item of
+        Just a ->
+           a.original
+        Nothing ->
+            ""
 
 innerItem item data max date unit = 
     --  tr [ class "qtr", id "q1" ]
@@ -948,6 +984,18 @@ takeItem idx item =
     in
     listHeader dropResult
 
+unitDecoder unit model data= 
+    case unit of
+        "Kg" ->
+            String.fromFloat data ++ " Kg"
+    
+        "min" ->
+            listHeaderExer (List.filter (\i -> i.format == data ) model.monthExerUnit)
+        "Kcal" ->
+           String.fromFloat data ++ " Kcal"
+        _ ->
+           String.fromFloat data
+
 dateDecoder model float = 
             case String.fromFloat float of
                 "1" ->
@@ -970,7 +1018,8 @@ dateDecoder model float =
 web model = 
         div [ class "container" ]
             [
-                commonJustHeader "/image/icon_stats.png" "나의 통계" ,
+                myPageCommonHeader ClickRight ClickLeft GoAnotherPage False
+                , commonJustHeader "/image/icon_stats.png" "나의 통계" ,
                 div [ class "yf_yfworkout_search_wrap" ]
                 [
                     tabBox model,
@@ -1103,7 +1152,7 @@ webBodyContentsItem model =
         [ div [ class "myStatistical_mediabox" ]
             [ div [ class "myStatistical_inbox web_inbox" ]
                 [ div [class "staticsTitle"] [text "체중" ]
-                    , chart model "체중" "date" model.barChartForm model.hoverWeight
+                    , chart model "체중" "날짜" model.barChartForm model.hoverWeight "Kg"
                 ]
             , div [ class "myStatistical_inbox web_inbox" ]
                 [ div [class "staticsTitle"][text "운동" ]
@@ -1113,7 +1162,7 @@ webBodyContentsItem model =
                 
                     "monthly" ->
                         
-                        chart model "운동" "date" model.monthExerLine model.hoverExercise
+                        chart model "운동" "날짜" model.monthExerLine model.hoverExercise "min"
                     _ ->
                         exerciseBarChart model
                 ]
@@ -1123,7 +1172,7 @@ webBodyContentsItem model =
                     "weekly" ->
                         calBarChart model 
                     "monthly" ->
-                        chart model "칼로리" "date" model.monthCalLine model.hoverCal
+                        chart model "칼로리" "날짜" model.monthCalLine model.hoverCal "Kcal"
                     _ ->
                         calBarChart model
                 ]

@@ -69,7 +69,7 @@ myPageCommonHeader scrRight scrLeft another show=
         [  
             i [ class "fas fa-caret-left scrStyle", onClick scrLeft ]
             [] ,
-            div [ class "haderIconWrap", id "scrollCtr", style "height"  (if show then "110px" else "0") ]
+            div [ class "haderIconWrap", id "scrollCtr", style "height"  (if show then "110px" else "0"), style "zindex" "99999999999999999" ]
             [ 
                 
                 a [ class "headerIcons", Route.href Route.MyPage]
@@ -91,7 +91,7 @@ myPageCommonHeader scrRight scrLeft another show=
                     [ text "스크랩리스트" ]
                 ]
             , a [ class "headerIcons", Route.href Route.MyS]
-                [ img [ src "../image/icon_list.png" ]
+                [ img [ src "../image/icon_stats.png" ]
                     []
                 , p []
                     [ text "나의 통계" ]

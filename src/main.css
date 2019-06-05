@@ -52,7 +52,8 @@ a {
   overflow-y: hidden;
   transition: height .3s;
   position: fixed;
-  z-index: 9999999999999999999999999999;
+  z-index: 99999999999;
+  left: 0;
 }
 .leftBtn, .rightBtn, .scrStyle {
   position: absolute;
@@ -2986,8 +2987,7 @@ input.vaidColor2:focus {
   z-index: 1;
   left: 50%; 
   top: 10vh;
-  z-index: 9999999999999999999999999999999999999999999999999999999;
-}
+  z-index: 99999999999;}
 
 #webToast.show {
   visibility: visible; 
@@ -3054,7 +3054,7 @@ input.vaidColor2:focus {
   background-color: #eaeaea;
   position: fixed;
   width: 100%;
-  z-index: 999999999999;
+  z-index: 99999999999;
   overflow: hidden;
   top: 45px; 
   padding-top: 15rem;
@@ -3070,7 +3070,7 @@ input.vaidColor2:focus {
   background-color: #eaeaea;
   position: fixed;
   width: 100%;
-  z-index: 999999999999;
+  z-index: 99999999999;
   overflow: hidden;
   top: 55px;
 }
@@ -4475,7 +4475,7 @@ width: 100px;
   position: fixed;
   top: 0;
   -webkit-backface-visibility: hidden;
-  z-index: 99999999999999999999999999999999999999;
+  z-index: 99999999999;
   left: 0;
   background-color: rgba(152, 152, 152, 0.4117647058823529);
 }
@@ -4618,7 +4618,7 @@ width: 100%;
   -webkit-backface-visibility: hidden;
   top: 0;
   background-color: rgba(152, 152, 152, 0.4117647058823529);
-  z-index: 9999999999999999999999999999999999999;
+  z-index: 99999999999;
 }
 .yf_logoRight {
   background: url(/image/logo.png) no-repeat -20px center !important;
