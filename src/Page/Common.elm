@@ -23,9 +23,8 @@ commonHeader icon title =
                         [ text title ]
                     ]
                 ]
-            , a [ class "column is-halfright", Route.href Route.Faq ]
-                [ i [ class "fas fa-question" ]
-                []
+            , div [ class "column is-halfright" ]
+                [ 
                 ]
             ]
         ]

@@ -5433,3 +5433,15 @@ li.myCalendar_infotitle .fas.fa-caret-up, li.myCalendar_infotitle .fas.fa-caret-
   width: 15%;
   font-size: 12px;
 }
+
+
+.datepickerPosition {
+  position: absolute;
+  bottom: 65px;
+  border: 1px solid gray;
+  border-radius: 5px;
+}
+
+.field.datepickerOn {
+  position: relative;
+}
