@@ -53,6 +53,7 @@ type Page
     | TA
     | C
     | CD
+    | MJList
 
 -- view:Maybe Cred -> Api.Check  -> Page -> {check : String , title : String, content: Html msg} -> Browser.Document msg
 view maybeViewer checkB  page { title, content}  =
