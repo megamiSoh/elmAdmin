@@ -296,7 +296,7 @@ app.ports.getSomeFilter.subscribe(function() {
 
 
 app.ports.videoData.subscribe(function(data) {
- if (data == null) {
+ if (data == null || data == "") {
    jwplayer("myElement").remove();
  }
  else {

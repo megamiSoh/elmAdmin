@@ -249,7 +249,8 @@ update msg model =
                     ({model | detailShow = True,  videoId = stringId}, 
                     Cmd.batch[(Decoder.yfDetailDetail YfD.GetData YfD.DetailData YfD.DetailDataItem YfD.Pairing)
                     |>Api.get GetListData (Endpoint.yfDetailDetail (stringId) ) (Session.cred model.session) 
-                    , Api.hideFooter () ]
+                    , Api.hideFooter ()
+                    , Api.videoData (Encode.string "") ]
                     )
             else
             (model, Api.saveId (encodeId))

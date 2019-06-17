@@ -42,6 +42,7 @@ type alias Model =
     , etcAsk : List EtcDataItem 
     , currentEtcAsk : EtcDataItem
     , idxSearch : Int
+    , trialShow : Bool
     }
 
 type alias ScreenInfo = 
@@ -204,6 +205,7 @@ init session mobile =
             , is_yes = ""
             , exercise_part_code = ""}
         , idxSearch = 1
+        , trialShow = False
         }, 
         Cmd.batch 
         [ bodyEncode 1 10 "" session
@@ -233,6 +235,8 @@ type Msg
     | EtcAsk EtcDataItem String
     | CompletePaperWeight
     | ProgressComplete Encode.Value
+    | CloseTrial
+     
 
 toSession : Model -> Session
 toSession model =
@@ -290,6 +294,8 @@ indexItem idx item =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        CloseTrial ->   
+            ({model | trialShow = not model.trialShow}, Cmd.none)
         ProgressComplete complete ->
             ( {model | categoryPaperWeight = "paperweightResult"}, Api.hideFooter ())
         CompletePaperWeight ->
@@ -510,6 +516,7 @@ view model =
                         
                         , appdeltelayer model
                         , paperweightStartMobile model
+                        -- , selectedItem
                         ]
                     
                     }
@@ -542,6 +549,7 @@ view model =
                      
                 ]
                 , paperweightStart model
+                , selectedItem model
             ]
             }
             else
@@ -1125,7 +1133,7 @@ caseItem item charaterType =
 
 
 videoItem = 
-    div [ class "yf_workoutvideoboxwrap" ]
+    div [ class "yf_workoutvideoboxwrap" , onClick CloseTrial]
         [ div [class"list_overlay"]
         [i [ class "fas fa-play overlayplay_list" ][]],
 
@@ -1179,3 +1187,39 @@ videoItemApp =
         ]
 
 
+selectedItem model = 
+    div [class "paperweightLayer", style "display" 
+        (if model.trialShow then "flex" else "none")
+        ]
+        [
+        div [class "paperweightStartItem paperweightSelectedItem_container"]
+        [
+            div[class "paperweightSelectedItem_first"][
+            img [src "image/dummy_video_image.png"][]
+            , div []
+            [ div [class "mj_title"][text "복근 만들기 운동"
+            , span [class "mj_title_part"][text "복부 - 상"]
+            ]
+            , span [class "mj_title_duration"]
+            [ i [ class "fas fa-stopwatch" ] []
+            , text " "
+            , text "duration"
+            ]
+            , ul [class "mj_description"]
+            [ li [][text "1. helloworld"]
+            , li [][text "2. helloworld"]
+            ]
+            ]
+        ]
+        , div [class "paperweightSelectedItem_second"][
+            h3 [][text "운동설명"]
+            , div [class "description"][
+                text "운동설명 123123123"
+            ]
+        ]
+        , div [class "paperweightSelectedItem_third"]
+        [ div [class "button is-link"][text "1주일 무료 체험"]
+        , div [class "button is-danger", onClick CloseTrial][text "닫기"]
+        ]
+        ]
+    ]
