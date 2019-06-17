@@ -63,7 +63,10 @@ module Api.Endpoint exposing
     , faqfaqList
     , faqfaqDetail
     , statisticalweek
-    , statisticalMonth)
+    , statisticalMonth
+    , askgender
+    , askExercise_point
+    , askSearch)
 
 import Http
 import Url.Builder exposing (QueryParameter)
@@ -312,3 +315,13 @@ statisticalweek =
 
 statisticalMonth date = 
     url ["front", "statistics", "month" , date][]
+
+
+askgender =
+    url ["front", "ask", "gender"][]
+
+askExercise_point = 
+    url ["front", "ask", "exercise_point"][]
+
+askSearch = 
+    url ["front", "ask", "search"] []

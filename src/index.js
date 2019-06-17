@@ -421,6 +421,25 @@ app.ports.mypageMenu.subscribe(function (val) {
 })
 
 
+app.ports.progressGo.subscribe(function () {
+  let xxx = 0
+  let bottom = 0
+    var goProgress = setInterval(() => {
+      xxx++
+      document.getElementById("paperWeightProgress").value = xxx / 10
+      
+    if (xxx % 180 == 0) {
+      bottom += 5
+      document.getElementById("progressText").style.bottom = bottom + "rem"
+    }
+		if(xxx == 1000) {
+      app.ports.progressComplete.send("complete")
+      clearInterval(goProgress)
+      
+    } 
+    }, 10);
+})
+
 app.ports.logoutpop.subscribe(function() {
 var heightValue = document.documentElement.clientHeight
 var checkDisplay = document.getElementById("logoutPop") || document.getElementById("mlogoutPop");

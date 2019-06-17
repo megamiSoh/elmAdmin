@@ -749,3 +749,48 @@ statisticalWeekData list =
         |> optional "exercise" (Decode.map Just string) Nothing
         |> optional "food" (Decode.map Just string) Nothing
         |> optional "weight" (Decode.map Just string) Nothing
+
+
+askyours data ask item= 
+    Decode.succeed data
+        |> required "data" (askyoursData ask item)
+
+askyoursData ask item= 
+    Decode.succeed ask
+        |> required "content" string
+        |> optional "default" (Decode.map Just bool) Nothing
+        |> required "items" (Decode.list (askyoursItems item))
+        |> required "name" string
+
+askyoursItems item = 
+    Decode.succeed item 
+        |> required "text" string
+        |> required "value" bool
+
+
+askyoursPoint data ask item= 
+    Decode.succeed data
+        |> required "data" (askyoursDataPoint ask item)
+
+askyoursDataPoint ask item= 
+    Decode.succeed ask
+        |> required "content" string
+        |> optional "default" (Decode.map Just bool) Nothing
+        |> required "items" (Decode.list (askyoursItemsPoint item))
+        |> required "name" string
+
+askyoursItemsPoint item = 
+    Decode.succeed item 
+        |> required "code" string
+        |> required "name" string
+
+
+askSearch data item = 
+    Decode.succeed data 
+        |> required "data" (Decode.list (askSearchItem item))
+
+askSearchItem item=
+    Decode.succeed item
+        |> required "content" string
+        |> required "exercise_part_code" string
+        |> required "id" int

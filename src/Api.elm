@@ -75,6 +75,7 @@ port getHeightValue : (Value -> msg) -> Sub msg
 port videoWatchComplete : (Value -> msg) -> Sub msg
 port sendHeight : (Value -> msg) -> Sub msg
 port touch : (Value -> msg) -> Sub msg
+port progressComplete : (Value -> msg) -> Sub msg
 viewerChanges toMsg decoder =
     onStoreChange (\value -> toMsg (decodeFromChange decoder value))
 
@@ -144,6 +145,7 @@ port getHeight : Value -> Cmd msg
 port mypageMenu : Value -> Cmd msg
 port bodyInfo : () -> Cmd msg
 port hideFooter : () -> Cmd msg
+port progressGo : () -> Cmd msg
 -- port logout : () -> Cmd msg
 -- application :
     -- Decoder (Cred -> viewer)

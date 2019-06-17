@@ -23,9 +23,8 @@ commonHeader icon title =
                         [ text title ]
                     ]
                 ]
-            , a [ class "column is-halfright", Route.href Route.Faq ]
-                [ i [ class "fas fa-question" ]
-                []
+            , div [ class "column is-halfright" ]
+                [ 
                 ]
             ]
         ]
@@ -69,7 +68,7 @@ myPageCommonHeader scrRight scrLeft another show=
         [  
             i [ class "fas fa-caret-left scrStyle", onClick scrLeft ]
             [] ,
-            div [ class "haderIconWrap", id "scrollCtr", style "height"  (if show then "110px" else "0"), style "zindex" "99999999999999999" ]
+            div [ class "haderIconWrap", id "scrollCtr", style "height"  (if show then "110px" else "0"), style "zindex" "999999999" ]
             [ 
                 
                 a [ class "headerIcons", Route.href Route.MyPage]
@@ -135,8 +134,9 @@ appHeaderSearch title style=
         li [ class "m_yf_topboxtitle" ]
             [ text title ]
         , li [ class "m_nextbtn" ]
-            [ i [ class "fas fa-search" ]
-                []
+            [ 
+                -- i [ class "fas fa-search" ]
+                -- []
             ]
         ]
     ]
