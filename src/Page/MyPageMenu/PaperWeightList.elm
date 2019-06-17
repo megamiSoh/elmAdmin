@@ -363,13 +363,17 @@ view model =
         }
 
 listwebDetail item = 
-   div [onClick (GetCodeId (item.scrap_code, item.scrap_id))] (
-        List.map scrapItem item.detail
-    )
+   div [onClick (GetCodeId (item.scrap_code, item.scrap_id))] 
+   [videoItem]
+--    (
+        -- List.map scrapItem item.detail
+    -- )
 listappDetail item = 
-    div [onClick (GetCodeId (item.scrap_code, item.scrap_id))] (
-        List.map appcontent item.detail
-    )
+    div [onClick (GetCodeId (item.scrap_code, item.scrap_id))] 
+    [videoItem]
+    -- (
+    --     List.map appcontent item.detail
+    -- )
 
 appcontent item= 
         div [ class "containerm_mypage_scrap" ]
@@ -403,18 +407,34 @@ contentsCount count=
         ]
  
 
-scrapItem item= 
-    div [ class "myScrap_yf_box" ]
-        [ img [ src item.thembnail ]
-            []
-        , i [ class "fas fa-bookmark myScrap_yf_icon_mark" ]
-            []
-        , div [ class "myScrap_box_wrap" ]
-            [ div [ class "myScrap_yf_box_title" ]
-                [ text item.title ]
-            , ul []
-                [  li [ class "myScrap_box_date" ]
-                    [ text (String.dropRight 15 (justData(item.lookup_at)))]
+-- scrapItem item= 
+videoItem = 
+    div [ class "mjList_container" ]
+        [ div [class"list_overlay"]
+        [i [ class "fas fa-play overlayplay_list" ][]],
+
+            div [class "mj_wrap"][
+                 div [ class "yf_workoutvideo_image" ]
+                [ 
+                    img [ class "yf_workoutvpic1", src "image/m_video_image.png" ]
+                    []
                 ]
+            , div [ class "yf_workoutvideo_lavel_bg" ]
+                [ div [ class "level" ]
+                    [ text "상" ]
+                ]
+            ]
+            , div [class "mjList_title"][
+            div [ class "yf_workoutworkout_title" ]
+                [ text "title" ]
+            , div [ class "m_timebox" ]
+                [
+                    i [ class "fas fa-stopwatch" ]
+                    []
+                    , text " "
+                    , text "duration"
+                    , p [class "limitedDate"][text "(~19/01/08)"]
+                    ]
+                    
             ]
         ]
