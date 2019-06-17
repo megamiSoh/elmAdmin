@@ -617,16 +617,17 @@ paperWeightStartApp model =
             []
         ]
         , listTitle
-            , div [class "nopaperWeightResult"] [
-                text "문진운동이 없습니다."
-                ,
-                if model.infiniteLoading then
-                    div [class "loadingPosition"] [
-                    infiniteSpinner
-                    ]
-                else
-                    span [] []
-            ]
+            , videoItem
+            -- , div [class "nopaperWeightResult"] [
+            --     text "문진운동이 없습니다."
+                -- ,
+            --     if model.infiniteLoading then
+            --         div [class "loadingPosition"] [
+            --         infiniteSpinner
+            --         ]
+            --     else
+            --         span [] []
+            -- ]
     ]
     
 
@@ -816,14 +817,15 @@ paperWeightBody model =
     div [ class "customContainerwrap" ]
             [ paperWeight 
             , deltelayer model,
-                div [ class "mj_yf_box"] [
+                div [ class "mj_yf_box make_boxwrap"] [
                     div [ class "mj_box_title" ]
                         [ h1 [ class "mj_yf_title" ]
                             [ text "문진운동 리스트" ]
-                        ],
-                    div [class "nopaperWeightResult"] [
-                            text "문진운동이 없습니다."
-                    ]
+                        ]
+                    , videoItem
+                    -- , div [class "nopaperWeightResult"] [
+                    --         text "문진운동이 없습니다."
+                    -- ]
 
                 ]
             ]
@@ -1116,3 +1118,28 @@ caseItem item charaterType =
     
         Nothing ->
             charaterType
+
+
+videoItem = 
+    div [ class "yf_workoutvideoboxwrap" ]
+        [ div [class"list_overlay"]
+        [i [ class "fas fa-play overlayplay_list" ][]],
+
+             div [ class "yf_workoutvideo_image" ]
+                [ 
+                    img [ class "yf_workoutvpic1", src "image/m_video_image.png" ]
+                    []
+                ]
+            , div [ class "yf_workoutvideo_lavel_bg" ]
+                [ div [ class "level" ]
+                    [ text "상" ]
+                ]
+            , div [ class "yf_workoutworkout_title" ]
+                [ text "title" ]
+            , div [ class "m_timebox" ]
+                [
+                    i [ class "fas fa-stopwatch" ]
+                    []
+                    , text " "
+                    , text "duration"]
+        ]
