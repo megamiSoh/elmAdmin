@@ -56,6 +56,7 @@ import Page.MyPageMenu.Contact as C
 import Page.Detail.ContactDetail as CD
 import TextApi as TA
 import Page.MyPageMenu.PaperWeightList as MJList
+import Page.Detail.PaperWeightDetail as MJD
 -- type alias Check = 
 --     String
 
@@ -105,6 +106,7 @@ type Model
      | CModel C.Model
      | CDModel CD.Model
      | MJListModel MJList.Model
+     | MJDModel MJD.Model
     --  | PageModel Page.Model
     --  | CheckDevice Check
     
@@ -157,6 +159,7 @@ type Msg
     | CMsg C.Msg
     | CDMsg CD.Msg
     | MJListMsg MJList.Msg
+    | MJDMsg MJD.Msg
 
 subscriptions model = 
     case model of
@@ -246,6 +249,8 @@ subscriptions model =
             Sub.map CDMsg (CD.subscriptions item)
         MJListModel item ->
             Sub.map MJListMsg (MJList.subscriptions item)
+        MJDModel item ->
+            Sub.map MJDMsg (MJD.subscriptions item)
 
 init : Maybe Cred -> Bool -> Url -> Key -> ( Model, Cmd Msg )
 init maybeViewer check url navKey =
@@ -395,6 +400,9 @@ changeRouteTo maybeRoute model =
         Just Route.MJList ->
             MJList.init session check
                 |> updateWith MJListModel MJListMsg model
+        Just Route.MJD ->
+            MJD.init session check
+                |> updateWith MJDModel MJDMsg model
             
 
 
@@ -484,6 +492,8 @@ toCheck page =
             CD.toCheck item
         MJListModel item ->
             MJList.toCheck item
+        MJDModel item ->
+            MJD.toCheck item
 
 
 toSession : Model -> Session
@@ -573,6 +583,8 @@ toSession page =
             CD.toSession item
         MJListModel item ->
             MJList.toSession item
+        MJDModel item ->
+            MJD.toSession item
         
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -732,6 +744,9 @@ update msg model =
         (MJListMsg subMsg, MJListModel mmodel) ->
             MJList.update subMsg mmodel
                 |> updateWith MJListModel MJListMsg mmodel
+        (MJDMsg subMsg, MJDModel mmodel ) ->
+            MJD.update subMsg mmodel
+                |> updateWith MJDModel MJDMsg mmodel
         ( _, _ ) ->
             ( model, Cmd.none )  
         
@@ -853,6 +868,8 @@ view model =
             viewPage Page.CD CDMsg (CD.view item)
         MJListModel item ->
             viewPage Page.MJList MJListMsg (MJList.view item)
+        MJDModel item ->
+            viewPage Page.MJD MJDMsg (MJD.view item)
 
 
 main : Program Value Model Msg

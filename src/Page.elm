@@ -54,6 +54,7 @@ type Page
     | C
     | CD
     | MJList
+    | MJD
 
 -- view:Maybe Cred -> Api.Check  -> Page -> {check : String , title : String, content: Html msg} -> Browser.Document msg
 view maybeViewer checkB  page { title, content}  =
@@ -242,6 +243,10 @@ viewHeader page maybeViewer =
                             C  ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             MyS  ->
+                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            MJD  ->
+                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            MJList  ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             _ ->
                                 a [ class "navbar-item yf_item",Route.href Route.MyPage ]
