@@ -317,11 +317,11 @@ update msg model =
 view : Model -> {title : String , content : Html Msg}
 view model =
     if model.check then
-            { title = "나의 스크랩"
+            { title = "문진운동 "
             , content = 
                 div [] [
                         div [class ("topSearch_container " ++ (if model.showDetail then "fadeContainer" else ""))] [
-                        appHeaderRDetail "나의 스크랩리스트" "myPageHeader  whiteColor" Route.MyPage "fas fa-angle-left", 
+                        appHeaderRDetail "문진운동 리스트" "myPageHeader  whiteColor" Route.MyPage "fas fa-angle-left", 
                         div [class "spinnerBack", style "display" (if model.loading then "flex" else "none" )] [
                             spinner
                             ]
@@ -339,14 +339,14 @@ view model =
                 ]
             }
         else
-        { title = "나의 스크랩"
+        { title = "문진운동 "
         , content = 
             div [  ]
                 [
                     div [class "mypageHiddenMenu", onClick ShowMenu] []
                     , div[][myPageCommonHeader ClickRight ClickLeft GoAnotherPage model.showMenu]
                     ,div [class "container"]
-                    [ commonJustHeader "/image/icon_list.png" "나의 스크랩",
+                    [ commonJustHeader "/image/icon_list.png" "문진운동 ",
                     div [ class "yf_yfworkout_search_wrap" ]
                     [
                         div [] [
