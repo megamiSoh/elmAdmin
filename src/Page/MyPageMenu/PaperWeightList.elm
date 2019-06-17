@@ -328,9 +328,11 @@ view model =
                         , div [class "noResult", style "display" (if List.isEmpty model.data.data then "fixed" else "none")] [
                                 text "스크랩한 게시물이 없습니다."
                             ]
-                        , div [ class "scrollheight", scrollEvent ScrollEvent ] (
-                                List.map listappDetail model.dataList
-                            )
+                        , div [ class "scrollheight", scrollEvent ScrollEvent ] 
+                            [listappDetail model]
+                        -- (
+                        --         List.map (\x -> listappDetail x model) model.dataList
+                        --     )
                         , div [class "loadingPosition", style "display" (if model.infiniteLoading then "block" else "none")] [
                             infiniteSpinner
                             ]
@@ -350,9 +352,11 @@ view model =
                     div [ class "yf_yfworkout_search_wrap" ]
                     [
                         div [] [
-                            div [class "myScrap_mediabox"] (
-                            List.map listwebDetail model.data.data
-                        )
+                            div [class "myScrap_mediabox"]
+                            [listwebDetail model]
+                        --      (
+                        --     List.map listwebDetail model.data.data
+                        -- )
                         , pagination 
                         PageBtn
                         model.data.paginate
@@ -362,15 +366,15 @@ view model =
                 ]]
         }
 
-listwebDetail item = 
-   div [onClick (GetCodeId (item.scrap_code, item.scrap_id))] 
-   [videoItem]
+listwebDetail model = 
+   div [] 
+   [videoItem model]
 --    (
         -- List.map scrapItem item.detail
     -- )
-listappDetail item = 
-    div [onClick (GetCodeId (item.scrap_code, item.scrap_id))] 
-    [videoItem]
+listappDetail model = 
+    div [] 
+    [videoItem model ]
     -- (
     --     List.map appcontent item.detail
     -- )
@@ -408,7 +412,7 @@ contentsCount count=
  
 
 -- scrapItem item= 
-videoItem = 
+videoItem model = 
     div [ class "mjList_container" ]
         [ div [class"list_overlay"]
         [i [ class "fas fa-play overlayplay_list" ][]],
@@ -427,13 +431,15 @@ videoItem =
             , div [class "mjList_title"][
             div [ class "yf_workoutworkout_title" ]
                 [ text "title" ]
-            , div [ class "m_timebox" ]
+            , div [ class ("m_timebox " ++ if model.check then "notRow" else "") ]
                 [
-                    i [ class "fas fa-stopwatch" ]
-                    []
-                    , text " "
-                    , text "duration"
-                    , p [class "limitedDate"][text "(~19/01/08)"]
+                    div [][
+                        i [ class "fas fa-stopwatch" ]
+                        []
+                        , text " "
+                        , text "duration"
+                    ]
+                    , p [class ("limitedDate " ++ if model.check then "notMargin" else "")][text "(~19/01/08)"]
                     ]
                     
             ]

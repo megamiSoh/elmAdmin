@@ -526,17 +526,20 @@ view model =
                         , activeTab model
                         , case model.isActive of
                             "paperweight" ->
-                                paperWeightBody model  
-                        
+                                div [][
+                                paperWeightBody model 
+                                , div [class "button mj_new_recommend"][text "새로운 추천"]
+                                ] 
                             "makeExer" ->
-                                makeExerBody model
+                                div[][makeExerBody model
+                                ,pagination
+                                PageBtn
+                                model.getlistData.paginate
+                                model.pageNum]
                             _ ->
                                 paperWeightBody model            
                     ]
-                     ,pagination
-                    PageBtn
-                    model.getlistData.paginate
-                    model.pageNum
+                     
                 ]
                 , paperweightStart model
             ]
@@ -617,7 +620,8 @@ paperWeightStartApp model =
             []
         ]
         , listTitle
-            , videoItem
+            , videoItemApp
+            , div [class "button reset_mj_exer"] [text "운동 새로 받기"]
             -- , div [class "nopaperWeightResult"] [
             --     text "문진운동이 없습니다."
                 -- ,
@@ -1143,3 +1147,35 @@ videoItem =
                     , text " "
                     , text "duration"]
         ]
+
+videoItemApp = 
+    div [ class "mjList_container" ]
+        [ div [class"list_overlay"]
+        [i [ class "fas fa-play overlayplay_list" ][]],
+
+            div [class "mj_wrap"][
+                 div [ class "yf_workoutvideo_image" ]
+                [ 
+                    img [ class "yf_workoutvpic1", src "image/m_video_image.png" ]
+                    []
+                ]
+            , div [ class "yf_workoutvideo_lavel_bg" ]
+                [ div [ class "level" ]
+                    [ text "상" ]
+                ]
+            ]
+            , div [class "mjList_title_makeTab"][
+            div [ class "yf_workoutworkout_title" ]
+                [ text "title" ]
+            , div [ class "m_timebox" ]
+                [
+                    i [ class "fas fa-stopwatch" ]
+                    []
+                    , text " "
+                    , text "duration"
+                    ]
+                    
+            ]
+        ]
+
+
