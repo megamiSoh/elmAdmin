@@ -478,21 +478,21 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    -- case model.check of
-    --     True ->
-    --         case model.loading of
-    --             True ->
-    --                 { title = "맞춤운동"
-    --                 , content =
-    --                     div [] [
-    --                     div [Route.href Route.MSearch]
-    --                     [appHeaderSearch "맞춤운동" "makeExerHeader"],
-    --                     div [class "spinnerBack"] [
-    --                         spinner
-    --                         ]
-    --                     ] 
-    --                 }
-    --             False ->
+    case model.check of
+        True ->
+            case model.loading of
+                True ->
+                    { title = "맞춤운동"
+                    , content =
+                        div [] [
+                        div [Route.href Route.MSearch]
+                        [appHeaderSearch "맞춤운동" "makeExerHeader"],
+                        div [class "spinnerBack"] [
+                            spinner
+                            ]
+                        ] 
+                    }
+                False ->
                     { title = "맞춤운동"
                     , content =
                         div [] [
@@ -514,56 +514,56 @@ view model =
                     
                     }
     
-        -- False ->
-        --     if List.length model.getlistData.data > 0  then 
-        --     { title = "맞춤운동"
-        --     , content =
-        --         div [ class "customContainerwrap" ]
-        --     [ div [ class "container" ]
-        --         [ div [ class "notification yf_workout" ]
-        --             [
-        --                 commonHeader "/image/icon_customworkout.png" "맞춤운동"
-        --                 , activeTab model
-        --                 , case model.isActive of
-        --                     "paperweight" ->
-        --                         paperWeightBody model  
+        False ->
+            if List.length model.getlistData.data > 0  then 
+            { title = "맞춤운동"
+            , content =
+                div [ class "customContainerwrap" ]
+            [ div [ class "container" ]
+                [ div [ class "notification yf_workout" ]
+                    [
+                        commonHeader "/image/icon_customworkout.png" "맞춤운동"
+                        , activeTab model
+                        , case model.isActive of
+                            "paperweight" ->
+                                paperWeightBody model  
                         
-        --                     "makeExer" ->
-        --                         makeExerBody model
-        --                     _ ->
-        --                         paperWeightBody model            
-        --             ]
-        --              ,pagination
-        --             PageBtn
-        --             model.getlistData.paginate
-        --             model.pageNum
-        --         ]
-        --         , paperweightStart model
-        --     ]
-        --     }
-        --     else
-        --         { title = "맞춤운동"
-        --         , content =
-        --             div [ class "customContainerwrap" ]
-        --     [ div [ class "container" ]
-        --         [ div [ class "notification yf_workout" ]
-        --             [
-        --                 commonHeader "/image/icon_customworkout.png" "맞춤운동",
-        --                 bodyContentTitle,deltelayer model,
-        --                 div [ class "customyf_box2"] [
-        --                     div [ class "make_box_title" ]
-        --                         [ h1 [ class "make_yf_h2" ]
-        --                             [ text "맞춤운동 리스트" ]
-        --                         ],
-        --                     div [] [
-        --                             div [class "noResult"] [text "맞춤영상이 없습니다."]
-        --                     ]
+                            "makeExer" ->
+                                makeExerBody model
+                            _ ->
+                                paperWeightBody model            
+                    ]
+                     ,pagination
+                    PageBtn
+                    model.getlistData.paginate
+                    model.pageNum
+                ]
+                , paperweightStart model
+            ]
+            }
+            else
+                { title = "맞춤운동"
+                , content =
+                    div [ class "customContainerwrap" ]
+            [ div [ class "container" ]
+                [ div [ class "notification yf_workout" ]
+                    [
+                        commonHeader "/image/icon_customworkout.png" "맞춤운동",
+                        bodyContentTitle,deltelayer model,
+                        div [ class "customyf_box2"] [
+                            div [ class "make_box_title" ]
+                                [ h1 [ class "make_yf_h2" ]
+                                    [ text "맞춤운동 리스트" ]
+                                ],
+                            div [] [
+                                    div [class "noResult"] [text "맞춤영상이 없습니다."]
+                            ]
 
-        --                 ]
-        --             ]
-        --         ]
-        --     ]
-        --         }
+                        ]
+                    ]
+                ]
+            ]
+                }
         
 
 
@@ -844,7 +844,7 @@ paperweightStart model =
             [ h1 [ class "mj_yf_title" ]
                 [ text ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 2 )") ]   
             ]
-            , paperweightSex model
+            , paperweightSex model "mj_text_web" "mj_movebtn"
             , stopPaperWeight
             ]
     
@@ -854,7 +854,7 @@ paperweightStart model =
             [ h1 [ class "mj_yf_title" ]
                 [ text ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 2 )") ]
             ]
-             , paperweightPoint model 
+             , paperweightPoint model "mj_text_web" "mj_movebtn"
              , stopPaperWeight
             ]
         "etcStart" ->
@@ -863,7 +863,7 @@ paperweightStart model =
             [ h1 [ class "mj_yf_title" ]
                 [ text ("문진 맞춤 운동 ( "++ String.fromInt (model.idxSearch) ++  " / " ++ String.fromInt (List.length model.askSearchData )++ " )") ]
             ]
-            , etcAsk model
+            , etcAsk model "mj_text_web" "mj_movebtn"
             , stopPaperWeight
             ]
         "completePaperWeight" ->
@@ -909,24 +909,24 @@ paperweightStartMobile model =
     [ 
     case model.categoryPaperWeight of
         "sex" ->
-            div []
+            div [class "inheritHeight"]
             [ 
             appHeaderRDetailClick  ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 2 )") "makeExerHeader paperweightmobileFontsize" (IsActive "paperweight") "fas fa-times"
-            , paperweightSex model
+            , paperweightSex model "mj_text" "m_mj_move_btn"
             ]
     
         "exerpoint" ->
-            div []
+            div [class "inheritHeight"]
             [ appHeaderRDetailClick  ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 2 )") "makeExerHeader paperweightmobileFontsize" (IsActive "paperweight") "fas fa-times"
-             , paperweightPoint model 
+             , paperweightPoint model  "mj_text" "m_mj_move_btn"
             ]
         "etcStart" ->
-            div []
+            div [class "inheritHeight"]
             [ appHeaderRDetailClick  ("문진 맞춤 운동 ( "++ String.fromInt (model.idxSearch) ++  " / " ++ String.fromInt (List.length model.askSearchData )++ " )") "makeExerHeader paperweightmobileFontsize" (IsActive "paperweight") "fas fa-times"
-            , etcAsk model
+            , etcAsk model "mj_text" "m_mj_move_btn"
             ]
         "completePaperWeight" ->
-            div []
+            div [class "inheritHeight"]
             [ div [ class "mj_box_title" ]
             [ h1 [ class "mj_yf_title" ]
                 [ text "문진 결과" ]
@@ -950,8 +950,7 @@ paperweightStartMobile model =
             div []
             [ div [ class "mj_box_title" ]
             [ h1 [ class "mj_yf_title" ]
-                [ text "문진 맞춤 운동결과" 
-                , text model.categoryPaperWeight]
+                [ text "문진 맞춤 운동결과" ]
             ]
             , paperweightAnswer
             ]
@@ -1014,9 +1013,9 @@ paperweightAnswer =
         ]
     ]
 
-etcAsk model = 
+etcAsk model textStyle moveBtn= 
     div [ class "mj_boxwrap" ]
-        [ p [ class "mj_text" ]
+        [ p [ class  textStyle ]
             [ text model.askSearchItem.content ]
 
         , p [class "control answer_box"][
@@ -1035,7 +1034,7 @@ etcAsk model =
                 [  text "아니오"
                 ]
         ]
-        , p [ class "mj_movebtn" ]
+        , p [ class moveBtn ]
             [ div [ class "button  mj_before" , onClick (EtcAsk model.currentEtcAsk "saveNbefore") ]
                 [ text "이전" ]
             , if List.length model.askSearchData == model.idxSearch then
@@ -1060,22 +1059,22 @@ etcExample idx model item =
                  ]
                 [  text item.text
                 ]
-paperweightSex model =
+paperweightSex model textStyle moveBtn=
     div [ class "mj_boxwrap" ]
-        [ p [ class "mj_text" ]
+        [ p [ class textStyle ]
             [ text model.askyours.content ]
         , p [class "control answer_box"](List.indexedMap (\idx x -> answerExample idx model x )model.askyours.items)
-        , p [ class "mj_movebtn" ]
+        , p [ class moveBtn ]
             [ div [ class "button is-dark mj_next" ,  onClick (SelectedAnswer "exerpoint" model.axerCode) ]
                 [ text "다음" ]
             ]
         ]
-paperweightPoint model =
+paperweightPoint model textStyle moveBtn =
     div [ class "mj_boxwrap" ]
-        [ p [ class "mj_text" ]
+        [ p [ class textStyle ]
             [ text model.aksYoursPoint.content ]
         , p [class "control answer_box"](List.indexedMap (\idx x -> answerExamplePoint idx model x )model.aksYoursPoint.items)
-        , p [ class "mj_movebtn" ]
+        , p [ class moveBtn ]
             [ div [ class "button  mj_before" , onClick (SelectedAnswer "sex" (if model.askSelected == True then "true" else "false"))]
                 [ text "이전" ]
             , 

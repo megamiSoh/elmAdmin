@@ -56,15 +56,15 @@ type Page
 
 -- view:Maybe Cred -> Api.Check  -> Page -> {check : String , title : String, content: Html msg} -> Browser.Document msg
 view maybeViewer checkB  page { title, content}  =
-    -- if checkB then
+    if checkB then
         {title = title , body =
          appContents content page maybeViewer
          :: [footerCommon page]}
                 
-    -- else
-    --     { title = title 
-    --     , body = viewHeader page maybeViewer:: webContents content page maybeViewer:: []
-    --     }
+    else
+        { title = title 
+        , body = viewHeader page maybeViewer:: webContents content page maybeViewer:: []
+        }
 
 
 
