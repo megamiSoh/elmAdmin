@@ -461,7 +461,7 @@ dietRecords model =
             [ text ("목표체중" ++ model.data.body.goal_weight ++ "Kg") ]
         , div [class "myCalendar_food_container"] (List.map (\x -> foodKcal x "myCalendar_food") model.data.kcal)
         , div [ class "myCalendar_kcalbox" ]
-            [ text ("총 섭취 칼로리 "++ model.data.date_kcal ++ " Kcal / 기초대사량 "++ String.fromFloat model.data.body.bmr ++  " Kcal"), 
+            [ text ("총 섭취 칼로리 "++ model.data.date_kcal ++ " Kcal / 기초대사량 "++ (if model.data.body.bmr < 0 then "0" else String.fromFloat model.data.body.bmr) ++  " Kcal"), 
             if roundPercent model >= 100 then
                 progress [ class "progress is-medium is-danger yf_progress", value model.data.date_kcal , Attr.max (String.fromInt(Basics.round model.data.body.bmr))]
                 []
@@ -485,7 +485,7 @@ appdietRecords model  =
         , div [ class "m_myCalendar_kcalbox" ]
             [ text ("일일 섭취 칼로리 " ++ model.data.date_kcal ++ "Kcal ")
             , div [] [
-                text (" 기초대사량 "++ String.fromFloat model.data.body.bmr ++  " Kcal")
+                text (" 기초대사량 "++  (if model.data.body.bmr < 0 then "0" else String.fromFloat model.data.body.bmr) ++  " Kcal")
             ]
             ,if roundPercent model >= 100 then
                 progress [ class "progress is-medium is-danger yf_progress", value model.data.date_kcal , Attr.max (String.fromInt(Basics.round model.data.body.bmr))]

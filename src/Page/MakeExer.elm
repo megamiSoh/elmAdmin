@@ -884,7 +884,7 @@ activeTab model =
     ul [class "tabs is-toggle is-fullwidth is-large make_tag" ]
         [ li [ classList [
             ("make_tag_li" , True)
-            , ("is-active ", model.isActive == "paperweight")
+            , ("is-active ", model.isActive == "paperweight" ||model.isActive ==  "reset" ||model.isActive ==  "recommend")
         ], onClick (IsActive "paperweight") ]
             [  text "문진 맞춤운동" 
                 

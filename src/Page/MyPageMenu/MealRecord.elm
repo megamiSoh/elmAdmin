@@ -18,6 +18,7 @@ import Page.MyPageMenu.MyPageInfoLayout exposing (..)
 import Route as Route
 import Task exposing(Task)
 import Browser.Dom as Dom
+import Round as Round
 
 type alias Model = 
     { session : Session
@@ -501,8 +502,8 @@ update msg model =
             let
                 filter = List.filterMap (\x -> String.toFloat x.kcal) ok.data
                 total = List.sum filter
-            in
-            ({model | data = ok, totalKcal = String.fromFloat total }, Cmd.none)
+            in  
+            ({model | data = ok, totalKcal = Round.round 2 total}, Cmd.none)
         GetMealData (Err err) ->
             let 
                 serverErrors = Api.decodeErrors err

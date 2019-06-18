@@ -17,7 +17,7 @@ import Date exposing (Date, Interval(..), Unit(..))
 import Task exposing (Task)
 import Time exposing(Month(..))
 import Page.MyPageMenu.MyPageInfoLayout exposing (..)
-
+import Round as Round
 type alias Model = 
     { session : Session
     , checkDevice : String
@@ -398,7 +398,7 @@ update msg model =
                 filter = List.filterMap (\x -> String.toFloat x.kcal) ok.data
                 total = List.sum filter
             in
-            ({model | mealDataList = ok, totalKcal = String.fromFloat total }, Cmd.none)
+            ({model | mealDataList = ok, totalKcal = Round.round 2 total }, Cmd.none)
         GetMealData (Err err) ->
             let 
                 serverErrors = Api.decodeErrors err
