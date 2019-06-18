@@ -6448,3 +6448,21 @@ color: white;
   color:#fff;  
   display: flex;
 }
+.mj_boxwrap_web {
+  height: calc(100% - 55px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+}
+
+.layerStyleWarn {
+  display: flex;
+  position: fixed;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  background-color: rgba(0, 0, 0, 0.37);
+  z-index: 9;
+}

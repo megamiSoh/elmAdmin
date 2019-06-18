@@ -43,6 +43,13 @@ type alias Model =
     , currentEtcAsk : EtcDataItem
     , idxSearch : Int
     , trialShow : Bool
+    , yesformat: 
+        { ask_id : Int
+        , content : String
+        , is_yes : Bool
+        , exercise_part_code : String
+        }
+    , resultData : AskResult
     }
 
 type alias ScreenInfo = 
@@ -113,14 +120,30 @@ type alias AskSearchData =
     , exercise_part_code : String
     , id : Int }
 
--- type alias EtcDataList = 
---     { etcData : List EtcDataItem }
-
 type alias EtcDataItem = 
     { ask_id : Int
-    , contents : String
+    , content : String
     , is_yes : String 
     , exercise_part_code : String}
+
+type alias AskResultData = 
+    { data : AskResult }
+
+type alias AskResult = 
+    { ask_no : Int
+    , result : AskResultResult 
+    }
+
+type alias AskResultResult = 
+    { content : String
+    , detail : List AskResultDetail
+    , part : String
+    , target : String  }
+
+type alias AskResultDetail = 
+    { content : String
+    , name : String
+    , sort : Int }
 
 bodyEncode page perpage title session= 
     let
@@ -136,7 +159,38 @@ bodyEncode page perpage title session=
     (Decoder.makeExerList GetListData ListData Paginate)
     |> Api.post Endpoint.makeExerList (Session.cred session) GetData body 
     
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+
+askAsnwer point male answers session format=
+    let 
+        format_change = format
+        is_yes_to_bool = 
+            List.map (\x -> 
+                { format_change | content = x.content
+                , exercise_part_code = x.exercise_part_code
+                , ask_id = x.ask_id
+                , is_yes = 
+                    if x.is_yes == "true" then
+                        True
+                    else
+                        False
+                }
+            ) (List.reverse answers)
+        answerList answer = 
+            Encode.object
+                [ ("content", Encode.string answer.content)
+                , ("exercise_part_code", Encode.string answer.exercise_part_code)
+                , ("ask_id", Encode.int answer.ask_id)
+                , ("is_yes", Encode.bool answer.is_yes)]
+        body = 
+            Encode.object   
+                [ ("exercise_point_code", Encode.string point)
+                , ("is_male", Encode.bool male)
+                , ("answers", Encode.list answerList is_yes_to_bool)
+                ] |> Http.jsonBody    
+    in
+    Api.post Endpoint.askAnswer (Session.cred session) AskAnswerComplete body Decoder.resultD
+
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile =
     let
         listmodel = 
@@ -201,11 +255,25 @@ init session mobile =
         , etcAsk = []
         , currentEtcAsk = 
             { ask_id = 0
-            , contents = ""
+            , content = ""
             , is_yes = ""
+            , exercise_part_code = ""}
+        , yesformat = 
+            { ask_id = 0
+            , content = ""
+            , is_yes = False
             , exercise_part_code = ""}
         , idxSearch = 1
         , trialShow = False
+        , resultData = 
+            { ask_no = 0 
+            , result = 
+                { content = ""
+                , detail = [] 
+                , part = ""
+                , target = ""
+                }
+            }
         }, 
         Cmd.batch 
         [ bodyEncode 1 10 "" session
@@ -236,7 +304,8 @@ type Msg
     | CompletePaperWeight
     | ProgressComplete Encode.Value
     | CloseTrial
-     
+    | AskAnswerComplete (Result Http.Error Decoder.Success)
+    | AskResultComplete (Result Http.Error AskResultData)
 
 toSession : Model -> Session
 toSession model =
@@ -294,21 +363,31 @@ indexItem idx item =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        AskResultComplete (Ok ok) ->
+            ({model | resultData = ok.data}, Cmd.none)
+        AskResultComplete (Err err) ->
+            (model, Cmd.none)
+        AskAnswerComplete (Ok ok) ->
+            (model, Cmd.none)
+        AskAnswerComplete (Err err) ->
+            (model, Cmd.none)
         CloseTrial ->   
             ({model | trialShow = not model.trialShow}, Cmd.none)
         ProgressComplete complete ->
-            ( {model | categoryPaperWeight = "paperweightResult"}, Api.hideFooter ())
+            ( {model | categoryPaperWeight = "paperweightResult"}, 
+             Api.get AskResultComplete Endpoint.askResult (Session.cred model.session ) (Decoder.askResultData AskResultData AskResult AskResultResult AskResultDetail) )
         CompletePaperWeight ->
             let _ = Debug.log "helloworld" "copmlete"
                 
             in
             
-            (model, Api.progressGo ())
+            (model, Cmd.batch[Api.progressGo ()
+            , askAsnwer model.axerCode model.askSelected model.etcAsk model.session model.yesformat])
         EtcAsk etcData direction->
             let _ = Debug.log "etc" model.etcAsk
                 initValue = 
                     { ask_id = 0
-                    , contents = ""
+                    , content = ""
                     , is_yes = "" 
                     , exercise_part_code = ""}
                 f =
@@ -394,6 +473,10 @@ update msg model =
                 "paperweightStart" ->
                     ({model | isActive = category, categoryPaperWeight = "sex", axerCode = "", askSelected = caseItem model.askyours.default True} , Cmd.batch[askYourData model  GetQuestions Endpoint.askgender (Decoder.askyours AskYours AskYourData AskItems)
                     , Api.hideFooter ()])
+                "paperWeightConfirm" ->
+                    ({model | isActive = "reset"}, Cmd.none)
+                "newRecommend" ->
+                    ({model | isActive = "recommend"}, Cmd.none) 
                 _ ->
                     (model, Cmd.none)
         DeleteConfirm id ->
@@ -492,11 +575,21 @@ view model =
                     , content =
                         div [] [
                         div [Route.href Route.MSearch]
-                        [appHeaderSearch "맞춤운동" "makeExerHeader"],
-                        div [class "spinnerBack"] [
-                            spinner
-                            ]
-                        ] 
+                        [appHeaderSearch "맞춤운동" "makeExerHeader"]
+                        , activeTab model
+                        , case model.isActive of
+                            "paperweight" ->
+                                paperWeightStartApp model  
+                        
+                            "makeExer" ->
+                                app model
+                            _ ->
+                                paperWeightStartApp model       
+                        
+                        , appdeltelayer model
+                        , paperweightStartMobile model
+                        , resetLayer "yf_popup" model
+                        ]
                     }
                 False ->
                     { title = "맞춤운동"
@@ -516,13 +609,12 @@ view model =
                         
                         , appdeltelayer model
                         , paperweightStartMobile model
-                        -- , selectedItem
+                        , resetLayer "yf_popup" model
                         ]
                     
                     }
     
         False ->
-            if List.length model.getlistData.data > 0  then 
             { title = "맞춤운동"
             , content =
                 div [ class "customContainerwrap" ]
@@ -535,7 +627,7 @@ view model =
                             "paperweight" ->
                                 div [][
                                 paperWeightBody model 
-                                , div [class "button mj_new_recommend"][text "새로운 추천"]
+                                , div [class "button mj_new_recommend", onClick (IsActive "newRecommend")][text "새로운 추천"]
                                 ] 
                             "makeExer" ->
                                 div[][makeExerBody model
@@ -550,31 +642,10 @@ view model =
                 ]
                 , paperweightStart model
                 , selectedItem model
+                , resetLayer "yf_popup" model
             ]
             }
-            else
-                { title = "맞춤운동"
-                , content =
-                    div [ class "customContainerwrap" ]
-            [ div [ class "container" ]
-                [ div [ class "notification yf_workout" ]
-                    [
-                        commonHeader "/image/icon_customworkout.png" "맞춤운동",
-                        bodyContentTitle,deltelayer model,
-                        div [ class "customyf_box2"] [
-                            div [ class "make_box_title" ]
-                                [ h1 [ class "make_yf_h2" ]
-                                    [ text "맞춤운동 리스트" ]
-                                ],
-                            div [] [
-                                    div [class "noResult"] [text "맞춤영상이 없습니다."]
-                            ]
-
-                        ]
-                    ]
-                ]
-            ]
-                }
+            
         
 
 
@@ -622,7 +693,7 @@ paperWeightStartApp model =
          div [ class "make_m_yf_box" ]
         [ h1 [ class "m_make_yf_h1" ]
             [ text "유어핏 문진을 통해서 나만의 운동을 만들어보세요!" ]
-        , div [ class "button is-dark m_make_yf_darkbut", onClick (IsActive "paperweightStart") ]
+        , div [ class "button is-dark m_make_yf_darkbut", onClick (IsActive "paperWeightConfirm") ]
             [ text "시작하기" ]
         , br []
             []
@@ -803,7 +874,7 @@ paperWeight =
            ,
                     h1 [ class "make_yf_h1" ]
                 [ text "유어핏 문진을 통해서 나만의 운동을 만들어보세요!" ]
-             , div [ class "button is-dark make_yf_darkbut", onClick (IsActive "paperweightStart") ]
+             , div [ class "button is-dark make_yf_darkbut", onClick (IsActive "paperWeightConfirm") ]
                 [ text "시작하기" ]
             , br []
                 []
@@ -858,7 +929,7 @@ paperweightStart model =
             [ h1 [ class "mj_yf_title" ]
                 [ text ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 2 )") ]   
             ]
-            , paperweightSex model "mj_text_web" "mj_movebtn"
+            , paperweightSex model "mj_text_web" "mj_movebtn" "mj_boxwrap_web"
             , stopPaperWeight
             ]
     
@@ -868,7 +939,7 @@ paperweightStart model =
             [ h1 [ class "mj_yf_title" ]
                 [ text ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 2 )") ]
             ]
-             , paperweightPoint model "mj_text_web" "mj_movebtn"
+             , paperweightPoint model "mj_text_web" "mj_movebtn" "mj_boxwrap_web"
              , stopPaperWeight
             ]
         "etcStart" ->
@@ -877,7 +948,7 @@ paperweightStart model =
             [ h1 [ class "mj_yf_title" ]
                 [ text ("문진 맞춤 운동 ( "++ String.fromInt (model.idxSearch) ++  " / " ++ String.fromInt (List.length model.askSearchData )++ " )") ]
             ]
-            , etcAsk model "mj_text_web" "mj_movebtn"
+            , etcAsk model "mj_text_web" "mj_movebtn" "mj_boxwrap_web"
             , stopPaperWeight
             ]
         "completePaperWeight" ->
@@ -907,7 +978,7 @@ paperweightStart model =
             [ h1 [ class "mj_yf_title" ]
                 [ text "문진 맞춤 운동결과" ]
             ]
-            , paperweightAnswer
+            , paperweightAnswer model.resultData
             ]
         _ ->
             div [][
@@ -926,18 +997,18 @@ paperweightStartMobile model =
             div [class "inheritHeight"]
             [ 
             appHeaderRDetailClick  ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 2 )") "makeExerHeader paperweightmobileFontsize" (IsActive "paperweight") "fas fa-times"
-            , paperweightSex model "mj_text" "m_mj_move_btn"
+            , paperweightSex model "mj_text" "m_mj_move_btn" "mj_boxwrap"
             ]
     
         "exerpoint" ->
             div [class "inheritHeight"]
             [ appHeaderRDetailClick  ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 2 )") "makeExerHeader paperweightmobileFontsize" (IsActive "paperweight") "fas fa-times"
-             , paperweightPoint model  "mj_text" "m_mj_move_btn"
+             , paperweightPoint model  "mj_text" "m_mj_move_btn" "mj_boxwrap"
             ]
         "etcStart" ->
             div [class "inheritHeight"]
             [ appHeaderRDetailClick  ("문진 맞춤 운동 ( "++ String.fromInt (model.idxSearch) ++  " / " ++ String.fromInt (List.length model.askSearchData )++ " )") "makeExerHeader paperweightmobileFontsize" (IsActive "paperweight") "fas fa-times"
-            , etcAsk model "mj_text" "m_mj_move_btn"
+            , etcAsk model "mj_text" "m_mj_move_btn" "mj_boxwrap"
             ]
         "completePaperWeight" ->
             div [class "inheritHeight"]
@@ -966,58 +1037,32 @@ paperweightStartMobile model =
             [ h1 [ class "mj_yf_title" ]
                 [ text "문진 맞춤 운동결과" ]
             ]
-            , paperweightAnswer
+            , paperweightAnswer model.resultData
             ]
         _ ->
             div [][
             ]
     ]
 
-paperweightAnswer = 
+paperweightAnswer item = 
     div [ class "mj_boxwrap2" ]
     [ div [ class "mj_result_box1" ]
         [ p [ class "mj_result_text1" ]
-            [ text "회원님의",  p [ class "mj_customtext" ]
-                [ text "다이어트" ], text "운동을 위한 맞춤형 문진 결과입니다." 
+            [ text item.result.target
             ]
         ]
     , div [ class "mj_result_box1" ]
         [ p [ class "mj_result_text1" ]
-            [ text "유어핏 문진을 통한 문진 결과" , p [ class "mj_customtext" ]
-                [ text "상체" ], text "위주의 운동을 추천합니다." 
+            [ text item.result.part
             ]
         ]
     , div [ class "mj_result_box1" ]
         [ p [ class "mj_result_text1" ]
-            [ text "꾸준한 운동과 활발한 신체관리로 건강한 신체입니다. 평소의 운동습관을 유지하면서 건강을 지켜보세요" ]
+            [ text item.result.content ]
         ]
     , div [ class "mj_result_box1" ]
         [ div [ class "columns mj_columns" ]
-            [ div [ class "column" ]
-                [ text "상체" , div [ class "mj_columns_icon" ]
-                    [ img [ src "../image/mj_icon1.png", alt "logo" ]
-                        []
-                    ]
-                , p [ class "mj_customtext1" ]
-                    [ text "노력" ]
-                ]
-            , div [ class "column" ]
-                [ text "복부",  div [ class "mj_columns_icon" ]
-                    [ img [ src "../image/mj_icon2.png", alt "logo" ]
-                        []
-                    ]
-                , p [ class "mj_customtext2" ]
-                    [ text "기본" ]
-                ]
-            , div [ class "column" ]
-                [ text "하체" , div [ class "mj_columns_icon" ]
-                    [ img [ src "../image/mj_icon3.png", alt "logo" ]
-                        []
-                    ]
-                , p [ class "mj_customtext3" ]
-                    [ text "최고" ]
-                ]
-            ]
+            (List.map (\x -> paperweightAnswerDetail x) (List.sortBy .sort item.result.detail) )
         ]
     , div [ class "mj_result_box1" ]
         [ p [ class "mj_result_text3" ]
@@ -1027,8 +1072,45 @@ paperweightAnswer =
         ]
     ]
 
-etcAsk model textStyle moveBtn= 
-    div [ class "mj_boxwrap" ]
+paperweightAnswerDetail item = 
+            div [ class "column" ]
+                [ text item.name , div [ class "mj_columns_icon" ]
+                [ 
+                case item.name of
+                    "상체" ->
+                        img [ src "../image/mj_icon1.png", alt "logo" ]
+                        []
+                
+                    "하체" ->
+                        img [ src "../image/mj_icon3.png", alt "logo" ]
+                        []
+                    "복부" ->
+                        img [ src "../image/mj_icon2.png", alt "logo" ]
+                        []
+                    _ ->
+                        img [ src "../image/mj_icon1.png", alt "logo" ]
+                        []
+                ]
+                ,  case item.content of
+                        "기본" ->
+                            p [ class "mj_customtext2" ]
+                            [ text item.content ]
+                    
+                        "최고" ->
+                            p [ class "mj_customtext3" ]
+                            [ text item.content ]
+                        "노력" ->  
+                            p [ class "mj_customtext1" ]
+                                [ text item.content ]
+                            
+                        _ ->
+                            p [ class "mj_customtext2" ]
+                            [ text item.content ]
+        
+                ]
+
+etcAsk model textStyle moveBtn boxStyle= 
+    div [ class boxStyle ]
         [ p [ class  textStyle ]
             [ text model.askSearchItem.content ]
 
@@ -1036,14 +1118,14 @@ etcAsk model textStyle moveBtn=
             label [ classList 
                 [(("answer_btn"), True)
                 , ("etcAnswerSelected" , model.currentEtcAsk.is_yes == "true")
-                ] , onClick (EtcAsk {ask_id = model.askSearchItem.id, contents = model.askSearchItem.content , is_yes = "true" , exercise_part_code = model.askSearchItem.exercise_part_code} "" )
+                ] , onClick (EtcAsk {ask_id = model.askSearchItem.id, content = model.askSearchItem.content , is_yes = "true" , exercise_part_code = model.askSearchItem.exercise_part_code} "" )
                  ]
                 [  text "예"
                 ]
             , label [ classList 
                 [(("answer_btn"), True)
                 , ("etcAnswerSelected" , model.currentEtcAsk.is_yes == "false")
-                ] , onClick (EtcAsk {ask_id = model.askSearchItem.id, contents = model.askSearchItem.content , is_yes = "false" , exercise_part_code = model.askSearchItem.exercise_part_code} "")
+                ] , onClick (EtcAsk {ask_id = model.askSearchItem.id, content = model.askSearchItem.content , is_yes = "false" , exercise_part_code = model.askSearchItem.exercise_part_code} "")
                  ]
                 [  text "아니오"
                 ]
@@ -1073,8 +1155,8 @@ etcExample idx model item =
                  ]
                 [  text item.text
                 ]
-paperweightSex model textStyle moveBtn=
-    div [ class "mj_boxwrap" ]
+paperweightSex model textStyle moveBtn boxStyle=
+    div [ class boxStyle ]
         [ p [ class textStyle ]
             [ text model.askyours.content ]
         , p [class "control answer_box"](List.indexedMap (\idx x -> answerExample idx model x )model.askyours.items)
@@ -1083,8 +1165,8 @@ paperweightSex model textStyle moveBtn=
                 [ text "다음" ]
             ]
         ]
-paperweightPoint model textStyle moveBtn =
-    div [ class "mj_boxwrap" ]
+paperweightPoint model textStyle moveBtn boxStyle =
+    div [ class boxStyle  ]
         [ p [ class textStyle ]
             [ text model.aksYoursPoint.content ]
         , p [class "control answer_box"](List.indexedMap (\idx x -> answerExamplePoint idx model x )model.aksYoursPoint.items)
@@ -1223,3 +1305,33 @@ selectedItem model =
         ]
         ]
     ]
+
+-- "myf_popup" 
+-- "yf_popup"
+resetLayer layerStyle model =
+    div [ class "layerStyleWarn", style "display" ( if model.isActive == "reset" || model.isActive == "recommend" then "flex" else "none") ] [
+    div [ class layerStyle ]
+    [ img [ src "/image/setting_icon2.png", style "width" "20%" ]
+        []
+    , h1 [ class "popup_yf_h1", style "font-size" "1rem" ]
+        [ text (
+            if model.isActive == "reset" then
+                "새로운 문진을 진행하시면 기존의 문진 리스트는 초기화 됩니다."
+            else
+                "새로운 추천을 받으면 기존의 문진 리스트는 초기화 됩니다."
+        ) ]
+    , p [ class "yf_logoout_butbox" ]
+        [ div [ class "button is-danger logout_danger" 
+        , onClick (
+            if model.isActive == "reset" then
+            IsActive "paperweightStart"
+            else
+            IsActive "paperweight"
+        ) ]
+            [ text "확인"]
+        , div [ class "button is-light logout_cencel" , onClick (IsActive "paperweight")]
+            [ text "취소" ]
+        ]
+    ]
+    ]
+

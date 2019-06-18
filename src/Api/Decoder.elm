@@ -794,3 +794,26 @@ askSearchItem item=
         |> required "content" string
         |> required "exercise_part_code" string
         |> required "id" int
+
+askResultData data item result detail =
+    Decode.succeed data 
+        |> required "data" (askresult item result detail )
+
+askresult item result detail= 
+    Decode.succeed item
+        |> required "ask_no" int
+        |> required "result" (askresultresult result detail)
+        
+
+askresultresult result detail = 
+    Decode.succeed result
+        |> required "content" string
+        |> required "detail" (Decode.list (askresultDetail detail))
+        |> required "part" string
+        |> required "target" string
+
+askresultDetail detail = 
+    Decode.succeed detail
+        |> required "content" string
+        |> required "name" string
+        |> required "sort" int
