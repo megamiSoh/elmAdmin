@@ -567,31 +567,31 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    -- case model.check of
-    --     True ->
-    --         case model.loading of
-    --             True ->
-    --                 { title = "맞춤운동"
-    --                 , content =
-    --                     div [] [
-    --                     div [Route.href Route.MSearch]
-    --                     [appHeaderSearch "맞춤운동" "makeExerHeader"]
-    --                     , activeTab model
-    --                     , case model.isActive of
-    --                         "paperweight" ->
-    --                             paperWeightStartApp model  
+    case model.check of
+        True ->
+            case model.loading of
+                True ->
+                    { title = "맞춤운동"
+                    , content =
+                        div [] [
+                        div [Route.href Route.MSearch]
+                        [appHeaderSearch "맞춤운동" "makeExerHeader"]
+                        , activeTab model
+                        , case model.isActive of
+                            "paperweight" ->
+                                paperWeightStartApp model  
                         
-    --                         "makeExer" ->
-    --                             app model
-    --                         _ ->
-    --                             paperWeightStartApp model       
+                            "makeExer" ->
+                                app model
+                            _ ->
+                                paperWeightStartApp model       
                         
-    --                     , appdeltelayer model
-    --                     , paperweightStartMobile model
-    --                     , resetLayer "yf_popup" model
-    --                     ]
-    --                 }
-    --             False ->
+                        , appdeltelayer model
+                        , paperweightStartMobile model
+                        , resetLayer "yf_popup" model
+                        ]
+                    }
+                False ->
                     { title = "맞춤운동"
                     , content =
                         div [] [
@@ -614,37 +614,37 @@ view model =
                     
                     }
     
-        -- False ->
-        --     { title = "맞춤운동"
-        --     , content =
-        --         div [ class "customContainerwrap" ]
-        --     [ div [ class "container" ]
-        --         [ div [ class "notification yf_workout" ]
-        --             [
-        --                 commonHeader "/image/icon_customworkout.png" "맞춤운동"
-        --                 , activeTab model
-        --                 , case model.isActive of
-        --                     "paperweight" ->
-        --                         div [][
-        --                         paperWeightBody model 
-        --                         , div [class "button mj_new_recommend", onClick (IsActive "newRecommend")][text "새로운 추천"]
-        --                         ] 
-        --                     "makeExer" ->
-        --                         div[][makeExerBody model
-        --                         ,pagination
-        --                         PageBtn
-        --                         model.getlistData.paginate
-        --                         model.pageNum]
-        --                     _ ->
-        --                         paperWeightBody model            
-        --             ]
+        False ->
+            { title = "맞춤운동"
+            , content =
+                div [ class "customContainerwrap" ]
+            [ div [ class "container" ]
+                [ div [ class "notification yf_workout" ]
+                    [
+                        commonHeader "/image/icon_customworkout.png" "맞춤운동"
+                        , activeTab model
+                        , case model.isActive of
+                            "paperweight" ->
+                                div [][
+                                paperWeightBody model 
+                                , div [class "button mj_new_recommend", onClick (IsActive "newRecommend")][text "새로운 추천"]
+                                ] 
+                            "makeExer" ->
+                                div[][makeExerBody model
+                                ,pagination
+                                PageBtn
+                                model.getlistData.paginate
+                                model.pageNum]
+                            _ ->
+                                paperWeightBody model            
+                    ]
                      
-        --         ]
-        --         , paperweightStart model
-        --         , selectedItem model
-        --         , resetLayer "yf_popup" model
-        --     ]
-        --     }
+                ]
+                , paperweightStart model
+                , selectedItem model
+                , resetLayer "yf_popup" model
+            ]
+            }
             
         
 
