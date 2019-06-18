@@ -209,7 +209,7 @@ menu =
         },
         {
             thumb = "image/icon05.png",
-            menuTitle = "1:1문의",
-            routing = Route.C
+            menuTitle = "FAQ",
+            routing = Route.Faq
         }
     ]

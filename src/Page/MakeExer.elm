@@ -474,9 +474,9 @@ update msg model =
                     ({model | isActive = category, categoryPaperWeight = "sex", axerCode = "", askSelected = caseItem model.askyours.default True} , Cmd.batch[askYourData model  GetQuestions Endpoint.askgender (Decoder.askyours AskYours AskYourData AskItems)
                     , Api.hideFooter ()])
                 "paperWeightConfirm" ->
-                    ({model | isActive = "reset"}, Cmd.none)
+                    ({model | isActive = "reset"}, scrollToTop NoOp)
                 "newRecommend" ->
-                    ({model | isActive = "recommend"}, Cmd.none) 
+                    ({model | isActive = "recommend"}, scrollToTop NoOp) 
                 _ ->
                     (model, Cmd.none)
         DeleteConfirm id ->
@@ -567,31 +567,31 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    case model.check of
-        True ->
-            case model.loading of
-                True ->
-                    { title = "맞춤운동"
-                    , content =
-                        div [] [
-                        div [Route.href Route.MSearch]
-                        [appHeaderSearch "맞춤운동" "makeExerHeader"]
-                        , activeTab model
-                        , case model.isActive of
-                            "paperweight" ->
-                                paperWeightStartApp model  
+    -- case model.check of
+    --     True ->
+    --         case model.loading of
+    --             True ->
+    --                 { title = "맞춤운동"
+    --                 , content =
+    --                     div [] [
+    --                     div [Route.href Route.MSearch]
+    --                     [appHeaderSearch "맞춤운동" "makeExerHeader"]
+    --                     , activeTab model
+    --                     , case model.isActive of
+    --                         "paperweight" ->
+    --                             paperWeightStartApp model  
                         
-                            "makeExer" ->
-                                app model
-                            _ ->
-                                paperWeightStartApp model       
+    --                         "makeExer" ->
+    --                             app model
+    --                         _ ->
+    --                             paperWeightStartApp model       
                         
-                        , appdeltelayer model
-                        , paperweightStartMobile model
-                        , resetLayer "yf_popup" model
-                        ]
-                    }
-                False ->
+    --                     , appdeltelayer model
+    --                     , paperweightStartMobile model
+    --                     , resetLayer "yf_popup" model
+    --                     ]
+    --                 }
+    --             False ->
                     { title = "맞춤운동"
                     , content =
                         div [] [
@@ -614,37 +614,37 @@ view model =
                     
                     }
     
-        False ->
-            { title = "맞춤운동"
-            , content =
-                div [ class "customContainerwrap" ]
-            [ div [ class "container" ]
-                [ div [ class "notification yf_workout" ]
-                    [
-                        commonHeader "/image/icon_customworkout.png" "맞춤운동"
-                        , activeTab model
-                        , case model.isActive of
-                            "paperweight" ->
-                                div [][
-                                paperWeightBody model 
-                                , div [class "button mj_new_recommend", onClick (IsActive "newRecommend")][text "새로운 추천"]
-                                ] 
-                            "makeExer" ->
-                                div[][makeExerBody model
-                                ,pagination
-                                PageBtn
-                                model.getlistData.paginate
-                                model.pageNum]
-                            _ ->
-                                paperWeightBody model            
-                    ]
+        -- False ->
+        --     { title = "맞춤운동"
+        --     , content =
+        --         div [ class "customContainerwrap" ]
+        --     [ div [ class "container" ]
+        --         [ div [ class "notification yf_workout" ]
+        --             [
+        --                 commonHeader "/image/icon_customworkout.png" "맞춤운동"
+        --                 , activeTab model
+        --                 , case model.isActive of
+        --                     "paperweight" ->
+        --                         div [][
+        --                         paperWeightBody model 
+        --                         , div [class "button mj_new_recommend", onClick (IsActive "newRecommend")][text "새로운 추천"]
+        --                         ] 
+        --                     "makeExer" ->
+        --                         div[][makeExerBody model
+        --                         ,pagination
+        --                         PageBtn
+        --                         model.getlistData.paginate
+        --                         model.pageNum]
+        --                     _ ->
+        --                         paperWeightBody model            
+        --             ]
                      
-                ]
-                , paperweightStart model
-                , selectedItem model
-                , resetLayer "yf_popup" model
-            ]
-            }
+        --         ]
+        --         , paperweightStart model
+        --         , selectedItem model
+        --         , resetLayer "yf_popup" model
+        --     ]
+        --     }
             
         
 
@@ -700,7 +700,7 @@ paperWeightStartApp model =
         ]
         , listTitle
             , videoItemApp
-            , div [class "button reset_mj_exer"] [text "운동 새로 받기"]
+            , div [class "button reset_mj_exer", onClick (IsActive "newRecommend")] [text "운동 새로 받기"]
             -- , div [class "nopaperWeightResult"] [
             --     text "문진운동이 없습니다."
                 -- ,
@@ -1134,8 +1134,12 @@ etcAsk model textStyle moveBtn boxStyle=
             [ div [ class "button  mj_before" , onClick (EtcAsk model.currentEtcAsk "saveNbefore") ]
                 [ text "이전" ]
             , if List.length model.askSearchData == model.idxSearch then
-             div [ class "button is-dark mj_next" ,  onClick (SelectedAnswer "completePaperWeight" "") ]
-                [ text "완료" ]
+                if model.currentEtcAsk.is_yes == "" then
+                     div [ class "button mj_disabled mj_next" ]
+                    [ text "완료" ]
+                else
+                     div [ class "button is-dark mj_next" ,  onClick (SelectedAnswer "completePaperWeight" "") ]
+                    [ text "완료" ]
             else
                 if model.currentEtcAsk.is_yes == "" then
                 div [ class "button mj_disabled mj_next" ]
@@ -1240,10 +1244,7 @@ videoItem =
 
 videoItemApp = 
     div [ class "mjList_container" ]
-        [ div [class"list_overlay"]
-        [i [ class "fas fa-play overlayplay_list" ][]],
-
-            div [class "mj_wrap"][
+        [div [class "mj_wrap"][
                  div [ class "yf_workoutvideo_image" ]
                 [ 
                     img [ class "yf_workoutvpic1", src "image/m_video_image.png" ]
@@ -1309,7 +1310,7 @@ selectedItem model =
 -- "myf_popup" 
 -- "yf_popup"
 resetLayer layerStyle model =
-    div [ class "layerStyleWarn", style "display" ( if model.isActive == "reset" || model.isActive == "recommend" then "flex" else "none") ] [
+    div [ class "layerStyleWarn", style "display" ( if model.isActive == "reset" || model.isActive == "recommend" then "flex" else "none"), id ( if model.isActive == "reset" || model.isActive == "recommend" then "noScrInput" else "") ] [
     div [ class layerStyle ]
     [ img [ src "/image/setting_icon2.png", style "width" "20%" ]
         []
