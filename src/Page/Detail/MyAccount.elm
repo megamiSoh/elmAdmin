@@ -374,7 +374,7 @@ update msg model =
             else if serverErrors == "401" then
             ({model | deleteAuth = "bodyinfo"}, (Session.changeInterCeptor (Just serverErrors) model.session))
             else
-            ({model | currentPage = "body"}, Cmd.none)
+            ({model | currentPage = ""}, Cmd.none)
         SaveComplete (Ok ok) ->
             let
                 text = Encode.string "저장 되었습니다."
@@ -505,6 +505,9 @@ update msg model =
             if str == "body" then
             ({model | currentPage = "body" }, 
             Cmd.batch [
+                if String.isEmpty model.weight then
+                Api.scrollControl ()
+                else
                 Decoder.bodyInfo BodyData BodyInfoData Protain
                 |>Api.get BodyInfoComplete Endpoint.getBodyInfo (Session.cred model.session)
                 , scrollToTop NoOp
@@ -752,7 +755,7 @@ bodyweight model =
     div [class "editTop showAccount"] [
         div [  class "editData"]
         [ ul [class "accountHeader"] 
-                [ li[onClick (ShowDetail "weightInput")]
+                [ li[onClick (ShowDetail "")]
                     [ span [class "fas fa-times"][] ]
                 , li[][text "체중"]
                 , li[onClick (ShowDetail "weightInput")][
@@ -776,7 +779,7 @@ goalweight model =
         -- , 
         div [  class "editData"]
         [ ul [class "accountHeader"] 
-                [ li[onClick (ShowDetail "goalWeightInput")]
+                [ li[onClick (ShowDetail "")]
                     [ span [class "fas fa-times"][] ]
                 , li[][text "목표체중"]
                 , li[onClick (ShowDetail "goalWeightInput")][
@@ -800,7 +803,7 @@ height model =
         div [  class "editData"]
         [ 
             ul [class "accountHeader"] 
-                [ li[onClick (ShowDetail "heightInput")]
+                [ li[onClick (ShowDetail "")]
                     [ span [class "fas fa-times"][] ]
                 , li[][text "신장"]
                 , li[onClick (ShowDetail "heightInput")][
@@ -824,7 +827,7 @@ birth model =
         -- ,
          div [  class "editData"]
         [ ul [class "accountHeader"] 
-                [ li[onClick (ShowDetail "birthInput")]
+                [ li[onClick (ShowDetail "")]
                     [ span [class "fas fa-times"][] ]
                 , li[][text "생년월일"]
                 , li[onClick (ShowDetail "birthInput")][

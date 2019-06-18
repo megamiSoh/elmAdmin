@@ -817,3 +817,17 @@ askresultDetail detail =
         |> required "content" string
         |> required "name" string
         |> required "sort" int
+
+askExer data list = 
+    Decode.succeed data 
+        |> required "data" (Decode.list (askExerList list))
+
+askExerList list = 
+    Decode.succeed list
+        |> required "difficulty_name" string
+        |> required "duration" string
+        |> required "exercise_part_name" string
+        |> required "id" int
+        |> required "mediaid" string
+        |> required "thembnail" string
+        |> required "title" string

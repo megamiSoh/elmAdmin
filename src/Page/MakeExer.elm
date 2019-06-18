@@ -50,7 +50,20 @@ type alias Model =
         , exercise_part_code : String
         }
     , resultData : AskResult
+    , askExerList : List AskExer
     }
+
+type alias AskExerData = 
+    { data : List AskExer }
+
+type alias AskExer = 
+    { difficulty_name :  String
+    , duration :  String 
+    , exercise_part_name :  String
+    , id : Int
+    , mediaid :  String 
+    , thembnail :  String
+    , title :  String }
 
 type alias ScreenInfo = 
     { scrollHeight : Int
@@ -190,6 +203,9 @@ askAsnwer point male answers session format=
     in
     Api.post Endpoint.askAnswer (Session.cred session) AskAnswerComplete body Decoder.resultD
 
+askExerData session = 
+    Api.get GetListComplete Endpoint.askExer (Session.cred session) (Decoder.askExer AskExerData AskExer)
+
 init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile =
     let
@@ -274,11 +290,13 @@ init session mobile =
                 , target = ""
                 }
             }
+        , askExerList = []
         }, 
         Cmd.batch 
         [ bodyEncode 1 10 "" session
         , Api.removeJw ()
         , scrollToTop NoOp
+        , askExerData session 
         ]
     )
 
@@ -306,6 +324,8 @@ type Msg
     | CloseTrial
     | AskAnswerComplete (Result Http.Error Decoder.Success)
     | AskResultComplete (Result Http.Error AskResultData)
+    | GetListComplete (Result Http.Error AskExerData)
+    | AskRecommendComplete (Result Http.Error Decoder.Success)
 
 toSession : Model -> Session
 toSession model =
@@ -363,8 +383,16 @@ indexItem idx item =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        AskRecommendComplete(Ok ok) ->
+            (model, askExerData model.session)
+        AskRecommendComplete(Err err) ->
+            (model, Cmd.none)
+        GetListComplete (Ok ok)->
+            ({model | askExerList = ok.data }, Cmd.none)
+        GetListComplete (Err err)->
+            (model, Cmd.none)
         AskResultComplete (Ok ok) ->
-            ({model | resultData = ok.data}, Cmd.none)
+            ({model | resultData = ok.data},scrollToTop NoOp)
         AskResultComplete (Err err) ->
             (model, Cmd.none)
         AskAnswerComplete (Ok ok) ->
@@ -474,9 +502,16 @@ update msg model =
                     ({model | isActive = category, categoryPaperWeight = "sex", axerCode = "", askSelected = caseItem model.askyours.default True} , Cmd.batch[askYourData model  GetQuestions Endpoint.askgender (Decoder.askyours AskYours AskYourData AskItems)
                     , Api.hideFooter ()])
                 "paperWeightConfirm" ->
+                    -- if model.check then
+                    -- ({model | isActive = "reset"}, Cmd.none)
+                    -- else
                     ({model | isActive = "reset"}, scrollToTop NoOp)
                 "newRecommend" ->
-                    ({model | isActive = "recommend"}, scrollToTop NoOp) 
+                    ({model | isActive = "recommend"}, Cmd.none)
+                "paperweightRecommend" ->
+                    ({model | isActive = "paperweight"}, Cmd.batch[Api.post Endpoint.askRecommend (Session.cred model.session) AskRecommendComplete Http.emptyBody Decoder.resultD]) 
+                "paperweightComplete" ->
+                    ({model | isActive = "paperweight", categoryPaperWeight = ""}, askExerData model.session )
                 _ ->
                     (model, Cmd.none)
         DeleteConfirm id ->
@@ -597,7 +632,6 @@ view model =
                         div [] [
                         div [Route.href Route.MSearch]
                         [appHeaderSearch "맞춤운동" "makeExerHeader"]
-                        , activeTab model
                         , case model.isActive of
                             "paperweight" ->
                                 paperWeightStartApp model  
@@ -627,14 +661,14 @@ view model =
                             "paperweight" ->
                                 div [][
                                 paperWeightBody model 
-                                , div [class "button mj_new_recommend", onClick (IsActive "newRecommend")][text "새로운 추천"]
+                                , if List.isEmpty model.askExerList then
+                                div [][]
+                                else
+                                div [class "button mj_new_recommend", onClick (IsActive "newRecommend")][text "새로운 추천"]
                                 ] 
                             "makeExer" ->
-                                div[][makeExerBody model
-                                ,pagination
-                                PageBtn
-                                model.getlistData.paginate
-                                model.pageNum]
+                                makeExerBody model
+                                
                             _ ->
                                 paperWeightBody model            
                     ]
@@ -658,15 +692,26 @@ makeExerBody model =
                             [ text "맞춤운동 리스트" ]
                         ],
                     div [] [
-                            div [ class "make_boxwrap" ]
-                            (List.map bodyItem model.getlistData.data)
-                    ]
+                        if List.isEmpty model.getlistData.data then
+                            div [class "nopaperWeightResult"] [
+                            text "맞춤운동이 없습니다."
+                            ]
+                        else
+                            div[][
+                                div [ class "make_boxwrap" ]
+                                (List.map bodyItem model.getlistData.data)
+                                ,pagination
+                                    PageBtn
+                                    model.getlistData.paginate
+                                    model.pageNum]
+                        ]
 
                 ]
             ]
 app model =
     div [ class "container", class "scroll", scrollEvent ScrollEvent, style "height" "85vh" ][
-         appStartBox
+        activeTab model
+        , appStartBox
         , listTitle
             ,div [] [
                 div[](List.map appItemContent model.newList) ,
@@ -690,27 +735,27 @@ appStartBox =
         ]
 paperWeightStartApp model = 
      div [ class "container", class "scroll", scrollEvent ScrollEvent, style "height" "85vh" ][
+         activeTab model ,
          div [ class "make_m_yf_box" ]
         [ h1 [ class "m_make_yf_h1" ]
             [ text "유어핏 문진을 통해서 나만의 운동을 만들어보세요!" ]
-        , div [ class "button is-dark m_make_yf_darkbut", onClick (IsActive "paperWeightConfirm") ]
+        , div [ class "button is-dark m_make_yf_darkbut", onClick (
+            if List.isEmpty model.askExerList then
+            IsActive "paperweightStart"
+            else
+            IsActive "paperWeightConfirm"
+        ) ]
             [ text "시작하기" ]
         , br []
             []
         ]
         , listTitle
-            , videoItemApp
+            , if List.isEmpty model.askExerList then
+                div [class "nopaperWeightResult"] [
+                    text "문진운동이 없습니다." ]
+            else
+                div [] (List.map videoItemApp model.askExerList) 
             , div [class "button reset_mj_exer", onClick (IsActive "newRecommend")] [text "운동 새로 받기"]
-            -- , div [class "nopaperWeightResult"] [
-            --     text "문진운동이 없습니다."
-                -- ,
-            --     if model.infiniteLoading then
-            --         div [class "loadingPosition"] [
-            --         infiniteSpinner
-            --         ]
-            --     else
-            --         span [] []
-            -- ]
     ]
     
 
@@ -865,7 +910,7 @@ deltelayer model =
     ]
 
 
-paperWeight = 
+paperWeight model = 
     div [ class "make_yf_box" ] 
         
                 [ 
@@ -874,7 +919,12 @@ paperWeight =
            ,
                     h1 [ class "make_yf_h1" ]
                 [ text "유어핏 문진을 통해서 나만의 운동을 만들어보세요!" ]
-             , div [ class "button is-dark make_yf_darkbut", onClick (IsActive "paperWeightConfirm") ]
+             , div [ class "button is-dark make_yf_darkbut",  onClick (
+                    if List.isEmpty model.askExerList then
+                    IsActive "paperweightStart"
+                    else
+                    IsActive "paperWeightConfirm"
+                )]
                 [ text "시작하기" ]
             , br []
                 []
@@ -898,18 +948,19 @@ activeTab model =
         ]
 paperWeightBody model =
     div [ class "customContainerwrap" ]
-            [ paperWeight 
+            [ paperWeight model 
             , deltelayer model,
                 div [ class "mj_yf_box make_boxwrap"] [
                     div [ class "mj_box_title" ]
                         [ h1 [ class "mj_yf_title" ]
                             [ text "문진운동 리스트" ]
                         ]
-                    , videoItem
-                    -- , div [class "nopaperWeightResult"] [
-                    --         text "문진운동이 없습니다."
-                    -- ]
-
+                    , if List.isEmpty model.askExerList then
+                        div [class "nopaperWeightResult"] [
+                            text "문진운동이 없습니다."
+                        ]
+                    else
+                        div [class "makeExerMjBoxWrap_Container"] ( List.map videoItem model.askExerList)
                 ]
             ]
 
@@ -1032,7 +1083,7 @@ paperweightStartMobile model =
                 [ text "60%" ]
             ]
         "paperweightResult" ->
-            div []
+            div [class "individual_paperweightResult"]
             [ div [ class "mj_box_title" ]
             [ h1 [ class "mj_yf_title" ]
                 [ text "문진 맞춤 운동결과" ]
@@ -1045,7 +1096,7 @@ paperweightStartMobile model =
     ]
 
 paperweightAnswer item = 
-    div [ class "mj_boxwrap2" ]
+    div [ class "mj_boxwrap2"]
     [ div [ class "mj_result_box1" ]
         [ p [ class "mj_result_text1" ]
             [ text item.result.target
@@ -1067,7 +1118,7 @@ paperweightAnswer item =
     , div [ class "mj_result_box1" ]
         [ p [ class "mj_result_text3" ]
             [ text "회원님의 문진데이터를 분석하여 유어핏 맞춤형 운동이 부위와 난이도 맞게 자동추천합니다." ]
-        , div [ class "button is-link is-medium mj_gobtn" , onClick (IsActive "paperweight")]
+        , div [ class "button is-link is-medium mj_gobtn" , onClick (IsActive "paperweightComplete")]
             [ text "맞춤 운동 보러가기" ]
         ]
     ]
@@ -1218,52 +1269,52 @@ caseItem item charaterType =
             charaterType
 
 
-videoItem = 
-    div [ class "yf_workoutvideoboxwrap" , onClick CloseTrial]
+videoItem item = 
+    div [ class "yf_workoutvideoboxwrap makeExerMjboxWrap" , onClick CloseTrial]
         [ div [class"list_overlay"]
         [i [ class "fas fa-play overlayplay_list" ][]],
 
-             div [ class "yf_workoutvideo_image" ]
+             div [  ]
                 [ 
-                    img [ class "yf_workoutvpic1", src "image/m_video_image.png" ]
+                    img [ src item.thembnail ]
                     []
                 ]
             , div [ class "yf_workoutvideo_lavel_bg" ]
                 [ div [ class "level" ]
-                    [ text "상" ]
+                    [ text item.difficulty_name ]
                 ]
             , div [ class "yf_workoutworkout_title" ]
-                [ text "title" ]
+                [ text (item.title ++ " - " ++ item.exercise_part_name) ]
             , div [ class "m_timebox" ]
                 [
                     i [ class "fas fa-stopwatch" ]
                     []
                     , text " "
-                    , text "duration"]
+                    , text item.duration ]
         ]
 
-videoItemApp = 
+videoItemApp item = 
     div [ class "mjList_container" ]
         [div [class "mj_wrap"][
                  div [ class "yf_workoutvideo_image" ]
                 [ 
-                    img [ class "yf_workoutvpic1", src "image/m_video_image.png" ]
+                    img [ class "yf_workoutvpic1", src item.thembnail ]
                     []
                 ]
             , div [ class "yf_workoutvideo_lavel_bg" ]
                 [ div [ class "level" ]
-                    [ text "상" ]
+                    [ text item.difficulty_name ]
                 ]
             ]
             , div [class "mjList_title_makeTab"][
             div [ class "yf_workoutworkout_title" ]
-                [ text "title" ]
+                [ text (item.title ++ " - " ++ item.exercise_part_name) ]
             , div [ class "m_timebox" ]
                 [
                     i [ class "fas fa-stopwatch" ]
                     []
                     , text " "
-                    , text "duration"
+                    , text item.duration
                     ]
                     
             ]
@@ -1327,7 +1378,7 @@ resetLayer layerStyle model =
             if model.isActive == "reset" then
             IsActive "paperweightStart"
             else
-            IsActive "paperweight"
+            IsActive "paperweightRecommend"
         ) ]
             [ text "확인"]
         , div [ class "button is-light logout_cencel" , onClick (IsActive "paperweight")]

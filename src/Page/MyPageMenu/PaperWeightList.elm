@@ -325,9 +325,9 @@ view model =
                         div [class "spinnerBack", style "display" (if model.loading then "flex" else "none" )] [
                             spinner
                             ]
-                        , div [class "noResult", style "display" (if List.isEmpty model.data.data then "fixed" else "none")] [
-                                text "스크랩한 게시물이 없습니다."
-                            ]
+                        -- , div [class "noResult", style "display" (if List.isEmpty model.data.data then "fixed" else "none")] [
+                        --         text "스크랩한 게시물이 없습니다."
+                        --     ]
                         , div [ class "scrollheight", scrollEvent ScrollEvent ] 
                             [listappDetail model]
                         -- (

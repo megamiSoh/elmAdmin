@@ -349,7 +349,8 @@ view model =
                     [ commonJustHeader "/image/icon_list.png" "나의 스크랩",
                     div [ class "yf_yfworkout_search_wrap" ]
                     [
-                        div [] [
+                        
+                        div [style "display" (if List.isEmpty model.data.data then "none" else "fixed")] [
                             div [class "myScrap_mediabox"] (
                             List.map listwebDetail model.data.data
                         )
@@ -358,6 +359,9 @@ view model =
                         model.data.paginate
                         model.pageNum
                         ]
+                        , div [class "noResult", style "display" (if List.isEmpty model.data.data then "fixed" else "none")] [
+                                text "스크랩한 게시물이 없습니다."
+                            ]
                     ]
                 ]]
         }

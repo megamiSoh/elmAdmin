@@ -68,7 +68,9 @@ module Api.Endpoint exposing
     , askExercise_point
     , askSearch
     , askAnswer 
-    , askResult )
+    , askResult
+    , askExer 
+    , askRecommend)
 
 import Http
 import Url.Builder exposing (QueryParameter)
@@ -333,3 +335,9 @@ askAnswer =
 
 askResult = 
     url ["front", "ask", "result"][]
+
+askExer = 
+    url ["front", "ask", "exercises"][]
+
+askRecommend = 
+    url ["front", "ask" , "recommend"][]

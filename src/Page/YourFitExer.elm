@@ -375,7 +375,7 @@ bodyContents idx item model =
         ]
        ,
        div [ class "menubox_wrap", id ("scrollCtr" ++ (String.fromInt idx))] [
-            div [ class "yf_workoutmenubox1", style "width" (String.fromInt(200 * 6 + 130) ++ "px") ]
+            div [ class "yf_workoutmenubox1", style "width" (String.fromInt(200 * 6 + 120) ++ "px") ]
         [  div [ class "yf_workoutvideopic" ]
             [    if item.code == "10" then
                 img [src "/image/workout_menu1.png", alt item.name ]

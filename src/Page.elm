@@ -106,7 +106,7 @@ type Msg = NoOp
 
 
 webContents content page maybeViewer=
-    case maybeViewer of
+        case maybeViewer of
         Just _ ->
             if page == MyPage then
             div [ class "" ][ 
@@ -189,7 +189,8 @@ viewHeader page maybeViewer =
     case maybeViewer of
         Just _ ->
             nav [ class "navbar yf_navbar" ]
-                [ div [ class "navbar-brand yf_brand" ]
+                [ div [ class "positionNav"][]
+                , div [ class "navbar-brand yf_brand" ]
                     [ a [ class "navbar-item yf_logo", Route.href Route.Home ]
                         []
                     , div [  class "navbar-burger burger" ]
