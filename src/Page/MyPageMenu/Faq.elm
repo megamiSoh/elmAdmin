@@ -374,7 +374,6 @@ view model =
     , content = 
         div [] [
             app model
-            , appDetail model
         ]
     }
     else
@@ -470,12 +469,6 @@ contentsLayout idx item model =
                     |> String.replace "%26" "&"
                     |> String.replace "%25" "%"
             ) ],
-        -- div [class "tableCell qna_ing_text"] [
-        --     if item.is_use then
-        --     span [class "faq_done"] [text "답변 완료"]
-        --     else
-        --     span [class "faq_waiting"][text "대기중"]
-        -- ],
         div [class "tableCell qna_title_date"] [text (String.dropRight 10 item.inserted_at)]
     ]
 
@@ -517,27 +510,3 @@ decodeChar char =
         |> String.replace  "%26" "&"
         |> String.replace  "%25" "%"
 
-
-appDetail model =
-    div [class ("container faqcontainer myaccountStyle " ++ (if model.showWrite || model.showDetail then "account" else "" ))] [
-       
-       if model.showDetail then
-       div [] [
-           appHeaderConfirmDetailR "문의하기" "myPageHeader" (GoBack "list") GoEdit "수정" 
-           , FaqDetail.apptitle model.title Title
-        --    , div [classList [("appFaqleft", True)
-        --    , ("display", model.detail.is_answer == True)
-        --    ] ][text "답변완료"]
-        --    , div [classList 
-        --    [ ("appFaqleft", True)
-        --    , ("red", True)
-        --    , ("display", model.detail.is_answer == False)]
-        --    ][text "답변 대기 중"]
-           , FaqDetail.apptextArea model.content Content
-       ]
-        else
-        div [][appHeaderConfirmDetailR "문의하기" "myPageHeader" (GoBack "list") GoRegist "등록" 
-        , Fw.apptitle Title model
-        , Fw.apptextArea Content model
-        ]
-    ]
