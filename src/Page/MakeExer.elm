@@ -405,14 +405,10 @@ update msg model =
             ( {model | categoryPaperWeight = "paperweightResult"}, 
              Api.get AskResultComplete Endpoint.askResult (Session.cred model.session ) (Decoder.askResultData AskResultData AskResult AskResultResult AskResultDetail) )
         CompletePaperWeight ->
-            let _ = Debug.log "helloworld" "copmlete"
-                
-            in
-            
             (model, Cmd.batch[Api.progressGo ()
             , askAsnwer model.axerCode model.askSelected model.etcAsk model.session model.yesformat])
         EtcAsk etcData direction->
-            let _ = Debug.log "etc" model.etcAsk
+            let
                 initValue = 
                     { ask_id = 0
                     , content = ""
@@ -446,18 +442,16 @@ update msg model =
             in
             case direction of
                 "saveNnext" ->
-                    -- let _ = Debug.log "m" m
-                        
-                    -- in
-                    
                     if f then
                     ({model | etcAsk = m,   askSearchItem = indexItem (model.idxSearch + 1) model.askSearchData , idxSearch = model.idxSearch + 1, currentEtcAsk = nextR},Cmd.none) 
                     else
                     ({model | etcAsk =  etcData :: model.etcAsk,   askSearchItem = indexItem (model.idxSearch + 1) model.askSearchData , idxSearch = model.idxSearch + 1, currentEtcAsk = nextR},Cmd.none)   
+                "saveNComplete" ->
+                    if f then
+                    update (SelectedAnswer "completePaperWeight" "") {model | etcAsk = m,   askSearchItem = indexItem (model.idxSearch + 1) model.askSearchData , idxSearch = model.idxSearch + 1, currentEtcAsk = nextR} 
+                    else
+                    update (SelectedAnswer "completePaperWeight" "") {model | etcAsk =  etcData :: model.etcAsk,   askSearchItem = indexItem (model.idxSearch + 1) model.askSearchData , idxSearch = model.idxSearch + 1, currentEtcAsk = nextR}  
                 "saveNbefore" ->
-                    -- let _ = Debug.log "m" m
-                        
-                    -- in
                         if model.idxSearch <= 1 then
                         ({model | categoryPaperWeight = "exerpoint", etcAsk = [], currentEtcAsk = initValue}, Cmd.none)
                         else
@@ -1189,7 +1183,7 @@ etcAsk model textStyle moveBtn boxStyle=
                      div [ class "button mj_disabled mj_next" ]
                     [ text "완료" ]
                 else
-                     div [ class "button is-dark mj_next" ,  onClick (SelectedAnswer "completePaperWeight" "") ]
+                     div [ class "button is-dark mj_next" ,  onClick  (EtcAsk model.currentEtcAsk "saveNComplete") ]
                     [ text "완료" ]
             else
                 if model.currentEtcAsk.is_yes == "" then
