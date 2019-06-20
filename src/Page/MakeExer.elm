@@ -1452,7 +1452,7 @@ selectedItem model =
 
 askDetailItems item = 
     li [][
-        text ((String.fromInt item.sort) ++ ". " ++ item.title)
+        text ((String.fromInt item.sort) ++ ". " ++ item.title ++ " x " ++ String.fromInt item.value ++ (if item.is_rest then " 분 " else " 세트 "))
     ]
 
 -- "myf_popup" 
