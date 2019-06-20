@@ -51,7 +51,29 @@ type alias Model =
         }
     , resultData : AskResult
     , askExerList : List AskExer
+    , askDetail : AskDetail
     }
+
+type alias AskDetailData = 
+    { data : AskDetail }
+
+type alias AskDetail = 
+    { description : String
+    , difficulty_name : String
+    , duration : String
+    , exercise_id : Int
+    , exercise_items : List AskDetailItem
+    , exercise_part_name : String
+    , thumbnail : String
+    , title : String }
+
+
+type alias AskDetailItem = 
+    { exercise_id : Int
+    , is_rest : Bool
+    , sort : Int
+    , title : String
+    , value : Int }
 
 type alias AskExerData = 
     { data : List AskExer }
@@ -60,10 +82,11 @@ type alias AskExer =
     { difficulty_name :  String
     , duration :  String 
     , exercise_part_name :  String
-    , id : Int
+    , exercise_id : Int
     , mediaid :  String 
     , thembnail :  String
-    , title :  String }
+    , title :  String 
+    , ask_no : Int}
 
 type alias ScreenInfo = 
     { scrollHeight : Int
@@ -291,6 +314,16 @@ init session mobile =
                 }
             }
         , askExerList = []
+        , askDetail = 
+                { description = ""
+                , difficulty_name = ""
+                , duration = ""
+                , exercise_id = 0
+                , exercise_items = []
+                , exercise_part_name = ""
+                , thumbnail = ""
+                , title = "" }
+
         }, 
         Cmd.batch 
         [ bodyEncode 1 10 "" session
@@ -321,12 +354,13 @@ type Msg
     | EtcAsk EtcDataItem String
     | CompletePaperWeight
     | ProgressComplete Encode.Value
-    | CloseTrial
+    | CloseTrial Int Int
     | AskAnswerComplete (Result Http.Error Decoder.Success)
     | AskResultComplete (Result Http.Error AskResultData)
     | GetListComplete (Result Http.Error AskExerData)
     | AskRecommendComplete (Result Http.Error Decoder.Success)
     | CalcurationComplete Encode.Value
+    | AskDetailMsg (Result Http.Error AskDetailData)
 
 toSession : Model -> Session
 toSession model =
@@ -384,7 +418,15 @@ indexItem idx item =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
+    case msg of 
+        AskDetailMsg (Ok ok) ->
+            ({model | askDetail = ok.data}, Cmd.none)
+        AskDetailMsg (Err err) ->
+            let _ = Debug.log "err" err
+                
+            in
+            
+            (model, Cmd.none)
         CalcurationComplete val ->
             ({model | isActive = "paperweight"}, Cmd.none)
         AskRecommendComplete(Ok ok) ->
@@ -403,8 +445,14 @@ update msg model =
             (model, Cmd.none)
         AskAnswerComplete (Err err) ->
             (model, Cmd.none)
-        CloseTrial ->   
+        CloseTrial no id ->  
+            let
+                format num = String.fromInt num
+            in
+            if no == 0 then
             ({model | trialShow = not model.trialShow}, Cmd.none)
+            else
+            ({model | trialShow = not model.trialShow}, Api.get AskDetailMsg (Endpoint.askdetail (format no) (format id)) (Session.cred model.session) (Decoder.askDetailData AskDetailData AskDetail AskDetailItem))
         ProgressComplete complete ->
             ( {model | categoryPaperWeight = "paperweightResult"}, 
              Api.get AskResultComplete Endpoint.askResult (Session.cred model.session ) (Decoder.askResultData AskResultData AskResult AskResultResult AskResultDetail) )
@@ -1274,7 +1322,7 @@ caseItem item charaterType =
 
 
 videoItem item = 
-    div [ class "yf_workoutvideoboxwrap makeExerMjboxWrap" , onClick CloseTrial]
+    div [ class "yf_workoutvideoboxwrap makeExerMjboxWrap" , onClick (CloseTrial item.ask_no item.exercise_id)]
         [ div [class"list_overlay"]
         [i [ class "fas fa-play overlayplay_list" ][]],
 
@@ -1333,33 +1381,36 @@ selectedItem model =
         div [class "paperweightStartItem paperweightSelectedItem_container"]
         [
             div[class "paperweightSelectedItem_first"][
-            img [src "image/dummy_video_image.png"][]
+            img [src model.askDetail.thumbnail ][]
             , div []
-            [ div [class "mj_title"][text "복근 만들기 운동"
-            , span [class "mj_title_part"][text "복부 - 상"]
+            [ div [class "mj_title"][text model.askDetail.title
+            , span [class "mj_title_part"][text (model.askDetail.exercise_part_name ++ " - " ++ model.askDetail.difficulty_name)]
             ]
             , span [class "mj_title_duration"]
-            [ i [ class "fas fa-stopwatch" ] []
-            , text " "
-            , text "duration"
+            [ i [ class "fas fa-stopwatch" , style "padding-right" "3px"] []
+            , text model.askDetail.duration
             ]
             , ul [class "mj_description"]
-            [ li [][text "1. helloworld"]
-            , li [][text "2. helloworld"]
-            ]
+             (List.map askDetailItems model.askDetail.exercise_items)
+            
             ]
         ]
         , div [class "paperweightSelectedItem_second"][
             h3 [][text "운동설명"]
             , div [class "description"][
-                text "운동설명 123123123"
+                text model.askDetail.description
             ]
         ]
         , div [class "paperweightSelectedItem_third"]
         [ div [class "button is-link"][text "1주일 무료 체험"]
-        , div [class "button is-danger", onClick CloseTrial][text "닫기"]
+        , div [class "button is-danger", onClick (CloseTrial 0 0)][text "닫기"]
         ]
         ]
+    ]
+
+askDetailItems item = 
+    li [][
+        text ((String.fromInt item.sort) ++ ". " ++ item.title)
     ]
 
 -- "myf_popup" 

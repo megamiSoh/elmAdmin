@@ -70,7 +70,9 @@ module Api.Endpoint exposing
     , askAnswer 
     , askResult
     , askExer 
-    , askRecommend)
+    , askRecommend
+    , sessionCheck
+    , askdetail)
 
 import Http
 import Url.Builder exposing (QueryParameter)
@@ -115,7 +117,8 @@ login =
 signup = 
     url ["auth", "front", "sign_up"] []
  
-
+sessionCheck = 
+    url ["auth", "front" ,"show"][]
 
 -- yourfitvideo
 yourfitVideoList = 
@@ -341,3 +344,6 @@ askExer =
 
 askRecommend = 
     url ["front", "ask" , "recommend"][]
+
+askdetail no id = 
+    url ["front" , "ask" , no , id][]

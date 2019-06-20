@@ -827,7 +827,39 @@ askExerList list =
         |> required "difficulty_name" string
         |> required "duration" string
         |> required "exercise_part_name" string
-        |> required "id" int
+        |> required "exercise_id" int
         |> required "mediaid" string
         |> required "thembnail" string
         |> required "title" string
+        |> required "ask_no" int
+
+sessionCheck data = 
+    Decode.succeed data
+        |> required "id" int
+        |> required "username" string
+
+
+
+
+askDetailData data detail item= 
+    Decode.succeed data
+        |> required "data" (askDetail detail item)
+
+askDetail detail item= 
+    Decode.succeed detail 
+        |> required "description" string
+        |> required "difficulty_name" string
+        |> required "duration" string
+        |> required "exercise_id" int
+        |> required "exercise_items" (Decode.list (askDetailItem item))
+        |> required "exercise_part_name" string
+        |> required "thumbnail" string
+        |> required "title" string
+
+askDetailItem item =
+    Decode.succeed item
+        |> required "exercise_id" int
+        |> required "is_rest" bool
+        |> required "sort" int
+        |> required "title" string
+        |> required "value" int
