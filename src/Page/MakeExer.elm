@@ -326,6 +326,7 @@ type Msg
     | AskResultComplete (Result Http.Error AskResultData)
     | GetListComplete (Result Http.Error AskExerData)
     | AskRecommendComplete (Result Http.Error Decoder.Success)
+    | CalcurationComplete Encode.Value
 
 toSession : Model -> Session
 toSession model =
@@ -351,6 +352,7 @@ subscriptions model=
         Session.changes GotSession (Session.navKey model.session)
         , Api.successId SaveIdComplete
         , Api.progressComplete ProgressComplete
+        , Api.calcurationComplete CalcurationComplete
     ]
 
 onLoad msg =
@@ -383,6 +385,8 @@ indexItem idx item =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        CalcurationComplete val ->
+            ({model | isActive = "paperweight"}, Cmd.none)
         AskRecommendComplete(Ok ok) ->
             (model, askExerData model.session)
         AskRecommendComplete(Err err) ->
@@ -503,7 +507,8 @@ update msg model =
                 "newRecommend" ->
                     ({model | isActive = "recommend"}, Cmd.none)
                 "paperweightRecommend" ->
-                    ({model | isActive = "paperweight"}, Cmd.batch[Api.post Endpoint.askRecommend (Session.cred model.session) AskRecommendComplete Http.emptyBody Decoder.resultD]) 
+                    ({model | isActive = "calcuration"}, Cmd.batch[Api.post Endpoint.askRecommend (Session.cred model.session) AskRecommendComplete Http.emptyBody Decoder.resultD
+                    , Api.progressCalcuration ()]) 
                 "paperweightComplete" ->
                     ({model | isActive = "paperweight", categoryPaperWeight = ""}, askExerData model.session )
                 _ ->
@@ -954,7 +959,12 @@ paperWeightBody model =
                             text "문진운동이 없습니다."
                         ]
                     else
-                        div [class "makeExerMjBoxWrap_Container"] ( List.map videoItem model.askExerList)
+                        if model.isActive == "calcuration" then
+                        div [class "loadingMjList"][
+                        div [class "calculationSpinner"][]
+                        , text "문진 데이터를 통한 맞춤운동 재 생성 중입니다."]
+                        else
+                        div [class "makeExerMjBoxWrap_Container"] ( List.map videoItem model.askExerList )
                 ]
             ]
 
@@ -1157,7 +1167,7 @@ paperweightAnswerDetail item =
 etcAsk model textStyle moveBtn boxStyle= 
     div [ class boxStyle ]
         [ p [ class  textStyle ]
-            [ text model.askSearchItem.content ]
+            [ text ("Q. " ++ model.askSearchItem.content )]
 
         , p [class "control answer_box"][
             label [ classList 
@@ -1207,7 +1217,7 @@ etcExample idx model item =
 paperweightSex model textStyle moveBtn boxStyle=
     div [ class boxStyle ]
         [ p [ class textStyle ]
-            [ text model.askyours.content ]
+            [ text ("Q. " ++ model.askyours.content) ]
         , p [class "control answer_box"](List.indexedMap (\idx x -> answerExample idx model x )model.askyours.items)
         , p [ class moveBtn ]
             [ div [ class "button is-dark mj_next" ,  onClick (SelectedAnswer "exerpoint" model.axerCode) ]
@@ -1217,7 +1227,7 @@ paperweightSex model textStyle moveBtn boxStyle=
 paperweightPoint model textStyle moveBtn boxStyle =
     div [ class boxStyle  ]
         [ p [ class textStyle ]
-            [ text model.aksYoursPoint.content ]
+            [ text ("Q. " ++ model.aksYoursPoint.content) ]
         , p [class "control answer_box"](List.indexedMap (\idx x -> answerExamplePoint idx model x )model.aksYoursPoint.items)
         , p [ class moveBtn ]
             [ div [ class "button  mj_before" , onClick (SelectedAnswer "sex" (if model.askSelected == True then "true" else "false"))]

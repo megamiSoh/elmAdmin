@@ -440,6 +440,13 @@ app.ports.progressGo.subscribe(function () {
     }, 10);
 })
 
+app.ports.progressCalcuration.subscribe(function () {
+  setTimeout(() => {
+    app.ports.calcurationComplete.send ("complete")
+  }, 3000);
+})
+
+
 app.ports.logoutpop.subscribe(function() {
 var heightValue = document.documentElement.clientHeight
 var checkDisplay = document.getElementById("logoutPop") || document.getElementById("mlogoutPop");
