@@ -243,20 +243,6 @@ update msg model =
         NoOp ->
             (model, Cmd.none)
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
-            --  if (scrollHeight - scrollTop) <= offsetHeight then
-            --     -- case toInt of
-            --     --     Just val ->
-            --             -- if (val  < (model.takeList + 10)) then
-            --             --     ({model | takeList = val, infiniteLoading = False},Cmd.none)
-            --             -- else 
-            --     if List.length model.checkList > 0 then
-            --     (model, Cmd.none)
-            --     else
-            --     ({model | infiniteLoading = True}, infoEncoder (model.page) model.per_page model.session)
-            --         -- Nothing ->
-            --         --     (model, Cmd.none)
-                
-            -- else
                 (model, Cmd.none)
         PageBtn (idx, str) ->
             let
@@ -361,7 +347,7 @@ web model=
 app model = 
     div [class ("container topSearch_container " ++ if model.detailShow then "fadeContainer" else "")] [
         appHeaderRDetail "공지사항" "myPageHeader whiteColor" Route.MyPage "fas fa-angle-left",
-        div ([ class "table scrollHegiht", id "searchHeight" ] ++ [scrollEvent ScrollEvent])
+        div ([ class "table scrollHegiht", id "searchHeight" ])
         [ 
             if List.length (model.data.data) > 0 then
             tbody [class ""] 
@@ -424,7 +410,7 @@ contentsBodyLayout idx item model =
             ]
 
 appDetail data model =
-    div [class ("container myaccountStyle " ++ if model.detailShow then "account" else "")] [
+    div [class ("container myaccountStyle " ++ if model.detailShow then "account" else ""), style "overflow-y" "scroll"] [
         appHeaderRDetailClick (
             if String.length( data.title ) > 10 then
                 (String.dropRight (String.length data.title - 9) data.title) ++ "..."

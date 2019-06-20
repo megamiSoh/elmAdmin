@@ -164,7 +164,8 @@ init session mobile
         , monthExerUnit = []
         }
         , Cmd.batch[ Date.today |> Task.perform ReceiveDate
-        , Api.mypageMenu (E.bool False)]
+        , Api.mypageMenu (E.bool False)
+        , scrollToTop NoOp]
     )
 
 
@@ -183,6 +184,7 @@ type Msg
     | ClickRight
     | ClickLeft
     | GoAnotherPage
+    | NoOp
 
 toSession : Model -> Session
 toSession model =
@@ -201,6 +203,8 @@ subscriptions model=
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        NoOp ->
+            (model, Cmd.none)
         GoAnotherPage ->
             (model, Cmd.batch [
                  Api.setCookie (E.int 1)
