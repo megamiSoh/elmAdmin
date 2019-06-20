@@ -31,10 +31,6 @@ type alias SessionCheck =
 
 init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile=
-    let _ = Debug.log "session" 
-        
-    in
-    
     (
         { session = session
         , title = "" 

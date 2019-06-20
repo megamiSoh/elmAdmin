@@ -443,7 +443,7 @@ app.ports.progressGo.subscribe(function () {
 app.ports.progressCalcuration.subscribe(function () {
   setTimeout(() => {
     app.ports.calcurationComplete.send ("complete")
-  },2000);
+  }, 3000);
 })
 
 

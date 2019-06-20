@@ -422,10 +422,6 @@ update msg model =
         AskDetailMsg (Ok ok) ->
             ({model | askDetail = ok.data}, Cmd.none)
         AskDetailMsg (Err err) ->
-            let _ = Debug.log "err" err
-                
-            in
-            
             (model, Cmd.none)
         CalcurationComplete val ->
             ({model | isActive = "paperweight"}, Cmd.none)
@@ -690,6 +686,7 @@ view model =
                         
                         , appdeltelayer model
                         , paperweightStartMobile model
+                        , selectedItemApp model
                         , resetLayer "yf_popup" model
                         ]
                     
@@ -756,7 +753,9 @@ makeExerBody model =
                 ]
             ]
 app model =
-    div [ class "container", class "scroll", scrollEvent ScrollEvent, style "height" "85vh" ][
+    div [ class "container", class "scroll", scrollEvent ScrollEvent
+    , style "height" "85vh" 
+    ][
         activeTab model
         , appStartBox
         , listTitle
@@ -790,6 +789,7 @@ paperWeightStartApp model =
             if List.isEmpty model.askExerList then
             IsActive "paperweightStart"
             else
+
             IsActive "paperWeightConfirm"
         ) ]
             [ text "시작하기" ]
@@ -801,8 +801,12 @@ paperWeightStartApp model =
                 div [class "nopaperWeightResult"] [
                     text "문진운동이 없습니다." ]
             else
-                div [] (List.map videoItemApp model.askExerList) 
-            , div [class "button reset_mj_exer", onClick (IsActive "newRecommend")] [text "운동 새로 받기"]
+                    div [class "loadingMjList", style "display" (if model.isActive == "calcuration" then "block" else "none")][
+                    div [class "calculationSpinner"][]
+                    
+                , text "문진 데이터를 통한 맞춤운동 재 생성 중입니다."]
+                   , div [ style "display" (if model.isActive == "calcuration" then "none" else "block")] (List.map videoItemApp model.askExerList) 
+            , div [class "button reset_mj_exer", onClick (IsActive "newRecommend"), style "display" (if model.isActive == "calcuration" then "none" else "flex")] [text "운동 새로 받기"]
     ]
     
 
@@ -1346,7 +1350,7 @@ videoItem item =
         ]
 
 videoItemApp item = 
-    div [ class "mjList_container" ]
+    div [ class "mjList_container", onClick (CloseTrial item.ask_no item.exercise_id) ]
         [div [class "mj_wrap"][
                  div [ class "yf_workoutvideo_image" ]
                 [ 
@@ -1371,7 +1375,45 @@ videoItemApp item =
                     
             ]
         ]
-
+selectedItemApp model = 
+    div [class ("container myaccountStyle " ++ (if model.trialShow then "account" else "") ++ " scrollStyle ")
+    , style "overflow-y" "scroll"
+        ]
+        [
+            appHeaderRDetailClick  model.askDetail.title "makeExerHeader paperweightmobileFontsize" ((CloseTrial 0 0)) "fas fa-times"
+            ,
+        div [class "paperweightSelectedItem_containerApp"]
+        [
+            div[class "paperweightSelectedItem_first_App"][
+            img [src model.askDetail.thumbnail ][]
+            , div [class "askDetailFirstContainer_app"]
+            [ div [class "askDetailFirstContainer_App_Text"]
+                [ div [class "mj_title"][text model.askDetail.title]
+                , div [class "mj_title_part_app"][text (model.askDetail.exercise_part_name ++ " - " ++ model.askDetail.difficulty_name)
+                ]
+                , span [class "mj_title_duration"]
+                [ i [ class "fas fa-stopwatch" , style "padding-right" "3px"] []
+                , text model.askDetail.duration
+                ]
+            ]
+            , ul [class "mj_description"]
+             (List.map askDetailItems model.askDetail.exercise_items)
+             , div [class "paperweightSelectedItem_second_app"][
+            h3 [][text "운동설명"]
+            , div [class "description"][
+                text model.askDetail.description
+            ]
+        ]
+        , div [class "button is-link freeTrial"][text "1주일 무료 체험"]
+            ]
+            
+       
+        ]
+        
+        
+        ]
+        
+    ]
 
 selectedItem model = 
     div [class "paperweightLayer", style "display" 
@@ -1390,7 +1432,7 @@ selectedItem model =
             [ i [ class "fas fa-stopwatch" , style "padding-right" "3px"] []
             , text model.askDetail.duration
             ]
-            , ul [class "mj_description"]
+            ,ul [class "mj_description"]
              (List.map askDetailItems model.askDetail.exercise_items)
             
             ]
