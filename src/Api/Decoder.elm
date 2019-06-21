@@ -832,6 +832,7 @@ askExerList list =
         |> required "thembnail" string
         |> required "title" string
         |> required "ask_no" int
+        |> required "is_buy" bool
 
 sessionCheck data = 
     Decode.succeed data
@@ -855,6 +856,7 @@ askDetail detail item=
         |> required "exercise_part_name" string
         |> required "thumbnail" string
         |> required "title" string
+        |> required "is_buy" bool
 
 askDetailItem item =
     Decode.succeed item

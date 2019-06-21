@@ -6351,7 +6351,7 @@ color: white;
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  width: 10%;
+  width: 131px;
   margin: 1rem;
   background-color: #148ACD;
   color: #fff;
@@ -6666,4 +6666,61 @@ margin: 0 1rem;
 
 .scrollStyle {
   -webkit-overflow-scrolling: touch;
+}
+
+
+.is_buy {
+  color: #fff;
+  border: 2px dotted #e0e0e0;
+  border-radius: 5px;
+  position: absolute;
+  background-color: rgba(6, 0, 0, 0.43);
+  -webkit-align-items: center;
+  align-items: center;
+  justify-content: center;
+  -webkit-transform: rotate(20deg);
+  transform: rotate(20deg);
+  bottom: 0;
+  right: 0;
+  height: 30%;
+  top: 29%;
+  font-weight: bold;
+  left: -2%;
+  font-size: 1.3rem;
+  /* color: #101010;
+  border: 2px dotted #e0e0e0;
+  border-radius: 5px;
+  position: absolute;
+  background-color: rgba(232, 230, 230, 0.43);
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  -webkit-transform: rotate(20deg);
+  transform: rotate(20deg);
+  bottom: 0;
+  right: 0;
+  height: 30%;
+  top: 29%;
+  font-weight: bold;
+  left: -2%;
+  font-size: 1.3rem; */
+}
+
+.is_buy_m {
+  color: #fff;
+  border: 2px dotted #e0e0e0;
+  border-radius: 5px;
+  position: absolute;
+  background-color: rgba(6, 0, 0, 0.43);
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  bottom: 0;
+  right: 0;
+  height: 100%;
+  font-weight: bold;
+  width: 100%;
+  font-size: 1.3rem;
 }

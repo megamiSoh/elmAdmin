@@ -65,7 +65,8 @@ type alias AskDetail =
     , exercise_items : List AskDetailItem
     , exercise_part_name : String
     , thumbnail : String
-    , title : String }
+    , title : String
+    , is_buy: Bool }
 
 
 type alias AskDetailItem = 
@@ -86,7 +87,8 @@ type alias AskExer =
     , mediaid :  String 
     , thembnail :  String
     , title :  String 
-    , ask_no : Int}
+    , ask_no : Int
+    , is_buy : Bool}
 
 type alias ScreenInfo = 
     { scrollHeight : Int
@@ -322,7 +324,8 @@ init session mobile =
                 , exercise_items = []
                 , exercise_part_name = ""
                 , thumbnail = ""
-                , title = "" }
+                , title = ""
+                , is_buy = False }
 
         }, 
         Cmd.batch 
@@ -361,6 +364,8 @@ type Msg
     | AskRecommendComplete (Result Http.Error Decoder.Success)
     | CalcurationComplete Encode.Value
     | AskDetailMsg (Result Http.Error AskDetailData)
+    | GoProduct Int
+    | CompleteProductWeekRegist (Result Http.Error Decoder.Success)
 
 toSession : Model -> Session
 toSession model =
@@ -416,9 +421,26 @@ indexItem idx item =
             , exercise_part_code = ""
             , id = 0 }
 
+goProductBody id session =
+    let
+        body = 
+            Encode.object
+                [ ("exercise_id", Encode.int id) ]
+                    |> Http.jsonBody
+    in
+    Api.post Endpoint.productWeek (Session.cred session) CompleteProductWeekRegist body Decoder.resultD
+    
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of 
+    case msg of
+        CompleteProductWeekRegist (Ok ok) ->
+            ({model | trialShow = False}, Cmd.batch[askExerData model.session
+            , Api.showToast (Encode.string "구입이 완료 되었습니다.")])
+        CompleteProductWeekRegist (Err err) ->
+            (model, Cmd.none)
+        GoProduct id ->
+            (model, goProductBody id model.session)
         AskDetailMsg (Ok ok) ->
             ({model | askDetail = ok.data}, Cmd.none)
         AskDetailMsg (Err err) ->
@@ -1326,8 +1348,8 @@ caseItem item charaterType =
 
 
 videoItem item = 
-    div [ class "yf_workoutvideoboxwrap makeExerMjboxWrap" , onClick (CloseTrial item.ask_no item.exercise_id)]
-        [ div [class"list_overlay"]
+    div [ class "yf_workoutvideoboxwrap makeExerMjboxWrap" , onClick (if item.is_buy then NoOp else (CloseTrial item.ask_no item.exercise_id))]
+        [ div [class "list_overlay_mj"]
         [i [ class "fas fa-play overlayplay_list" ][]],
 
              div [  ]
@@ -1347,10 +1369,13 @@ videoItem item =
                     []
                     , text " "
                     , text item.duration ]
+            , div [class "is_buy", style "display" (if item.is_buy then "flex" else "none")][
+                text (if item.is_buy then "구입완료" else "")
+            ]
         ]
 
 videoItemApp item = 
-    div [ class "mjList_container", onClick (CloseTrial item.ask_no item.exercise_id) ]
+    div [ class "mjList_container mj_wrap", onClick (if item.is_buy then NoOp else (CloseTrial item.ask_no item.exercise_id))]
         [div [class "mj_wrap"][
                  div [ class "yf_workoutvideo_image" ]
                 [ 
@@ -1372,9 +1397,12 @@ videoItemApp item =
                     , text " "
                     , text item.duration
                     ]
-                    
+            , div [class "is_buy_m", style "display" (if item.is_buy then "flex" else "none")][
+            text (if item.is_buy then "구입완료" else "")
+            ]
             ]
         ]
+    
 selectedItemApp model = 
     div [class ("container myaccountStyle " ++ (if model.trialShow then "account" else "") ++ " scrollStyle ")
     , style "overflow-y" "scroll"
@@ -1404,10 +1432,8 @@ selectedItemApp model =
                 text model.askDetail.description
             ]
         ]
-        , div [class "button is-link freeTrial"][text "1주일 무료 체험"]
+        , div [class "button is-link freeTrial", onClick (GoProduct model.askDetail.exercise_id)][text "1주일 무료 체험"]
             ]
-            
-       
         ]
         
         
@@ -1444,7 +1470,7 @@ selectedItem model =
             ]
         ]
         , div [class "paperweightSelectedItem_third"]
-        [ div [class "button is-link"][text "1주일 무료 체험"]
+        [ div [class "button is-link", onClick (GoProduct model.askDetail.exercise_id)][text "1주일 무료 체험"]
         , div [class "button is-danger", onClick (CloseTrial 0 0)][text "닫기"]
         ]
         ]
