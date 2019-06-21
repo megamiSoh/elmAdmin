@@ -749,3 +749,119 @@ statisticalWeekData list =
         |> optional "exercise" (Decode.map Just string) Nothing
         |> optional "food" (Decode.map Just string) Nothing
         |> optional "weight" (Decode.map Just string) Nothing
+
+
+askyours data ask item= 
+    Decode.succeed data
+        |> required "data" (askyoursData ask item)
+
+askyoursData ask item= 
+    Decode.succeed ask
+        |> required "content" string
+        |> optional "default" (Decode.map Just bool) Nothing
+        |> required "items" (Decode.list (askyoursItems item))
+        |> required "name" string
+
+askyoursItems item = 
+    Decode.succeed item 
+        |> required "text" string
+        |> required "value" bool
+
+
+askyoursPoint data ask item= 
+    Decode.succeed data
+        |> required "data" (askyoursDataPoint ask item)
+
+askyoursDataPoint ask item= 
+    Decode.succeed ask
+        |> required "content" string
+        |> optional "default" (Decode.map Just bool) Nothing
+        |> required "items" (Decode.list (askyoursItemsPoint item))
+        |> required "name" string
+
+askyoursItemsPoint item = 
+    Decode.succeed item 
+        |> required "code" string
+        |> required "name" string
+
+
+askSearch data item = 
+    Decode.succeed data 
+        |> required "data" (Decode.list (askSearchItem item))
+
+askSearchItem item=
+    Decode.succeed item
+        |> required "content" string
+        |> required "exercise_part_code" string
+        |> required "id" int
+
+askResultData data item result detail =
+    Decode.succeed data 
+        |> required "data" (askresult item result detail )
+
+askresult item result detail= 
+    Decode.succeed item
+        |> required "ask_no" int
+        |> required "result" (askresultresult result detail)
+        
+
+askresultresult result detail = 
+    Decode.succeed result
+        |> required "content" string
+        |> required "detail" (Decode.list (askresultDetail detail))
+        |> required "part" string
+        |> required "target" string
+
+askresultDetail detail = 
+    Decode.succeed detail
+        |> required "content" string
+        |> required "name" string
+        |> required "sort" int
+
+askExer data list = 
+    Decode.succeed data 
+        |> required "data" (Decode.list (askExerList list))
+
+askExerList list = 
+    Decode.succeed list
+        |> required "difficulty_name" string
+        |> required "duration" string
+        |> required "exercise_part_name" string
+        |> required "exercise_id" int
+        |> required "mediaid" string
+        |> required "thembnail" string
+        |> required "title" string
+        |> required "ask_no" int
+        |> required "is_buy" bool
+
+sessionCheck data = 
+    Decode.succeed data
+        |> required "id" int
+        |> required "username" string
+
+
+
+
+askDetailData data detail item= 
+    Decode.succeed data
+        |> required "data" (askDetail detail item)
+
+askDetail detail item= 
+    Decode.succeed detail 
+        |> required "description" string
+        |> required "difficulty_name" string
+        |> required "duration" string
+        |> required "exercise_id" int
+        |> required "exercise_items" (Decode.list (askDetailItem item))
+        |> required "exercise_part_name" string
+        |> required "thumbnail" string
+        |> required "title" string
+        |> required "is_buy" bool
+
+askDetailItem item =
+    Decode.succeed item
+        |> required "exercise_id" int
+        |> required "is_rest" bool
+        |> required "sort" int
+        |> required "title" string
+        |> required "value" int

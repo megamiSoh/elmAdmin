@@ -68,7 +68,7 @@ myPageCommonHeader scrRight scrLeft another show=
         [  
             i [ class "fas fa-caret-left scrStyle", onClick scrLeft ]
             [] ,
-            div [ class "haderIconWrap", id "scrollCtr", style "height"  (if show then "110px" else "0"), style "zindex" "99999999999999999" ]
+            div [ class "haderIconWrap", id "scrollCtr", style "height"  (if show then "110px" else "0"), style "zindex" "999999999" ]
             [ 
                 
                 a [ class "headerIcons", Route.href Route.MyPage]
@@ -100,6 +100,12 @@ myPageCommonHeader scrRight scrLeft another show=
                     []
                 , p []
                     [ text "내 게시물관리" ]
+                ]
+            , a [ class "headerIcons", Route.href Route.MJList]
+                [ img [ src "../image/icon_mj.png" ]
+                    []
+                , p []
+                    [ text "문진운동" ]
                 ]
             , a [ class "headerIcons", Route.href Route.Info]
                 [ img [ src "../image/icon_notice.png" ]
@@ -134,8 +140,9 @@ appHeaderSearch title style=
         li [ class "m_yf_topboxtitle" ]
             [ text title ]
         , li [ class "m_nextbtn" ]
-            [ i [ class "fas fa-search" ]
-                []
+            [ 
+                -- i [ class "fas fa-search" ]
+                -- []
             ]
         ]
     ]

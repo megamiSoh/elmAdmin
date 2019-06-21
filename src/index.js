@@ -296,7 +296,7 @@ app.ports.getSomeFilter.subscribe(function() {
 
 
 app.ports.videoData.subscribe(function(data) {
- if (data == null) {
+ if (data == null || data == "") {
    jwplayer("myElement").remove();
  }
  else {
@@ -418,6 +418,32 @@ app.ports.mypageMenu.subscribe(function (val) {
     secItem.style.height = "0px"
     item.style.height = "0px" } }
   }
+})
+
+
+app.ports.progressGo.subscribe(function () {
+  let xxx = 0
+  let bottom = 0
+    var goProgress = setInterval(() => {
+      xxx++
+      document.getElementById("paperWeightProgress").value = xxx / 10
+      
+    if (xxx % 180 == 0) {
+      bottom += 5
+      document.getElementById("progressText").style.bottom = bottom + "rem"
+    }
+		if(xxx == 1000) {
+      app.ports.progressComplete.send("complete")
+      clearInterval(goProgress)
+      
+    } 
+    }, 10);
+})
+
+app.ports.progressCalcuration.subscribe(function () {
+  setTimeout(() => {
+    app.ports.calcurationComplete.send ("complete")
+  }, 3000);
 })
 
 

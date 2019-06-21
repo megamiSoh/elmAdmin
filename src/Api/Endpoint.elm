@@ -63,7 +63,17 @@ module Api.Endpoint exposing
     , faqfaqList
     , faqfaqDetail
     , statisticalweek
-    , statisticalMonth)
+    , statisticalMonth
+    , askgender
+    , askExercise_point
+    , askSearch
+    , askAnswer 
+    , askResult
+    , askExer 
+    , askRecommend
+    , sessionCheck
+    , askdetail
+    , productWeek)
 
 import Http
 import Url.Builder exposing (QueryParameter)
@@ -108,7 +118,8 @@ login =
 signup = 
     url ["auth", "front", "sign_up"] []
  
-
+sessionCheck = 
+    url ["auth", "front" ,"show"][]
 
 -- yourfitvideo
 yourfitVideoList = 
@@ -312,3 +323,31 @@ statisticalweek =
 
 statisticalMonth date = 
     url ["front", "statistics", "month" , date][]
+
+
+askgender =
+    url ["front", "ask", "gender"][]
+
+askExercise_point = 
+    url ["front", "ask", "exercise_point"][]
+
+askSearch = 
+    url ["front", "ask", "search"] []
+
+askAnswer = 
+    url ["front","ask","answer"][]
+
+askResult = 
+    url ["front", "ask", "result"][]
+
+askExer = 
+    url ["front", "ask", "exercises"][]
+
+askRecommend = 
+    url ["front", "ask" , "recommend"][]
+
+askdetail no id = 
+    url ["front" , "ask" , no , id][]
+
+productWeek =
+    url ["front", "product", "new", "week"][]

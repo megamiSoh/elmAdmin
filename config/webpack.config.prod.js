@@ -253,7 +253,11 @@ module.exports = {
       },
 
       {
+<<<<<<< HEAD
         exclude: [/\.html$/, /\.js$/, /\.elm$/, /\.css$/, /\.json$/, /\.svg$/],
+=======
+        exclude: [/\.html$/, /\.js$/, /\.elm$/, /\.css$/, /\.scss$/, /\.sass$/, /\.json$/, /\.svg$/],
+>>>>>>> c93928d87ea7d0830114a0f086b07a10ba4a1305
         loader: require.resolve('url-loader'),
         options: {
           limit: 10000,

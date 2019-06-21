@@ -11,26 +11,45 @@ import Api as Api
 import Page as P
 import Html.Lazy exposing (lazy)
 import Page.Common exposing (..)
+import Api.Endpoint as Endpoint
+import Api.Decoder as Decoder
+import Http as Http
+
 type alias Model 
     = {
         session : Session,
         title : String
          , check : Bool
          , image : String
+         , splash : Bool
     }
 
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+
+type alias SessionCheck = 
+    { id : Int
+    , username : String }
+
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile=
     (
         { session = session
         , title = "" 
         , check = mobile
+        , splash = if Session.viewer session == Nothing then False else True
         , image = "/image/lazy_bg_back.jpg"}
-       , scrollToTop NoOp
+       , Cmd.batch[scrollToTop NoOp
+       ,
+       if Session.viewer session == Nothing then
+       Cmd.none
+       else
+        Api.get Check Endpoint.sessionCheck (Session.cred session) (Decoder.sessionCheck SessionCheck)
+        , Api.progressCalcuration ()]
     )
 type Msg 
     = NoOp 
     | LoadImg
+    | Check (Result Http.Error SessionCheck )
+    | Complete E.Value
     -- | GotSession Session
 
 toSession : Model -> Session
@@ -44,7 +63,7 @@ toCheck model =
 
 subscriptions :Model -> Sub Msg
 subscriptions model=
-    Sub.none
+    Api.calcurationComplete Complete
     -- Session.changes GotSession (Session.navKey model.session)
 
 onLoad msg =
@@ -53,6 +72,18 @@ onLoad msg =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Complete val ->
+            ({model | splash = False}, Cmd.none)
+        Check (Ok ok) ->
+            (model, Cmd.none)
+        Check (Err err) ->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model, Api.logout)     
+            else 
+            (model, Cmd.none)
         LoadImg ->
             ({model | image = "/image/bg_back.png"}, Cmd.none)
         NoOp ->
@@ -80,8 +111,11 @@ webOrApp model =
             (List.indexedMap menuLayout menu)
         ]
     else 
+         
          div [ class "yf_contentswarp" ]
                  [
+                    --  div [class "splash", style "display" (if model.splash then "block" else "none")][],
+                     
                      lazy lazyview model.image 
                      
         , 
@@ -209,7 +243,7 @@ menu =
         },
         {
             thumb = "image/icon05.png",
-            menuTitle = "1:1문의",
-            routing = Route.C
+            menuTitle = "FAQ",
+            routing = Route.Faq
         }
     ]

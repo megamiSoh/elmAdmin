@@ -53,6 +53,8 @@ type Page
     | TA
     | C
     | CD
+    | MJList
+    | MJD
 
 -- view:Maybe Cred -> Api.Check  -> Page -> {check : String , title : String, content: Html msg} -> Browser.Document msg
 view maybeViewer checkB  page { title, content}  =
@@ -104,7 +106,7 @@ type Msg = NoOp
 
 
 webContents content page maybeViewer=
-    case maybeViewer of
+        case maybeViewer of
         Just _ ->
             if page == MyPage then
             div [ class "" ][ 
@@ -187,7 +189,8 @@ viewHeader page maybeViewer =
     case maybeViewer of
         Just _ ->
             nav [ class "navbar yf_navbar" ]
-                [ div [ class "navbar-brand yf_brand" ]
+                [ div [ class "positionNav"][]
+                , div [ class "navbar-brand yf_brand" ]
                     [ a [ class "navbar-item yf_logo", Route.href Route.Home ]
                         []
                     , div [  class "navbar-burger burger" ]
@@ -241,6 +244,10 @@ viewHeader page maybeViewer =
                             C  ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             MyS  ->
+                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            MJD  ->
+                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            MJList  ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             _ ->
                                 a [ class "navbar-item yf_item",Route.href Route.MyPage ]

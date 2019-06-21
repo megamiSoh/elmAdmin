@@ -61,6 +61,8 @@ type Route
     | MyPageBottomMenu
     | C
     | CD
+    | MJList
+    | MJD
 
 parser : Parser (Route -> a) a
 parser =
@@ -110,6 +112,8 @@ parser =
         , Parser.map MyPageBottomMenu (s "open")
         , Parser.map C (s "contact")
         , Parser.map CD (s "contactDetail")
+        , Parser.map MJList(s "paperweightList")
+        , Parser.map MJD (s "paperweightDetail")
         ]
 
 
@@ -235,5 +239,9 @@ routeToString page =
                     ["contact"]
                 CD ->
                     ["contactDetail"]
+                MJList ->
+                    ["paperweightList"]
+                MJD ->
+                    ["paperweightDetail"]
     in
     "#/" ++ String.join "/" pages
