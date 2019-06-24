@@ -323,7 +323,6 @@ view model =
 
 listwebDetail item model = 
    div [] 
---    [videoItem model]
    (
         List.map (\x -> videoItem x model item ) item.detail
     )
@@ -332,10 +331,6 @@ listappDetail item model =
     (
         List.map (\x -> videoItem x model item ) item.detail
     )
-    -- [videoItem model ]
-    -- (
-    --     List.map appcontent item.detail
-    -- )
 
 appcontent item= 
         div [ class "containerm_mypage_scrap" ]
@@ -401,8 +396,7 @@ videoItem item model getlist=
             , div [ class ( if model.check then "notRow" else "") ]
                 [
                     p [class ("limitedDate " ++ if model.check then "notMargin" else " rowPaperWeight")]
-                    [ p [][text ("( " ++ getlist.start_at ) ]
-                    , p [ class (if model.check then "paperweightalign" else "")][text (" ~ " ++ getlist.end_at ++  " )")]
+                    [ p [][text ("( " ++ getlist.start_at ++ " ~ " ++ getlist.end_at ++  " )")]
                     ]
                 ]
                     

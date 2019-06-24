@@ -6336,17 +6336,11 @@ color: white;
   flex-direction: column;
 }
 .notMargin {
- margin: 0; 
- flex-direction: column;
- display: flex;
+font-size: .8rem;
 }
 .rowPaperWeight {
   flex-direction: row;
   display: flex;
-}
-.notMargin p {
-  width: 100%;
-  text-align: left;
 }
 .paperweightalign {
   padding-left: 1rem;
