@@ -540,9 +540,7 @@ text-align: left;
 }
 
 
-.container {
-  /* margin-bottom: 5rem; */
-}
+
 /* yourfitExercise */
 
 .container_backcolor
@@ -1354,10 +1352,7 @@ border-right: .1px #CCCCCC solid;
  margin-top: 5rem;
 }
 
-.filterstep2_yf_listselect .filterstep2_videolistbox:last-child .upIcon
-{
- /* display: none; */
-}
+
 
 .downIcon{
 margin:  0 0 2.8rem 0;
@@ -2858,12 +2853,6 @@ input.vaidColor2:focus {
   width: 1500px;
   z-index: 999;
 }
-.m_yf_workoutmenubox {
-  /* width: 1500px !important; */
-}
-/* .notification.m_yfwo_menubox1 {
-  height: 377px !important;
-  margin-bottom: 0;} */
 
 .originSwipeStyle {
   overflow: hidden;
@@ -4430,7 +4419,6 @@ width: 100px;
   justify-content: center;
   width: 100%;
   height: 45rem;
-  -webkit-backface-visibility: hidden;
   top: 0;
   background-color: rgba(152, 152, 152, 0.4117647058823529);
 }
@@ -4446,7 +4434,6 @@ width: 100px;
   height: 100%;
   position: fixed;
   top: 0;
-  -webkit-backface-visibility: hidden;
   left: 0;
   background-color: rgba(152, 152, 152, 0.4117647058823529);
   z-index: 999;
@@ -4461,7 +4448,6 @@ width: 100px;
   position: fixed;
   top: 0;
   height: 45rem;
-  -webkit-backface-visibility: hidden;
   left: 0;
   background-color: rgba(152, 152, 152, 0.4117647058823529);
   z-index: 999;
@@ -4475,7 +4461,6 @@ width: 100px;
   height: 100%;
   position: fixed;
   top: 0;
-  -webkit-backface-visibility: hidden;
   z-index: 999999999;
   left: 0;
   background-color: rgba(152, 152, 152, 0.4117647058823529);
@@ -4488,14 +4473,10 @@ width: 100px;
   position: fixed;
   padding-top: 25%;
   top: 0;
-  -webkit-backface-visibility: hidden;
   left: 0;
   background-color: rgba(152, 152, 152, 0.4117647058823529);
 }
 
-.navbar-menu.yf_menu {
-  /* z-index: 999999; */
-}
 .navbar {
   z-index: 9999;
 }
@@ -4553,9 +4534,6 @@ width: 100%;
   /* overflow-y: hidden; */
 }
 
-.breaktimetbox {
-  /* border-bottom: .1rem solid #ccc; */
-}
 
 .filterStep1_listbox, .filterStep1_listbox2
 {
@@ -4582,9 +4560,6 @@ width: 100%;
   text-align:left;
   border-bottom: .1rem solid #ccc;
   /* border-bottom: 0; */
-  /* border-right: .1rem solid #ccc; */
-}
-.worklistbox {
   /* border-right: .1rem solid #ccc; */
 }
 .filterStep1_listsrollbox
@@ -4618,7 +4593,6 @@ width: 100%;
   position: fixed;
   width: 100%;
   height: 45rem;
-  -webkit-backface-visibility: hidden;
   top: 0;
   background-color: rgba(152, 152, 152, 0.4117647058823529);
   z-index: 999999999;
@@ -4682,13 +4656,6 @@ width: 100%;
 }
 .shut {
   display: none;
-}
-.loadlistbox {
-  /* height: 2200px;;
-  overflow: scroll; */
-}
-.worklistbox:last-child {
-  /* height: 100%; */
 }
 
 .warnText {
@@ -4759,7 +4726,6 @@ color: red;
 
 .faqisAnswer {
   display: inline-block;
-  float: right;
   font-size: 14px;
   display: flex;
   align-items: center;
@@ -5103,13 +5069,7 @@ li.myCalendar_infotitle .fas.fa-caret-up, li.myCalendar_infotitle .fas.fa-caret-
   color: #000;
 }
 
-.detailyf {
-  /* position: absolute;
-    top: 0;
-    background: #fff;
-    width: 100%;
-    height: 100%; */
-}
+
 .dispalyNO {
   display: none;
 }
@@ -5131,13 +5091,13 @@ li.myCalendar_infotitle .fas.fa-caret-up, li.myCalendar_infotitle .fas.fa-caret-
 
 
 }
-.barChart_item {}
+
 .barChart {
   width: 90%;
   background-color: #0da993;
   
 }
-.chartDate {}
+
 .barchartWrap {
     display: flex;
     align-items: flex-end;
@@ -5317,11 +5277,6 @@ li.myCalendar_infotitle .fas.fa-caret-up, li.myCalendar_infotitle .fas.fa-caret-
   margin-bottom: 25px;
 }
 
-#ticks .tick {
-  /* position: relative;
-  border-bottom: 1px dotted #C4C4C4;
-  width: 600px; */
-}
 
 #ticks .tick p {
   /* position: absolute;
@@ -6343,7 +6298,7 @@ color: white;
   flex-direction: row;
 }
 .limitedDate {
-  margin: 0 2rem;
+  margin: 0;
   color: #148ACD;
 }
 
@@ -6382,8 +6337,20 @@ color: white;
 }
 .notMargin {
  margin: 0; 
+ flex-direction: column;
+ display: flex;
 }
-
+.rowPaperWeight {
+  flex-direction: row;
+  display: flex;
+}
+.notMargin p {
+  width: 100%;
+  text-align: left;
+}
+.paperweightalign {
+  padding-left: 1rem;
+}
 .paperweightSelectedItem_container {
   padding: 1rem;
   border-radius: 5px;
@@ -6650,11 +6617,6 @@ margin: 0 1rem;
   border-top: 1px solid gray;
 }
 
-.paperweightSelectedItem_first_App .mj_description {
-  /* height: 100%;
-  display: flex;
-  flex-wrap: wrap; */
-}
 .askDetailFirstContainer_app {
   text-align: left;
   height: 100%;

@@ -865,3 +865,37 @@ askDetailItem item =
         |> required "sort" int
         |> required "title" string
         |> required "value" int
+
+
+myPaperweightList data item detail page = 
+    Decode.succeed data 
+        |> required "data" (Decode.list (mypaperweight item detail ))
+        |> required "paginate" (mypaperweightpage page)
+
+
+mypaperweight item detail = 
+    Decode.succeed item
+        |> required "bought_at" string
+        |> required "detail" (Decode.list (mypaperweightDetail detail))
+        |> required "end_at" string
+        |> required "is_buy" bool 
+        |> required "product_code" string
+        |> required "product_id" int
+        |> required "product_no" int
+        |> required "start_at" string
+
+mypaperweightDetail detail = 
+    Decode.succeed detail
+        |> required "difficulty_name" string
+        |> required "duration" string
+        |> required "exercise_part_name" string
+        |> required "id" int
+        |> required "thembnail" string
+        |> required "title" string
+
+mypaperweightpage page = 
+    Decode.succeed page
+        |> required "page" int
+        |> required "per_page" int
+        |> required "total_count" int
+        |> required "user_id" int

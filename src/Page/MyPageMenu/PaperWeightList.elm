@@ -19,11 +19,8 @@ type alias Model
     = {
         session : Session
         , check : Bool
-        , data : Data
         , infiniteLoading : Bool
         , checkList : List String
-        , screenInfo : ScreenInfo
-        , dataList : List DataList
         , page : Int
         , per_page :Int
         , count : Int
@@ -35,37 +32,49 @@ type alias Model
         , showDetail : Bool
         , videoId : String
         , showMenu : Bool
+        , getList : List PaperWeightList
+        , pagenation : ListPagenate
     }
 
-type alias ScreenInfo = 
-    { scrollHeight : Int
-    , scrollTop : Int
-    , offsetHeight : Int}
 
+type alias PaperweightData = 
+    { data : List PaperWeightList
+    , paginate : ListPagenate }
 
-type alias Data = 
-    { data : List DataList
-    , paginate : Paginate }
+type alias PaperWeightList = 
+    { bought_at : String
+    , detail : List DetailPaperWeight 
+    , end_at : String
+    , is_buy : Bool
+    , product_code : String
+    , product_id : Int
+    , product_no : Int
+    , start_at : String }
 
-type alias DataList = 
-    { detail : List DetailData 
-    , scrap_code : String
-    , scrap_id : Int
-     }
-
-type alias DetailData = 
-    { id : Int
-    , lookup :Int
-    , lookup_at : Maybe String
-    , mediaid : String
+type alias DetailPaperWeight = 
+    { difficulty_name : String
+    , duration : String
+    , exercise_part_name : String
+    , id : Int
     , thembnail : String
     , title : String}
 
-type alias Paginate = 
-    { page : Int
+type alias ListPagenate = 
+    { page : Int 
     , per_page : Int
     , total_count : Int
     , user_id : Int }
+
+
+paperweightEncoder page per_page session=
+    let
+        body = Encode.object 
+            [ ("page", Encode.int page)
+            , ("per_page", Encode.int per_page)]
+                |> Http.jsonBody
+    in
+    Api.post Endpoint.myPaperweightList (Session.cred session) GetList body (Decoder.myPaperweightList PaperweightData PaperWeightList DetailPaperWeight ListPagenate)
+
 
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile
@@ -74,7 +83,6 @@ init session mobile
         , page = 1
         , per_page = 10
         , check = mobile
-        , dataList = []
         , checkList = []
         , count = 1
         , loading = True
@@ -84,19 +92,6 @@ init session mobile
         , videoId = ""
         , infiniteLoading = False
         , showMenu = False
-        , screenInfo = 
-            { scrollHeight = 0
-            , scrollTop = 0
-            , offsetHeight = 0}
-        , data = 
-            { data = []
-            , paginate = 
-                { page = 0
-                , per_page = 0
-                , total_count = 0
-                , user_id = 0
-            }
-        }
         , listData = 
             { difficulty_name = Nothing
             , duration = ""
@@ -110,9 +105,15 @@ init session mobile
             , thumbnail = ""
             , description = Nothing}
         , showDetail = False
+        , getList = []
+        , pagenation = 
+            { page = 1 
+            , per_page = 10
+            , total_count = 0
+            , user_id = 0 }
         }
         , Cmd.batch [
-            scrapDataEncoder 1 10 session
+            paperweightEncoder 1 10 session
             , Api.removeJw ()
             , Api.mypageMenu (Encode.bool False)
         ]
@@ -122,9 +123,6 @@ init session mobile
 
 type Msg 
     = NoOp
-    | GetList (Result Http.Error Data)
-    | ScrollEvent ScreenInfo
-    | OnLoad
     | GetCodeId (String, Int)
     | SaveComplete Encode.Value
     | GotSession Session
@@ -138,6 +136,7 @@ type Msg
     | ClickLeft
     | GoAnotherPage
     | ShowMenu
+    | GetList (Result Http.Error PaperweightData)
 
 toSession : Model -> Session
 toSession model =
@@ -147,28 +146,13 @@ toCheck : Model -> Bool
 toCheck model =
     model.check
 
-scrollEvent msg = 
-    on "scroll" (Decode.map msg scrollInfoDecoder)
 
 onLoad msg =
     on "load" (Decode.succeed msg)
 
-scrollInfoDecoder =
-    Decode.map3 ScreenInfo
-        (Decode.at [ "target", "scrollHeight" ] Decode.int)
-        (Decode.at [ "target", "scrollTop" ] Decode.int)
-        (Decode.at [ "target", "offsetHeight" ] Decode.int)  
 
-scrapDataEncoder page per_page session = 
-    let
-        list = 
-            Encode.object
-                [ ("page", Encode.int page)
-                , ("per_page", Encode.int per_page)]
-                    |> Http.jsonBody
-    in
-    (Decoder.myscrapData Data DataList DetailData Paginate)
-    |> Api.post Endpoint.scrapList (Session.cred session) GetList list 
+
+ 
     
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -180,6 +164,10 @@ subscriptions model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GetList (Ok ok) ->
+            ({model |  getList = ok.data, pagenation = ok.paginate, loading = False}, Cmd.none)
+        GetList (Err err) ->
+            (model, Cmd.none)
         ShowMenu ->
             ({model | showMenu = not model.showMenu}, Cmd.none)
         GoAnotherPage ->
@@ -233,17 +221,16 @@ update msg model =
             (model, Cmd.none)
         PageBtn (idx, str) ->
             case str of
-                "prev" ->
-                    ({model | page = idx, pageNum = model.pageNum - 1}, scrapDataEncoder idx model.per_page model.session)
+                "prev" -> 
+                    ({model | page = idx, pageNum = model.pageNum - 1}, paperweightEncoder idx model.per_page model.session)
                 "next" ->
-                    ({model | page = idx, pageNum = model.pageNum + 1}, scrapDataEncoder idx model.per_page model.session)
+                    ({model | page = idx, pageNum = model.pageNum + 1}, paperweightEncoder idx model.per_page model.session)
                 "go" -> 
-                    ({model | page = idx}, scrapDataEncoder idx model.per_page model.session)
+                    ({model | page = idx}, paperweightEncoder idx model.per_page model.session)
                 _ ->
                     (model, Cmd.none)
         GotSession session ->
-            ({model | session = session},
-            scrapDataEncoder model.page model.per_page session
+            ({model | session = session}, paperweightEncoder model.page model.per_page model.session
             )
         SaveComplete complete ->
             let
@@ -273,46 +260,15 @@ update msg model =
                     |>Api.get GetListData (Endpoint.scrapDetail code stringInt) (Session.cred model.session) )
             else
             (model, Api.saveId codeIdEncoder )
-        OnLoad ->
-            if model.count >= List.length model.data.data then
-            ({model | loading = False}, Cmd.none)
-            else
-            ({model | count = model.count + 1}, Cmd.none)
-        ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
-             if (scrollHeight - scrollTop) <= offsetHeight then
-                -- case toInt of
-                --     Just val ->
-                        -- if (val  < (model.takeList + 10)) then
-                        --     ({model | takeList = val, infiniteLoading = False},Cmd.none)
-                        -- else 
-                if List.length model.checkList > 0 then
-                (model, Cmd.none)
-                else
-                ({model | infiniteLoading = True}, scrapDataEncoder model.page model.per_page model.session)
-                    -- Nothing ->
-                    --     (model, Cmd.none)
-                
-            else
-                (model, Cmd.none)
+        -- OnLoad ->
+        --     if model.count >= List.length model.data.data then
+        --     ({model | loading = False}, Cmd.none)
+        --     else
+        --     ({model | count = model.count + 1}, Cmd.none)
+        
         NoOp ->
             ( model, Cmd.none )
-        GetList (Ok ok) -> 
-            -- if model.check then
-                if ok.data == [] then
-                    ({model | infiniteLoading = False, checkList = ["empty"], loading = False}, Cmd.none)
-                else
-                    ({model | data = ok, dataList = model.dataList ++ ok.data, page = model.page + 1, infiniteLoading = False, loading = False}, Cmd.none)
-            -- else
-            --     ({model | data = ok}, (scrollToTop NoOp))
-        GetList (Err err) -> 
-            let
-                serverErrors = 
-                    Api.decodeErrors err
-            in
-            if serverErrors == "401" then
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
-            else 
-            (model, Route.load ("#/myScrap"))
+        
 
 view : Model -> {title : String , content : Html Msg}
 view model =
@@ -325,14 +281,14 @@ view model =
                         div [class "spinnerBack", style "display" (if model.loading then "flex" else "none" )] [
                             spinner
                             ]
-                        -- , div [class "noResult", style "display" (if List.isEmpty model.data.data then "fixed" else "none")] [
-                        --         text "스크랩한 게시물이 없습니다."
-                        --     ]
-                        , div [ class "scrollheight", scrollEvent ScrollEvent ] 
-                            [listappDetail model]
-                        -- (
-                        --         List.map (\x -> listappDetail x model) model.dataList
-                        --     )
+                        , div [class "noResult", style "display" (if List.isEmpty model.getList then "fixed" else "none")] [
+                                text "스크랩한 게시물이 없습니다."
+                            ]
+                        , div [ class "scrollheight" ] 
+                            -- [listappDetail model]
+                        (
+                                List.map (\x -> listwebDetail x model) model.getList
+                            )
                         , div [class "loadingPosition", style "display" (if model.infiniteLoading then "block" else "none")] [
                             infiniteSpinner
                             ]
@@ -353,28 +309,30 @@ view model =
                     [
                         div [] [
                             div [class "myScrap_mediabox"]
-                            [listwebDetail model]
-                        --      (
-                        --     List.map listwebDetail model.data.data
-                        -- )
+                             (
+                            List.map (\x -> listwebDetail x model) model.getList
+                            )
                         , pagination 
-                        PageBtn
-                        model.data.paginate
-                        model.pageNum
+                            PageBtn
+                            model.pagenation
+                            model.pageNum
                         ]
                     ]
                 ]]
         }
 
-listwebDetail model = 
+listwebDetail item model = 
    div [] 
-   [videoItem model]
---    (
-        -- List.map scrapItem item.detail
-    -- )
-listappDetail model = 
+--    [videoItem model]
+   (
+        List.map (\x -> videoItem x model item ) item.detail
+    )
+listappDetail item model = 
     div [] 
-    [videoItem model ]
+    (
+        List.map (\x -> videoItem x model item ) item.detail
+    )
+    -- [videoItem model ]
     -- (
     --     List.map appcontent item.detail
     -- )
@@ -411,8 +369,7 @@ contentsCount count=
         ]
  
 
--- scrapItem item= 
-videoItem model = 
+videoItem item model getlist= 
     div [ class "mjList_container" ]
         [ div [class"list_overlay"]
         [i [ class "fas fa-play overlayplay_list" ][]],
@@ -420,27 +377,34 @@ videoItem model =
             div [class "mj_wrap"][
                  div [ class "yf_workoutvideo_image" ]
                 [ 
-                    img [ class "yf_workoutvpic1", src "image/m_video_image.png" ]
+                    img [ class "yf_workoutvpic1", src item.thembnail ]
                     []
                 ]
             , div [ class "yf_workoutvideo_lavel_bg" ]
                 [ div [ class "level" ]
-                    [ text "상" ]
+                    [ text item.difficulty_name ]
                 ]
             ]
             , div [class "mjList_title"][
             div [ class "yf_workoutworkout_title" ]
-                [ text "title" ]
-            , div [ class ("m_timebox " ++ if model.check then "notRow" else "") ]
-                [
-                    div [][
+                [ text item.title 
+                , div [][
+                            text item.exercise_part_name
+                        ]
+                    ]
+            , div [][
                         i [ class "fas fa-stopwatch" ]
                         []
                         , text " "
-                        , text "duration"
+                        , text item.duration
                     ]
-                    , p [class ("limitedDate " ++ if model.check then "notMargin" else "")][text "(~19/01/08)"]
+            , div [ class ( if model.check then "notRow" else "") ]
+                [
+                    p [class ("limitedDate " ++ if model.check then "notMargin" else " rowPaperWeight")]
+                    [ p [][text ("( " ++ getlist.start_at ) ]
+                    , p [ class (if model.check then "paperweightalign" else "")][text (" ~ " ++ getlist.end_at ++  " )")]
                     ]
+                ]
                     
             ]
         ]

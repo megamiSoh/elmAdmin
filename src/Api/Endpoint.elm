@@ -73,7 +73,8 @@ module Api.Endpoint exposing
     , askRecommend
     , sessionCheck
     , askdetail
-    , productWeek)
+    , productWeek
+    , myPaperweightList)
 
 import Http
 import Url.Builder exposing (QueryParameter)
@@ -351,3 +352,6 @@ askdetail no id =
 
 productWeek =
     url ["front", "product", "new", "week"][]
+
+myPaperweightList =
+    url ["front", "products"][]
