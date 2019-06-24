@@ -6284,6 +6284,7 @@ color: white;
   flex-direction: row;
   border: 1px solid #ccc;
   margin: 0.3rem;
+  position: relative;
 }
 .mjList_title {
   display: flex;
@@ -6679,4 +6680,9 @@ margin: 0 1rem;
   font-weight: bold;
   width: 100%;
   font-size: 1.3rem;
+}
+
+.expired_date {
+  font-weight: bold;
+  color: red;
 }

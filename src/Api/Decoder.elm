@@ -899,3 +899,73 @@ mypaperweightpage page =
         |> required "per_page" int
         |> required "total_count" int
         |> required "user_id" int
+
+detailMypaperweight data detail item pair  = 
+    Decode.succeed data 
+        |> optional "data" (Decode.map Just (detailMypaperData detail item pair) ) Nothing
+
+detailMypaperData detail item pair = 
+    Decode.succeed detail
+        |> required "description" string
+        |> required "difficulty_name" string
+        |> required "duration" string
+        |> required "exercise_items" (Decode.list (detailmypaperitem item))
+        |> required "exercise_part_name" string
+        |> required "id" int
+        |> required "inserted_at" string
+        |> required "is_buy" bool
+        |> required "pairing" (Decode.list (detailmypaperPairing pair))
+        |> required "product_no" int
+        |> required "thumbnail" string
+        |> required "title" string
+
+
+detailmypaperitem item  = 
+    Decode.succeed item 
+        |> optional "action_id" (Decode.map Just int) Nothing
+        |> optional "difficulty_name" (Decode.map Just string )Nothing
+        |> required "duration" string
+        |> required "exercise_id" int
+        |> optional "exercise_name" (Decode.map Just string )Nothing
+        |> optional "instrument_name" (Decode.map Just string) Nothing
+        |> required "is_rest" bool
+        |> required "mediaid" string
+        |> required "part_detail_name" (Decode.list (Decode.nullable string))
+        |> required "sort" int
+        |> required "thembnail" string
+        |> required "title" string
+        |> required "value" int
+
+detailmypaperPairing pair = 
+    Decode.succeed pair
+        |> required "file" string
+        |> required "image" string
+        |> required "title" string
+
+
+
+
+myaskDetailData data detail item= 
+    Decode.succeed data
+        |> required "data" (myaskDetail detail item)
+
+myaskDetail detail item= 
+    Decode.succeed detail 
+        |> required "description" string
+        |> required "difficulty_name" string
+        |> required "duration" string
+        |> required "exercise_id" int
+        |> required "exercise_items" (Decode.list (myaskDetailItem item))
+        |> required "exercise_part_name" string
+        |> required "product_no" int
+        |> required "thumbnail" string
+        |> required "title" string
+        |> required "is_buy" bool
+
+myaskDetailItem item =
+    Decode.succeed item
+        |> required "exercise_id" int
+        |> required "is_rest" bool
+        |> required "sort" int
+        |> required "title" string
+        |> required "value" int

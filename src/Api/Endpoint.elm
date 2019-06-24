@@ -74,7 +74,8 @@ module Api.Endpoint exposing
     , sessionCheck
     , askdetail
     , productWeek
-    , myPaperweightList)
+    , myPaperweightList
+    , mypaperweightDetail)
 
 import Http
 import Url.Builder exposing (QueryParameter)
@@ -355,3 +356,6 @@ productWeek =
 
 myPaperweightList =
     url ["front", "products"][]
+
+mypaperweightDetail no = 
+    url ["front", "products" , no][]

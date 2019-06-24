@@ -13,7 +13,7 @@ import Http as Http
 import Api.Endpoint as Endpoint
 import Json.Decode as Decode
 import Api.Decoder as Decoder
-import Page.Detail.MyScrapDetail as MyD
+import Page.Detail.PaperWeightDetail as MyD
 
 type alias Model 
     = {
@@ -34,6 +34,8 @@ type alias Model
         , showMenu : Bool
         , getList : List PaperWeightList
         , pagenation : ListPagenate
+        , falseData : MyD.AskDetail
+        , whatKindOfData : Bool
     }
 
 
@@ -92,18 +94,7 @@ init session mobile
         , videoId = ""
         , infiniteLoading = False
         , showMenu = False
-        , listData = 
-            { difficulty_name = Nothing
-            , duration = ""
-            , exercise_items = []
-            , exercise_part_name = Nothing
-            , id = 0
-            , inserted_at = ""
-            , pairing = []
-            , title = ""
-            , nickname = Nothing
-            , thumbnail = ""
-            , description = Nothing}
+        , listData = MyD.listDataInit
         , showDetail = False
         , getList = []
         , pagenation = 
@@ -111,6 +102,18 @@ init session mobile
             , per_page = 10
             , total_count = 0
             , user_id = 0 }
+        , falseData =   
+            { description = ""
+            , difficulty_name = ""
+            , duration = ""
+            , exercise_id = 0
+            , exercise_items = []
+            , exercise_part_name = ""
+            , product_no = 0
+            , thumbnail = ""
+            , title = ""
+            , is_buy= True }
+        , whatKindOfData = False
         }
         , Cmd.batch [
             paperweightEncoder 1 10 session
@@ -123,7 +126,6 @@ init session mobile
 
 type Msg 
     = NoOp
-    | GetCodeId (String, Int)
     | SaveComplete Encode.Value
     | GotSession Session
     | PageBtn (Int, String)
@@ -137,6 +139,8 @@ type Msg
     | GoAnotherPage
     | ShowMenu
     | GetList (Result Http.Error PaperweightData)
+    | GoDetail Int
+    | GetFalseData (Result Http.Error MyD.AskDetailData)
 
 toSession : Model -> Session
 toSession model =
@@ -164,6 +168,16 @@ subscriptions model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GoDetail product_no ->
+            let
+                idEncoder = Encode.string (String.fromInt product_no)
+            in
+            -- if model.check then
+            ({model | videoId = (String.fromInt product_no)}, 
+                Decoder.detailMypaperweight MyD.GetData MyD.DetailData MyD.DetailDataItem MyD.Pairing
+                    |>Api.get GetListData (Endpoint.mypaperweightDetail (String.fromInt product_no)) (Session.cred model.session) )
+            -- else
+            -- (model, Api.saveId idEncoder)
         GetList (Ok ok) ->
             ({model |  getList = ok.data, pagenation = ok.paginate, loading = False}, Cmd.none)
         GetList (Err err) ->
@@ -210,14 +224,30 @@ update msg model =
             
             ({model | zindex = "zindex"}, Api.videoData videoList)
         GetListData (Ok ok) -> 
-            ({model | listData = ok.data, scrap = False, loading = False, showDetail = True}, Cmd.none)
+            ({model | listData = 
+            case ok.data of
+                Just data ->
+                    data
+            
+                Nothing ->
+                    MyD.listDataInit
+                , scrap = False, loading = False, showDetail = True, whatKindOfData = False}, Cmd.none)
         GetListData (Err err) -> 
             let 
                 serverErrors = Api.decodeErrors err
             in
-            if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
-            else
+            case serverErrors of
+                "401" ->
+                    (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+                "badbody" ->
+                    (model, 
+                    Api.get GetFalseData (Endpoint.mypaperweightDetail model.videoId) (Session.cred model.session) (Decoder.myaskDetailData MyD.AskDetailData MyD.AskDetail MyD.AskDetailItem)
+                    )
+                _ ->
+                    (model, Cmd.none)
+        GetFalseData (Ok ok) ->
+            ({model | falseData = ok.data, showDetail = True , whatKindOfData = True}, Cmd.none)
+        GetFalseData (Err err) ->
             (model, Cmd.none)
         PageBtn (idx, str) ->
             case str of
@@ -239,28 +269,28 @@ update msg model =
                 case save of
                     Ok ok ->
                         (model, 
-                        Route.pushUrl (Session.navKey model.session) Route.ScrapD
+                        Route.pushUrl (Session.navKey model.session) Route.MJD
                         -- Api.historyUpdate (Encode.string "myScrapDetail")
                         )
                 
                     Err _ ->
                        (model, Cmd.none) 
             
-        GetCodeId (code, id ) ->
-            let 
-                stringInt = String.fromInt (id)
-                codeIdEncoder = 
-                    Encode.object
-                        [("code", Encode.string code)
-                        , ("id", Encode.string stringInt)]
-            in
-            if model.check then
-            ({model | videoId = stringInt }, 
-                Decoder.yfDetailDetail MyD.GetData MyD.DetailData MyD.DetailDataItem MyD.Pairing
-                    |>Api.get GetListData (Endpoint.scrapDetail code stringInt) (Session.cred model.session) )
-            else
-            (model, Api.saveId codeIdEncoder )
-        -- OnLoad ->
+        -- GetCodeId (code, id ) ->
+        --     let 
+        --         stringInt = String.fromInt (id)
+        --         codeIdEncoder = 
+        --             Encode.object
+        --                 [("code", Encode.string code)
+        --                 , ("id", Encode.string stringInt)]
+        --     in
+        --     if model.check then
+        --     ({model | videoId = stringInt }, 
+        --         Decoder.yfDetailDetail MyD.GetData MyD.DetailData MyD.DetailDataItem MyD.Pairing
+        --             |>Api.get GetListData (Endpoint.scrapDetail code stringInt) (Session.cred model.session) )
+        --     else
+        --     (model, Api.saveId codeIdEncoder )
+        -- -- OnLoad ->
         --     if model.count >= List.length model.data.data then
         --     ({model | loading = False}, Cmd.none)
         --     else
@@ -272,7 +302,7 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    if model.check then
+    -- if model.check then
             { title = "문진운동 "
             , content = 
                 div [] [
@@ -293,33 +323,43 @@ view model =
                             infiniteSpinner
                             ]
                         ]
-                        , div [class ("myaccountStyle myScrapStyle " ++ (if model.showDetail then "account" else "")) ][MyD.app model BackBtn GoVideo]
+                        , 
+                        if model.whatKindOfData then
+                        div [class ("myaccountStyle myScrapStyle " ++ (if model.showDetail then "account" else "")) ][
+                           selectedItemApp model
+                        ]
+                        else
+                        div [class ("myaccountStyle myScrapStyle " ++ (if model.showDetail then "account" else "")) ][
+                            
+                            MyD.app model BackBtn GoVideo
+                        ]
+
                 ]
             }
-        else
-        { title = "문진운동 "
-        , content = 
-            div [  ]
-                [
-                    div [class "mypageHiddenMenu", onClick ShowMenu] []
-                    , div[][myPageCommonHeader ClickRight ClickLeft GoAnotherPage model.showMenu]
-                    ,div [class "container"]
-                    [ commonJustHeader "/image/icon_list.png" "문진운동 ",
-                    div [ class "yf_yfworkout_search_wrap" ]
-                    [
-                        div [] [
-                            div [class "myScrap_mediabox"]
-                             (
-                            List.map (\x -> listwebDetail x model) model.getList
-                            )
-                        , pagination 
-                            PageBtn
-                            model.pagenation
-                            model.pageNum
-                        ]
-                    ]
-                ]]
-        }
+        -- else
+        -- { title = "문진운동 "
+        -- , content = 
+        --     div [  ]
+        --         [
+        --             div [class "mypageHiddenMenu", onClick ShowMenu] []
+        --             , div[][myPageCommonHeader ClickRight ClickLeft GoAnotherPage model.showMenu]
+        --             ,div [class "container"]
+        --             [ commonJustHeader "/image/icon_list.png" "문진운동 ",
+        --             div [ class "yf_yfworkout_search_wrap" ]
+        --             [
+        --                 div [] [
+        --                     div [class "myScrap_mediabox"]
+        --                      (
+        --                     List.map (\x -> listwebDetail x model) model.getList
+        --                     )
+        --                 , pagination 
+        --                     PageBtn
+        --                     model.pagenation
+        --                     model.pageNum
+        --                 ]
+        --             ]
+        --         ]]
+        -- }
 
 listwebDetail item model = 
    div [] 
@@ -365,11 +405,8 @@ contentsCount count=
  
 
 videoItem item model getlist= 
-    div [ class "mjList_container" ]
-        [ div [class"list_overlay"]
-        [i [ class "fas fa-play overlayplay_list" ][]],
-
-            div [class "mj_wrap"][
+    div [ class "mjList_container", onClick (GoDetail getlist.product_no)]
+        [ div [class "mj_wrap"][
                  div [ class "yf_workoutvideo_image" ]
                 [ 
                     img [ class "yf_workoutvpic1", src item.thembnail ]
@@ -393,12 +430,63 @@ videoItem item model getlist=
                         , text " "
                         , text item.duration
                     ]
-            , div [ class ( if model.check then "notRow" else "") ]
+            , div [ class ( if model.check then "notRow " else ""), style "text-decoration"(if getlist.is_buy then "" else "line-through") ]
                 [
                     p [class ("limitedDate " ++ if model.check then "notMargin" else " rowPaperWeight")]
                     [ p [][text ("( " ++ getlist.start_at ++ " ~ " ++ getlist.end_at ++  " )")]
                     ]
-                ]
+                   
+                ] , 
+                -- if model.check then 
+                    div [class "is_buy_m", style "display" (if getlist.is_buy then "none" else "flex"), onClick (GoDetail getlist.product_no)][
+                    text "기간만료"
+                    ]
+                -- else
+                --     div [class "expired_date"] [
+                --     if getlist.is_buy then 
+                --     text ""
+                --     else
+                --     text "기간만료"
+                -- ]
                     
             ]
         ]
+
+
+    
+selectedItemApp model = 
+    div []
+        [
+            appHeaderRDetailClick  model.falseData.title "myPageHeader whiteColor" BackBtn "fas fa-times"
+            ,
+        div [class "paperweightSelectedItem_containerApp"]
+        [
+            div[class "paperweightSelectedItem_first_App"][
+            img [src model.falseData.thumbnail ][]
+            , div [class "askDetailFirstContainer_app"]
+            [ div [class "askDetailFirstContainer_App_Text"]
+                [ div [class "mj_title"][text model.falseData.title]
+                , div [class "mj_title_part_app"][text (model.falseData.exercise_part_name ++ " - " ++ model.falseData.difficulty_name)
+                ]
+                , span [class "mj_title_duration"]
+                [ i [ class "fas fa-stopwatch" , style "padding-right" "3px"] []
+                , text model.falseData.duration
+                ]
+            ]
+            , ul [class "mj_description"]
+             (List.map MyD.askDetailItems model.falseData.exercise_items)
+             , div [class "paperweightSelectedItem_second_app"][
+            h3 [][text "운동설명"]
+            , div [class "description"][
+                text model.falseData.description
+            ]
+        ]
+        , div [class "button is-link freeTrial"][text "1주일 무료 체험"]
+            ]
+        ]
+        
+        
+        ]
+        
+    ]
+    

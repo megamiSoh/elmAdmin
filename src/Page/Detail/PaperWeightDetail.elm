@@ -27,40 +27,89 @@ type alias Model =
     , loading : Bool
     , need2login : Bool
     , zindex : String
-    , videoId : CodeId
+    , videoId : String
+    , falseData : AskDetail
     }
 -- Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
 type alias GetData = 
-    { data : DetailData }
+    { data : Maybe DetailData }
 
-type alias CodeId = 
-    { code : String
-    , id : String }
+-- type alias CodeId = 
+--     { code : String
+--     , id : String }
 
 type alias DetailData =    
-    { difficulty_name : Maybe String
+    { description : String
+    , difficulty_name : String
     , duration : String
     , exercise_items : List DetailDataItem
-    , exercise_part_name : Maybe String
+    , exercise_part_name : String
     , id : Int
     , inserted_at : String
+    , is_buy : Bool
     , pairing : List Pairing
-    , title : String
-    , nickname : Maybe String
+    , product_no : Int
     , thumbnail : String
-    , description : Maybe String}
+    , title : String
+    }
 
-type alias DetailDataItem = 
+type alias AskDetailData = 
+    { data : AskDetail }
+
+type alias AskDetail = 
+    { description : String
+    , difficulty_name : String
+    , duration : String
+    , exercise_id : Int
+    , exercise_items : List AskDetailItem
+    , exercise_part_name : String
+    , product_no : Int
+    , thumbnail : String
+    , title : String
+    , is_buy: Bool }
+
+
+type alias AskDetailItem = 
     { exercise_id : Int
     , is_rest : Bool
     , sort : Int
     , title : String
-    , value : Int}
+    , value : Int }
+
+
+type alias DetailDataItem = 
+    { action_id : Maybe Int
+    , difficulty_name : Maybe String
+    , duration : String
+    , exercise_id : Int
+    , exercise_name : Maybe String
+    , instrument_name : Maybe String
+    , is_rest : Bool
+    , mediaid : String
+    , part_detail_name : List (Maybe String)
+    , sort : Int
+    , thembnail : String
+    , title : String
+    , value : Int }
 
 type alias Pairing = 
     { file : String
     , image : String
     , title : String}
+
+listDataInit =
+    { description = ""
+    , difficulty_name = ""
+    , duration = ""
+    , exercise_items = []
+    , exercise_part_name = ""
+    , id = 0
+    , inserted_at = ""
+    , is_buy = False
+    , pairing = []
+    , product_no = 0
+    , thumbnail = ""
+    , title = ""}
 
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile
@@ -72,21 +121,19 @@ init session mobile
         , loading = True
         , need2login = False
         , zindex = ""
-        , videoId = 
-            { code = ""
-            , id = ""}
-        , listData = 
-            { difficulty_name = Nothing
+        , videoId = ""
+        , listData =  listDataInit
+        , falseData = 
+            { description = ""
+            , difficulty_name = ""
             , duration = ""
+            , exercise_id = 0
             , exercise_items = []
-            , exercise_part_name = Nothing
-            , id = 0
-            , inserted_at = ""
-            , pairing = []
-            , title = ""
-            , nickname = Nothing
+            , exercise_part_name = ""
+            , product_no = 0
             , thumbnail = ""
-            , description = Nothing}
+            , title = ""
+            , is_buy= True }
         }
         , Api.getId ()
     )
@@ -116,6 +163,7 @@ type Msg
     | ClickRight
     | ClickLeft
     | GoAnotherPage
+    | GetFalseData (Result Http.Error AskDetailData)
     
 
 toSession : Model -> Session
@@ -129,6 +177,10 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GetFalseData (Ok ok) ->
+            ({model | falseData = ok.data }, Cmd.none)
+        GetFalseData (Err err) ->
+            (model, Cmd.none)
         GoAnotherPage ->
             (model, Cmd.batch [
                  Api.setCookie (Encode.int 1)
@@ -147,7 +199,9 @@ update msg model =
             in
                 case decodestr of
                     Ok ok ->
-                        (model, Api.get VideoRecordComplete  (Endpoint.videoCompleteRecord model.videoId.id)  (Session.cred model.session) Decoder.resultD)
+                        (model, Cmd.none
+                        -- Api.get VideoRecordComplete  (Endpoint.videoCompleteRecord model.videoId.id)  (Session.cred model.session) Decoder.resultD
+                        )
                 
                     Err err ->
                         (model, Cmd.none)
@@ -165,14 +219,14 @@ update msg model =
             
             ({model | zindex = "zindex"}, Api.videoData pList)
         GotSession session ->
-            ({model | session = session},
-            Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
-            |> Api.get GetListData (Endpoint.scrapDetail model.videoId.code model.videoId.id ) (Session.cred session) 
+            ({model | session = session}, Cmd.none
+            -- Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
+            -- |> Api.get GetListData (Endpoint.scrapDetail model.videoId.code model.videoId.id ) (Session.cred session) 
             )
         BackDetail ->
-            ({model | need2login = False}, 
-            Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
-             |> Api.get GetListData (Endpoint.scrapDetail model.videoId.code model.videoId.id ) (Session.cred model.session) 
+            ({model | need2login = False}, Cmd.none
+            -- Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
+            --  |> Api.get GetListData (Endpoint.scrapDetail model.videoId.code model.videoId.id ) (Session.cred model.session) 
             )
 
         GoVideo ->
@@ -189,16 +243,28 @@ update msg model =
                         ]
             in
              (model, Cmd.none)
-        GetListData (Ok ok) -> 
-            update GoVideo {model | listData = ok.data, scrap = False, loading = False}
+        GetListData (Ok ok) ->
+            update GoVideo {model | listData = 
+            case ok.data of
+                Just data ->
+                    data
+            
+                Nothing ->
+                    listDataInit
+            , scrap = False, loading = False}
         GetListData (Err err) -> 
-            let 
+            let
                 serverErrors = Api.decodeErrors err
             in
-            if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
-            else
-            (model, Cmd.none)
+            case serverErrors of
+                "401" ->
+                    (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+                "badbody" ->
+                    (model, 
+                    Api.get GetFalseData (Endpoint.mypaperweightDetail model.videoId) (Session.cred model.session) (Decoder.myaskDetailData AskDetailData AskDetail AskDetailItem)
+                    )
+                _ ->
+                    (model, Cmd.none)
         Loading success ->
             let
                 d = Decode.decodeValue Decode.string success
@@ -213,13 +279,14 @@ update msg model =
         ReceiveId id ->
             let
                 d = 
-                    Decode.decodeValue (Decoder.codeId CodeId) id
+                    Decode.decodeValue Decode.string id
             in
             case d of
                 Ok item ->
                     ({model | videoId = item}, 
-                    Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
-                    |>Api.get GetListData (Endpoint.scrapDetail item.code item.id ) (Session.cred model.session) 
+                    Api.get GetListData (Endpoint.mypaperweightDetail item) (Session.cred model.session) (Decoder.detailMypaperweight GetData DetailData DetailDataItem Pairing)
+                    -- Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
+                    -- |>Api.get GetListData (Endpoint.scrapDetail item.code item.id ) (Session.cred model.session) 
                     )
             
                 Err _ ->
@@ -227,7 +294,7 @@ update msg model =
             
         BackPage ->
             ( model, 
-            Route.pushUrl (Session.navKey model.session) Route.MyScrap
+            Route.pushUrl (Session.navKey model.session) Route.MJList
             -- -- Api.historyUpdate (Encode.string "myScrap")
             )
 
@@ -241,6 +308,7 @@ view model =
             ]
         
         }
+
 app model back videoCall= 
         div [ class "container" ]
                 [
@@ -253,64 +321,6 @@ app model back videoCall=
                      ]
                 ]
 
-web msg model= 
-    div [ class "container" ]
-                [
-                    -- appHeaderRDetailClick  model.listData.title  "yourfitHeader" BackPage "fas fa-times"  
-                    -- ,
-                    contentsBody model.listData model.loading model.zindex
-                    ,goBtnBox msg
-                ]
-contentsBody item loading zindex=
-    
-    div [ class "yf_yfworkout_search_wrap" ]
-        [ div [ class "tapbox" ]
-            [ div [ class "yf_large" ]
-                [ text item.title ],
-                contentsItem item loading zindex
-               
-            ]
-        
-        ]
-
-contentsItem item loading zindex =
-            div [ class "tile is-parent is-vertical" ]
-            [lazy2 div [ class "yf_notification" ]
-                [ p [ class "video_title" ]
-                    [ 
-                    --    div [class ("imagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") , onClick (GoVideo item.pairing)] [] ,
-                    --          videoCall
-
-
-                         div [ class ("imagethumb " ++ zindex),style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") , onClick (VideoCall item.pairing) ][]
-                        -- img [class zindex, src item.thumbnail, onClick (VideoCall item.pairing)] []
-                        , div [ id "myElement", style "height" (if String.isEmpty zindex then "0px" else "auto") ] [
-                            ]
-                    ]
-                ], 
-            div [ class "yf_subnav" ]
-                [ div [ class "yf_time" ]
-                    [ span []
-                        [ i [ class "fas fa-clock" ]
-                            []
-                        ], text item.duration
-                    ]
-                , div [ class "yf_part" ]
-                    [ text ((justok item.exercise_part_name) ++ " - " ++  (justok item.difficulty_name)) ]
-                ]
-            , pre [class"yf_explanation descriptionBackground"] [text (justok item.description)]
-            , div [ class "yf_text" ]
-               (List.indexedMap description item.exercise_items)
-            ]
-
-
-justok casees = 
-    case casees of
-        Just a ->
-            a
-    
-        Nothing ->
-            "-"
 
 appcontentsItem item zindex videoCall = 
             div []
@@ -330,12 +340,70 @@ appcontentsItem item zindex videoCall =
                         ], text item.duration
                     ]
                 , div [ class "m_yf_work_text" ]
-                    [ text ((justok item.exercise_part_name) ++ " - " ++  (justok item.difficulty_name)) ]
+                    [ text ((item.exercise_part_name) ++ " - " ++  (item.difficulty_name)) ]
                 ]
-            , pre [class"wordBreak descriptionBackground"][text (justok item.description)]
+            , pre [class"wordBreak descriptionBackground"][text (item.description)]
             , div [ class "m_work_script" ]
                 (List.indexedMap YfD.description item.exercise_items)
             ]
+web msg model= 
+    if model.falseData.is_buy then
+    div [ class "container" ]
+                [
+                    contentsBody model.listData model.loading model.zindex model.listData.title
+                    ,goBtnBox msg
+                ]
+
+    else
+        selectedItem model
+    
+contentsBody item loading zindex title =
+    
+    div [ class "yf_yfworkout_search_wrap" ]
+        [ div [ class "tapbox" ]
+            [ div [ class "yf_large" ]
+                [ text title ],
+                contentsItem item loading zindex
+               
+            ]
+        
+        ]
+
+contentsItem item loading zindex =
+            div [ class "tile is-parent is-vertical" ]
+            [lazy2 div [ class "yf_notification" ]
+                [ p [ class "video_title" ]
+                    [ 
+                        div [ class ("imagethumb " ++ zindex),style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") , onClick (VideoCall item.pairing) ][]
+                        -- img [class zindex, src item.thumbnail, onClick (VideoCall item.pairing)] []
+                        , div [ id "myElement", style "height" (if String.isEmpty zindex then "0px" else "auto") ] [
+                            ]
+                    ]
+                ], 
+            div [ class "yf_subnav" ]
+                [ div [ class "yf_time" ]
+                    [ span []
+                        [ i [ class "fas fa-clock" ]
+                            []
+                        ], text item.duration
+                    ]
+                , div [ class "yf_part" ]
+                    [ text (( item.exercise_part_name) ++ " - " ++  ( item.difficulty_name)) ]
+                ]
+            , pre [class"yf_explanation descriptionBackground"] [text ( item.description)]
+            , div [ class "yf_text" ]
+               (List.indexedMap description item.exercise_items)
+            ]
+
+
+justok casees = 
+    case casees of
+        Just a ->
+            a
+    
+        Nothing ->
+            "-"
+
 
 description idx item = 
     ul [] [
@@ -353,3 +421,46 @@ goBtnBox backPage =
             ]
         ]
 
+
+selectedItem model = 
+        div [class "container"]
+        [
+             div [ class "tapbox" ]
+            [ div [ class "yf_large" ]
+                [ text "체험 기간 만료" ]
+            ]
+            , div[class "paperweightSelectedItem_first"][
+            img [src model.falseData.thumbnail ][]
+            , div []
+            [ div [class "mj_title"][text model.falseData.title
+            , span [class "mj_title_part"][text (model.falseData.exercise_part_name ++ " - " ++ model.falseData.difficulty_name)]
+            ]
+            , span [class "mj_title_duration"]
+            [ i [ class "fas fa-stopwatch" , style "padding-right" "3px"] []
+            , text model.falseData.duration
+            ]
+            ,ul [class "mj_description"]
+             (List.map askDetailItems model.falseData.exercise_items)
+            
+            ]
+        ]
+        , div [class "paperweightSelectedItem_second"][
+            h3 [][text "운동설명"]
+            , div [class "description"][
+                text model.falseData.description
+            ]
+        ]
+        , div [class "paperweightSelectedItem_third"]
+        [ div [class "button is-link"
+        -- , onClick (GoProduct model.falseData.exercise_id)
+        ][text "재 구매"]
+        , div [class "button is-danger", onClick BackPage][text "뒤로"]
+        ]
+        ]
+
+
+
+askDetailItems item = 
+    li [][
+        text ((String.fromInt item.sort) ++ ". " ++ item.title ++ " x " ++ String.fromInt item.value ++ (if item.is_rest then " 분 " else " 세트 "))
+    ]
