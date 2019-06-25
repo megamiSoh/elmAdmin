@@ -1558,7 +1558,7 @@ selectedItem model =
     ]
 
 askDetailItems item = 
-    li [][
+    li [style "font-size" ".7rem"][
         text ((String.fromInt item.sort) ++ ". " ++ item.title ++ " x " ++ String.fromInt item.value ++ (if item.is_rest then " 분 " else " 세트 "))
     ]
 
