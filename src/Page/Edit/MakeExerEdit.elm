@@ -572,7 +572,7 @@ justIntData data =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    if model.check then
+    -- if model.check then
         if model.loading then
         { title = "맞춤운동 필터 Step 1"
         , content = 
@@ -588,13 +588,13 @@ view model =
                     , appitemContainer model
                 ]
             }
-    else
-    { title = "맞춤운동 필터 Step 1"
-    , content = 
-            div [] [
-                web model
-            ]
-        }
+    -- else
+    -- { title = "맞춤운동 필터 Step 1"
+    -- , content = 
+    --         div [] [
+    --             web model
+    --         ]
+    --     }
 
 app model = 
     div [] [

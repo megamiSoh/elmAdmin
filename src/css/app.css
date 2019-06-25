@@ -934,7 +934,7 @@ font-size: .9rem;
   /* font-size: 1.5em; */
   /* overflow: auto; */
   display: flex;
-  z-index: 999999999;
+  /* z-index: 999999999; */
 }
 
 
@@ -960,6 +960,7 @@ padding: 10px;
 {
   overflow: scroll;
   height: 98vh; 
+  -webkit-overflow-scrolling: touch;
   /* height:100%; */
   border-right: .1rem solid #CCCCCC;
 }
