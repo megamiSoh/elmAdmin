@@ -30,6 +30,8 @@ type alias Model =
     , videoId : String
     , falseData : AskDetail
     , isActive : Bool
+    , errType : String
+    , product_no : Int
     }
 -- Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
 type alias GetData = 
@@ -136,6 +138,8 @@ init session mobile
             , title = ""
             , is_buy= True }
         , isActive = False
+        , errType = ""
+        , product_no = 0
         }
         , Api.getId ()
     )
@@ -186,7 +190,12 @@ update msg model =
             (model, Cmd.batch[Api.showToast (Encode.string "재 구매 되었습니다.")
             , Route.pushUrl (Session.navKey model.session) Route.MJList])
         ProductComplete (Err err) ->
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            ({model | errType ="ProductComplete"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
+            ])
         ReRegistExercise product_no ->
             let
                 body = Encode.object
@@ -194,11 +203,16 @@ update msg model =
                         |> Http.jsonBody
             in
             
-            (model, Api.post Endpoint.renewWeekExercise (Session.cred model.session) ProductComplete body Decoder.resultD )
+            ({model | product_no = product_no}, Api.post Endpoint.renewWeekExercise (Session.cred model.session) ProductComplete body Decoder.resultD )
         GetFalseData (Ok ok) ->
             ({model | falseData = ok.data }, Cmd.none)
         GetFalseData (Err err) ->
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            ({model | errType = "GetFalseData"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
+            ])
         GoAnotherPage ->
             (model, Cmd.batch [
                  Api.setCookie (Encode.int 1)
@@ -210,15 +224,20 @@ update msg model =
         VideoRecordComplete (Ok ok) ->
             (model, Cmd.none)
         VideoRecordComplete (Err err) ->
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            ({model | errType = "VideoRecordComplete"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
+            ])
         VideoEnd complete ->
             let
                 decodestr = Decode.decodeValue Decode.string complete
             in
                 case decodestr of
                     Ok ok ->
-                        (model, Cmd.none
-                        -- Api.get VideoRecordComplete  (Endpoint.videoCompleteRecord model.videoId.id)  (Session.cred model.session) Decoder.resultD
+                        (model,
+                        Api.get VideoRecordComplete  (Endpoint.videoCompleteRecord model.videoId)  (Session.cred model.session) Decoder.resultD
                         )
                 
                     Err err ->
@@ -237,9 +256,25 @@ update msg model =
             
             ({model | zindex = "zindex"}, Api.videoData pList)
         GotSession session ->
-            ({model | session = session}, Cmd.none
-            -- Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
-            -- |> Api.get GetListData (Endpoint.scrapDetail model.videoId.code model.videoId.id ) (Session.cred session) 
+            let
+                body = Encode.object
+                    [ ("product_no", Encode.int model.product_no)]
+                        |> Http.jsonBody
+            in
+            
+            ({model | session = session}, 
+            case model.errType of
+                "ProductComplete" ->
+                    Api.post Endpoint.renewWeekExercise (Session.cred model.session) ProductComplete body Decoder.resultD
+            
+                "GetFalseData" ->
+                    Api.get GetFalseData (Endpoint.mypaperweightDetail model.videoId) (Session.cred model.session) (Decoder.myaskDetailData AskDetailData AskDetail AskDetailItem)
+                "VideoRecordComplete" ->
+                    Api.get VideoRecordComplete  (Endpoint.videoCompleteRecord model.videoId)  (Session.cred model.session) Decoder.resultD
+                "GetListData" ->
+                   Api.get GetListData (Endpoint.mypaperweightDetail model.videoId) (Session.cred model.session) (Decoder.detailMypaperweight GetData DetailData DetailDataItem Pairing)
+                _ ->
+                   Api.get GetListData (Endpoint.mypaperweightDetail model.videoId) (Session.cred model.session) (Decoder.detailMypaperweight GetData DetailData DetailDataItem Pairing)
             )
         BackDetail ->
             ({model | need2login = False}, Cmd.none
@@ -276,7 +311,7 @@ update msg model =
             in
             case serverErrors of
                 "401" ->
-                    (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+                    ({model | errType = "GetListData"}, (Session.changeInterCeptor(Just serverErrors)model.session))
                 "badbody" ->
                     (model, 
                     Api.get GetFalseData (Endpoint.mypaperweightDetail model.videoId) (Session.cred model.session) (Decoder.myaskDetailData AskDetailData AskDetail AskDetailItem)

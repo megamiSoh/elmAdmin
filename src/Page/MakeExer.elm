@@ -52,6 +52,10 @@ type alias Model =
     , resultData : AskResult
     , askExerList : List AskExer
     , askDetail : AskDetail
+    , errType : String
+    , productId : Int
+    , trialNo : String
+    , trialId : String 
     }
 
 type alias AskDetailData = 
@@ -183,7 +187,7 @@ type alias AskResultDetail =
     , name : String
     , sort : Int }
 
-bodyEncode page perpage title session= 
+bodyEncode page perpage title session = 
     let
         list = 
             Encode.object
@@ -326,7 +330,10 @@ init session mobile =
                 , thumbnail = ""
                 , title = ""
                 , is_buy = False }
-
+        , errType = ""
+        , productId = 0
+        , trialId = ""
+        , trialNo = ""
         }, 
         Cmd.batch 
         [ bodyEncode 1 10 "" session
@@ -438,31 +445,61 @@ update msg model =
             ({model | trialShow = False}, Cmd.batch[askExerData model.session
             , Api.showToast (Encode.string "구입이 완료 되었습니다.")])
         CompleteProductWeekRegist (Err err) ->
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            ({model | errType = "CompleteProductWeekRegist"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
+            ])
         GoProduct id ->
-            (model, goProductBody id model.session)
+            ({model | productId = id}, goProductBody id model.session)
         AskDetailMsg (Ok ok) ->
             ({model | askDetail = ok.data}, Cmd.none)
         AskDetailMsg (Err err) ->
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            ({model | errType = "AskDetailMsg"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
+            ])
         CalcurationComplete val ->
             ({model | isActive = "paperweight"}, Cmd.none)
         AskRecommendComplete(Ok ok) ->
             (model, askExerData model.session)
         AskRecommendComplete(Err err) ->
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            ({model | errType = "AskRecommendComplete("}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
+            ])
         GetListComplete (Ok ok)->
             ({model | askExerList = ok.data }, Cmd.none)
         GetListComplete (Err err)->
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            ({model | errType = "GetListComplete"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
+            ])
         AskResultComplete (Ok ok) ->
             ({model | resultData = ok.data},scrollToTop NoOp)
         AskResultComplete (Err err) ->
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            ({model | errType = "AskResultComplete"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
+            ])
         AskAnswerComplete (Ok ok) ->
             (model, Cmd.none)
         AskAnswerComplete (Err err) ->
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            ({model | errType = "AskAnswerComplete"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
+            ])
         CloseTrial no id ->  
             let
                 format num = String.fromInt num
@@ -470,7 +507,7 @@ update msg model =
             if no == 0 then
             ({model | trialShow = not model.trialShow}, Cmd.none)
             else
-            ({model | trialShow = not model.trialShow}, Api.get AskDetailMsg (Endpoint.askdetail (format no) (format id)) (Session.cred model.session) (Decoder.askDetailData AskDetailData AskDetail AskDetailItem))
+            ({model | trialShow = not model.trialShow, trialId = format id, trialNo = format no}, Api.get AskDetailMsg (Endpoint.askdetail (format no) (format id)) (Session.cred model.session) (Decoder.askDetailData AskDetailData AskDetail AskDetailItem))
         ProgressComplete complete ->
             ( {model | categoryPaperWeight = "paperweightResult"}, 
              Api.get AskResultComplete Endpoint.askResult (Session.cred model.session ) (Decoder.askResultData AskResultData AskResult AskResultResult AskResultDetail) )
@@ -534,15 +571,30 @@ update msg model =
         AskYourDataPost (Ok ok)->
             ({model | askSearchData = ok.data, askSearchItem = indexItem 1 ok.data }, Cmd.none)
         AskYourDataPost (Err err)->
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            ({model | errType ="AskYourDataPost"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
+            ])
         GetQuestions2 (Ok ok) ->
             ({model | aksYoursPoint = ok.data }, Cmd.none)
         GetQuestions2 (Err err) ->
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            ({model | errType = "GetQuestions2"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
+            ])
         GetQuestions (Ok ok) ->
             ({model | askyours = ok.data, askSelected = caseItem ok.data.default True}, Cmd.none)
         GetQuestions (Err err) ->
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            ({model | errType = "GetQuestions"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
+            ])
         SelectedAnswer category answer -> 
                 case category of
                 "sex" ->
@@ -613,14 +665,41 @@ update msg model =
                 , Api.showToast (Encode.string "삭제되었습니다.")
             ])
         DeleteSuccess (Err err) ->
-            ({model | show = ""}, Api.showToast (Encode.string "삭제할 수 없는 게시물입니다."))
+            ({model | show = "", errType ="DeleteSuccess"}, Api.showToast (Encode.string "삭제할 수 없는 게시물입니다."))
         Delete ->
             (model, 
             Decoder.resultD
             |> Api.get DeleteSuccess (Endpoint.makeDelete (String.fromInt (model.contentsId)))(Session.cred model.session)  )
         GotSession session ->
             ({model | session = session}
-            , bodyEncode model.page model.per_page model.title session
+            , 
+            case model.errType of
+                "CompleteProductWeekRegist" ->
+                    goProductBody model.productId model.session
+            
+                "AskDetailMsg" ->
+                    Api.get AskDetailMsg (Endpoint.askdetail model.trialNo model.trialId) (Session.cred model.session) (Decoder.askDetailData AskDetailData AskDetail AskDetailItem)
+                "AskRecommendComplete" ->
+                    Api.post Endpoint.askRecommend (Session.cred model.session) AskRecommendComplete Http.emptyBody Decoder.resultD
+                "GetListComplete" ->
+                    askExerData model.session
+                "AskResultComplete" ->
+                    Api.get AskResultComplete Endpoint.askResult (Session.cred model.session ) (Decoder.askResultData AskResultData AskResult AskResultResult AskResultDetail)
+                "AskAnswerComplete" ->
+                    askAsnwer model.axerCode model.askSelected model.etcAsk model.session model.yesformat
+                "AskYourDataPost" ->
+                    askYourDataPost model
+                "GetQuestions2" ->
+                    askYourData model GetQuestions2 Endpoint.askExercise_point (Decoder.askyoursPoint AskYoursPoint AskYourDataPoint AskItemsPoint)
+                "GetQuestions" ->
+                    askYourData model  GetQuestions Endpoint.askgender (Decoder.askyours AskYours AskYourData AskItems)
+                "DeleteSuccess" ->
+                     Decoder.resultD
+                    |> Api.get DeleteSuccess (Endpoint.makeDelete (String.fromInt (model.contentsId)))(Session.cred model.session) 
+                "GetData" ->
+                    bodyEncode (model.page)  model.per_page model.title model.session
+                _ ->
+                    bodyEncode (model.page)  model.per_page model.title model.session
             )
         SessionCheck check ->
             let
@@ -660,7 +739,7 @@ update msg model =
                 serverErrors =
                     Api.decodeErrors err
             in  
-            (model, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
+            ({model | errType = "GetData"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
             ])
             
             
@@ -1087,7 +1166,8 @@ paperweightStart model =
                 [ text "문진 결과" ]
             ]
             , div [class "progressTextWrap"] [
-                div [class "progressText"][
+                img [src "https://yourfitbucket.s3.ap-northeast-2.amazonaws.com/images/run.gif"][]
+                , div [class "progressText"][
                     ul [class "progressTextul", id "progressText"]
                     [li [] [ text "작성한 문진 데이터를 입력 중입니다."]
                     ,li [] [ text "문진 데이터에 맞춰 체형을 분석 중입니다."]
@@ -1098,7 +1178,7 @@ paperweightStart model =
                 ]
                 ]
             ]
-            , progress [ class "progress is-large is-info", Attr.max "100" , id "paperWeightProgress"]
+            , progress [ class "progress is-large is-info mj_probar", Attr.max "100" , id "paperWeightProgress"]
                 [ text "60%" ]
             ]
         "paperweightResult" ->
@@ -1146,7 +1226,8 @@ paperweightStartMobile model =
                 [ text "문진 결과" ]
             ]
             , div [class "progressTextWrap"] [
-                div [class "progressText"][
+                img [src "https://yourfitbucket.s3.ap-northeast-2.amazonaws.com/images/run.gif"][]
+                , div [class "progressText"][
                     ul [class "progressTextul", id "progressText"]
                     [li [] [ text "작성한 문진 데이터를 입력 중입니다."]
                     ,li [] [ text "문진 데이터에 맞춰 체형을 분석 중입니다."]
@@ -1481,8 +1562,6 @@ askDetailItems item =
         text ((String.fromInt item.sort) ++ ". " ++ item.title ++ " x " ++ String.fromInt item.value ++ (if item.is_rest then " 분 " else " 세트 "))
     ]
 
--- "myf_popup" 
--- "yf_popup"
 resetLayer layerStyle model =
     div [ class "layerStyleWarn", style "display" ( if model.isActive == "reset" || model.isActive == "recommend" then "flex" else "none"), id ( if model.isActive == "reset" || model.isActive == "recommend" then "noScrInput" else "") ] [
     div [ class layerStyle ]

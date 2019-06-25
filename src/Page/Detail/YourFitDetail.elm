@@ -26,7 +26,8 @@ type alias Model =
     , loading : Bool
     , need2login : Bool
     , videoId : String
-     , zindex : String
+    , zindex : String
+    , video : String
     }
 -- Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
 type alias GetData = 
@@ -80,6 +81,7 @@ init session mobile
             , nickname = Nothing
             , thumbnail = ""
             , description = Nothing}
+        , video = ""
         }
         , Cmd.batch [
             Api.getId ()

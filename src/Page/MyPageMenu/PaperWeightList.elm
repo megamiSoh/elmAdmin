@@ -37,6 +37,8 @@ type alias Model
         , falseData : MyD.AskDetail
         , whatKindOfData : Bool
         , isActive : Bool
+        , errType : String
+        , product_no : Int
     }
 
 
@@ -116,6 +118,8 @@ init session mobile
             , is_buy= True }
         , whatKindOfData = False
         , isActive = False
+        , errType = ""
+        , product_no = 0
         }
         , Cmd.batch [
             paperweightEncoder 1 10 session
@@ -178,7 +182,12 @@ update msg model =
         ProductComplete (Ok ok) ->
             ({model | showDetail = False, isActive = False}, Cmd.batch[Api.showToast (Encode.string "재 구매 되었습니다."), paperweightEncoder model.page model.per_page model.session])
         ProductComplete (Err err) ->
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            ({model | errType = "ProductComplet"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
+            ])
         ReRegistExercise product_no ->
             let
                 body = Encode.object
@@ -186,7 +195,7 @@ update msg model =
                         |> Http.jsonBody
             in
             
-            (model, Api.post Endpoint.renewWeekExercise (Session.cred model.session) ProductComplete body Decoder.resultD )
+            ({model | product_no = product_no}, Api.post Endpoint.renewWeekExercise (Session.cred model.session) ProductComplete body Decoder.resultD )
         GoDetail product_no is_buy->
             let
                 idEncoder = Encode.string (String.fromInt product_no)
@@ -204,7 +213,12 @@ update msg model =
         GetList (Ok ok) ->
             ({model |  getList = ok.data, pagenation = ok.paginate, loading = False}, Cmd.none)
         GetList (Err err) ->
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            ({model | errType = "GetList"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
+            ])
         ShowMenu ->
             ({model | showMenu = not model.showMenu}, Cmd.none)
         GoAnotherPage ->
@@ -218,7 +232,12 @@ update msg model =
         VideoRecordComplete (Ok ok) ->
             (model, Cmd.none)
         VideoRecordComplete (Err err) ->
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            ({model | errType ="VideoRecordComplete"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
+            ])
         VideoEnd complete ->
             let
                 decodestr = Decode.decodeValue Decode.string complete
@@ -261,7 +280,7 @@ update msg model =
             in
             case serverErrors of
                 "401" ->
-                    (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+                    ({model | errType ="GetListData"}, (Session.changeInterCeptor(Just serverErrors)model.session))
                 "badbody" ->
                     (model, 
                     Api.get GetFalseData (Endpoint.mypaperweightDetail model.videoId) (Session.cred model.session) (Decoder.myaskDetailData MyD.AskDetailData MyD.AskDetail MyD.AskDetailItem)
@@ -271,7 +290,12 @@ update msg model =
         GetFalseData (Ok ok) ->
             ({model | falseData = ok.data, showDetail = True , whatKindOfData = True}, Cmd.none)
         GetFalseData (Err err) ->
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in  
+            ({model | errType = "GetFalseData"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
+            ])
         PageBtn (idx, str) ->
             case str of
                 "prev" -> 
@@ -283,7 +307,27 @@ update msg model =
                 _ ->
                     (model, Cmd.none)
         GotSession session ->
-            ({model | session = session}, paperweightEncoder model.page model.per_page model.session
+            let
+                body = Encode.object
+                    [ ("product_no", Encode.int model.product_no)]
+                        |> Http.jsonBody
+            in
+            
+            ({model | session = session}, 
+             case model.errType of
+                "ProductComplete" ->
+                    Api.post Endpoint.renewWeekExercise (Session.cred model.session) ProductComplete body Decoder.resultD
+                "GetList" ->
+                    paperweightEncoder model.page model.per_page model.session
+                "VideoRecordComplete" ->
+                    Api.get VideoRecordComplete  (Endpoint.videoCompleteRecord model.videoId)  (Session.cred model.session) Decoder.resultD
+                "GetListData" ->
+                    Decoder.detailMypaperweight MyD.GetData MyD.DetailData MyD.DetailDataItem MyD.Pairing
+                        |>Api.get GetListData (Endpoint.mypaperweightDetail model.videoId) (Session.cred model.session)
+                "GetFalseData" ->
+                    Api.get GetFalseData (Endpoint.mypaperweightDetail model.videoId) (Session.cred model.session) (Decoder.myaskDetailData MyD.AskDetailData MyD.AskDetail MyD.AskDetailItem)
+                _ ->
+                    paperweightEncoder model.page model.per_page model.session
             )
         SaveComplete complete ->
             let
