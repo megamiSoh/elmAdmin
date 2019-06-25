@@ -29,6 +29,7 @@ type alias Model =
     , zindex : String
     , videoId : String
     , falseData : AskDetail
+    , isActive : Bool
     }
 -- Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
 type alias GetData = 
@@ -134,6 +135,7 @@ init session mobile
             , thumbnail = ""
             , title = ""
             , is_buy= True }
+        , isActive = False
         }
         , Api.getId ()
     )
@@ -154,8 +156,6 @@ type Msg
     | Loading Encode.Value
     | GoVideo
     | GotSession Session
-    -- | Scrap Int
-    -- | ScrapComplete (Result Http.Error Decoder.Success)
     | BackDetail
     | VideoCall (List Pairing)
     | VideoEnd Encode.Value
@@ -164,6 +164,9 @@ type Msg
     | ClickLeft
     | GoAnotherPage
     | GetFalseData (Result Http.Error AskDetailData)
+    | PayConfirm
+    | ReRegistExercise Int
+    | ProductComplete (Result Http.Error Decoder.Success)
     
 
 toSession : Model -> Session
@@ -177,6 +180,21 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        PayConfirm ->
+            ({model | isActive = not model.isActive}, Cmd.none)
+        ProductComplete (Ok ok) ->
+            (model, Cmd.batch[Api.showToast (Encode.string "재 구매 되었습니다.")
+            , Route.pushUrl (Session.navKey model.session) Route.MJList])
+        ProductComplete (Err err) ->
+            (model, Cmd.none)
+        ReRegistExercise product_no ->
+            let
+                body = Encode.object
+                    [ ("product_no", Encode.int product_no)]
+                        |> Http.jsonBody
+            in
+            
+            (model, Api.post Endpoint.renewWeekExercise (Session.cred model.session) ProductComplete body Decoder.resultD )
         GetFalseData (Ok ok) ->
             ({model | falseData = ok.data }, Cmd.none)
         GetFalseData (Err err) ->
@@ -452,10 +470,11 @@ selectedItem model =
         ]
         , div [class "paperweightSelectedItem_third"]
         [ div [class "button is-link"
-        -- , onClick (GoProduct model.falseData.exercise_id)
+        , onClick PayConfirm
         ][text "재 구매"]
         , div [class "button is-danger", onClick BackPage][text "뒤로"]
         ]
+        , payConfirmLayer model
         ]
 
 
@@ -463,4 +482,24 @@ selectedItem model =
 askDetailItems item = 
     li [][
         text ((String.fromInt item.sort) ++ ". " ++ item.title ++ " x " ++ String.fromInt item.value ++ (if item.is_rest then " 분 " else " 세트 "))
+    ]
+
+
+payConfirmLayer model =
+    div [ class "layerStyleWarn", style "display" ( if model.isActive then "flex" else "none"), id ( if model.isActive then "noScrInput" else "") ] [
+    div [ class "yf_popup" ]
+    [ 
+        i [ class "fas fa-cart-arrow-down" , style "font-size" "3rem"]
+        []
+    , h1 [ class "popup_yf_h1", style "font-size" "1rem" ]
+        [ text "확인을 클릭하시면 운동영상이 구매되며, 구매한 시점을 기준으로 유효기간이 연장됩니다."]
+    , p [ class "yf_logoout_butbox" ]
+        [ div [ class "button is-danger logout_danger" 
+        , onClick (ReRegistExercise model.falseData.product_no)
+        ]
+            [ text "확인"]
+        , div [ class "button is-light logout_cencel", onClick PayConfirm ]
+            [ text "취소" ]
+        ]
+    ]
     ]

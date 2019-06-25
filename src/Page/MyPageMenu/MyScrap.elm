@@ -350,7 +350,7 @@ view model =
                     div [ class "yf_yfworkout_search_wrap" ]
                     [
                         
-                        div [style "display" (if List.isEmpty model.data.data then "none" else "fixed")] [
+                        div [style "display" (if List.isEmpty model.data.data then "none" else "block")] [
                             div [class "myScrap_mediabox"] (
                             List.map listwebDetail model.data.data
                         )
@@ -359,7 +359,7 @@ view model =
                         model.data.paginate
                         model.pageNum
                         ]
-                        , div [class "noResult", style "display" (if List.isEmpty model.data.data then "fixed" else "none")] [
+                        , div [class "noResult", style "display" (if List.isEmpty model.data.data then "flex" else "none")] [
                                 text "스크랩한 게시물이 없습니다."
                             ]
                     ]

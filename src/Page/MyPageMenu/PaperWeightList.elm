@@ -36,6 +36,7 @@ type alias Model
         , pagenation : ListPagenate
         , falseData : MyD.AskDetail
         , whatKindOfData : Bool
+        , isActive : Bool
     }
 
 
@@ -114,6 +115,7 @@ init session mobile
             , title = ""
             , is_buy= True }
         , whatKindOfData = False
+        , isActive = False
         }
         , Cmd.batch [
             paperweightEncoder 1 10 session
@@ -139,8 +141,11 @@ type Msg
     | GoAnotherPage
     | ShowMenu
     | GetList (Result Http.Error PaperweightData)
-    | GoDetail Int
+    | GoDetail Int Bool
     | GetFalseData (Result Http.Error MyD.AskDetailData)
+    | ReRegistExercise Int
+    | ProductComplete (Result Http.Error Decoder.Success)
+    | PayConfirm
 
 toSession : Model -> Session
 toSession model =
@@ -168,16 +173,34 @@ subscriptions model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GoDetail product_no ->
+        PayConfirm ->
+            ({model | isActive = not model.isActive}, scrollToTop NoOp)
+        ProductComplete (Ok ok) ->
+            ({model | showDetail = False, isActive = False}, Cmd.batch[Api.showToast (Encode.string "재 구매 되었습니다."), paperweightEncoder model.page model.per_page model.session])
+        ProductComplete (Err err) ->
+            (model, Cmd.none)
+        ReRegistExercise product_no ->
+            let
+                body = Encode.object
+                    [ ("product_no", Encode.int product_no)]
+                        |> Http.jsonBody
+            in
+            
+            (model, Api.post Endpoint.renewWeekExercise (Session.cred model.session) ProductComplete body Decoder.resultD )
+        GoDetail product_no is_buy->
             let
                 idEncoder = Encode.string (String.fromInt product_no)
             in
-            -- if model.check then
-            ({model | videoId = (String.fromInt product_no)}, 
-                Decoder.detailMypaperweight MyD.GetData MyD.DetailData MyD.DetailDataItem MyD.Pairing
-                    |>Api.get GetListData (Endpoint.mypaperweightDetail (String.fromInt product_no)) (Session.cred model.session) )
-            -- else
-            -- (model, Api.saveId idEncoder)
+            if model.check then
+                if is_buy then
+                    ({model | videoId = (String.fromInt product_no), isActive = False}, 
+                        Decoder.detailMypaperweight MyD.GetData MyD.DetailData MyD.DetailDataItem MyD.Pairing
+                            |>Api.get GetListData (Endpoint.mypaperweightDetail (String.fromInt product_no)) (Session.cred model.session) )
+                else
+                   ({model | videoId = (String.fromInt product_no),isActive = False}, Api.get GetFalseData (Endpoint.mypaperweightDetail (String.fromInt product_no)) (Session.cred model.session) (Decoder.myaskDetailData MyD.AskDetailData MyD.AskDetail MyD.AskDetailItem
+                   ) )
+            else
+            (model, Api.saveId idEncoder)
         GetList (Ok ok) ->
             ({model |  getList = ok.data, pagenation = ok.paginate, loading = False}, Cmd.none)
         GetList (Err err) ->
@@ -275,26 +298,6 @@ update msg model =
                 
                     Err _ ->
                        (model, Cmd.none) 
-            
-        -- GetCodeId (code, id ) ->
-        --     let 
-        --         stringInt = String.fromInt (id)
-        --         codeIdEncoder = 
-        --             Encode.object
-        --                 [("code", Encode.string code)
-        --                 , ("id", Encode.string stringInt)]
-        --     in
-        --     if model.check then
-        --     ({model | videoId = stringInt }, 
-        --         Decoder.yfDetailDetail MyD.GetData MyD.DetailData MyD.DetailDataItem MyD.Pairing
-        --             |>Api.get GetListData (Endpoint.scrapDetail code stringInt) (Session.cred model.session) )
-        --     else
-        --     (model, Api.saveId codeIdEncoder )
-        -- -- OnLoad ->
-        --     if model.count >= List.length model.data.data then
-        --     ({model | loading = False}, Cmd.none)
-        --     else
-        --     ({model | count = model.count + 1}, Cmd.none)
         
         NoOp ->
             ( model, Cmd.none )
@@ -302,7 +305,7 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    -- if model.check then
+    if model.check then
             { title = "문진운동 "
             , content = 
                 div [] [
@@ -327,39 +330,40 @@ view model =
                         if model.whatKindOfData then
                         div [class ("myaccountStyle myScrapStyle " ++ (if model.showDetail then "account" else "")) ][
                            selectedItemApp model
+                           , payConfirmLayer model
                         ]
                         else
                         div [class ("myaccountStyle myScrapStyle " ++ (if model.showDetail then "account" else "")) ][
                             
                             MyD.app model BackBtn GoVideo
                         ]
-
+                    
                 ]
             }
-        -- else
-        -- { title = "문진운동 "
-        -- , content = 
-        --     div [  ]
-        --         [
-        --             div [class "mypageHiddenMenu", onClick ShowMenu] []
-        --             , div[][myPageCommonHeader ClickRight ClickLeft GoAnotherPage model.showMenu]
-        --             ,div [class "container"]
-        --             [ commonJustHeader "/image/icon_list.png" "문진운동 ",
-        --             div [ class "yf_yfworkout_search_wrap" ]
-        --             [
-        --                 div [] [
-        --                     div [class "myScrap_mediabox"]
-        --                      (
-        --                     List.map (\x -> listwebDetail x model) model.getList
-        --                     )
-        --                 , pagination 
-        --                     PageBtn
-        --                     model.pagenation
-        --                     model.pageNum
-        --                 ]
-        --             ]
-        --         ]]
-        -- }
+        else
+        { title = "문진운동 "
+        , content = 
+            div [  ]
+                [
+                    div [class "mypageHiddenMenu", onClick ShowMenu] []
+                    , div[][myPageCommonHeader ClickRight ClickLeft GoAnotherPage model.showMenu]
+                    ,div [class "container"]
+                    [ commonJustHeader "/image/icon_list.png" "문진운동 ",
+                    div [ class "yf_yfworkout_search_wrap" ]
+                    [
+                        div [] [
+                            div [class "myScrap_mediabox"]
+                             (
+                            List.map (\x -> listwebDetail x model) model.getList
+                            )
+                        , pagination 
+                            PageBtn
+                            model.pagenation
+                            model.pageNum
+                        ]
+                    ]
+                ]]
+        }
 
 listwebDetail item model = 
    div [] 
@@ -405,7 +409,7 @@ contentsCount count=
  
 
 videoItem item model getlist= 
-    div [ class "mjList_container", onClick (GoDetail getlist.product_no)]
+    div [ class "mjList_container", onClick (GoDetail getlist.product_no getlist.is_buy)]
         [ div [class "mj_wrap"][
                  div [ class "yf_workoutvideo_image" ]
                 [ 
@@ -437,17 +441,17 @@ videoItem item model getlist=
                     ]
                    
                 ] , 
-                -- if model.check then 
-                    div [class "is_buy_m", style "display" (if getlist.is_buy then "none" else "flex"), onClick (GoDetail getlist.product_no)][
+                if model.check then 
+                    div [class "is_buy_m", style "display" (if getlist.is_buy then "none" else "flex"), onClick (GoDetail getlist.product_no getlist.is_buy)][
                     text "기간만료"
                     ]
-                -- else
-                --     div [class "expired_date"] [
-                --     if getlist.is_buy then 
-                --     text ""
-                --     else
-                --     text "기간만료"
-                -- ]
+                else
+                    div [class "expired_date"] [
+                    if getlist.is_buy then 
+                    text ""
+                    else
+                    text "기간만료"
+                ]
                     
             ]
         ]
@@ -455,12 +459,12 @@ videoItem item model getlist=
 
     
 selectedItemApp model = 
-    div []
+    div [id "scrollTop"]
         [
             appHeaderRDetailClick  model.falseData.title "myPageHeader whiteColor" BackBtn "fas fa-times"
             ,
         div [class "paperweightSelectedItem_containerApp"]
-        [
+        [   div [class "centerStyle"][] ,
             div[class "paperweightSelectedItem_first_App"][
             img [src model.falseData.thumbnail ][]
             , div [class "askDetailFirstContainer_app"]
@@ -481,12 +485,32 @@ selectedItemApp model =
                 text model.falseData.description
             ]
         ]
-        , div [class "button is-link freeTrial"][text "1주일 무료 체험"]
+        , div [class "button is-link freeTrial", onClick (ReRegistExercise model.falseData.product_no)][text "1주일 무료 체험"]
             ]
         ]
-        
+         
         
         ]
+       
         
     ]
     
+
+
+payConfirmLayer model =
+    div [ class "layerStyleWarnsec", style "display" ( if model.isActive then "flex" else "none"), id ( if model.isActive then "noScrInput" else "") ] [
+    div [ class "myf_popup" ]
+    [  i [ class "fas fa-cart-arrow-down" , style "font-size" "3rem"]
+        []
+    , h1 [ class "popup_yf_h1", style "font-size" "1rem" ]
+        [ text "확인을 클릭하시면 운동영상이 구매되며, 구매한 시점을 기준으로 유효기간이 연장됩니다."]
+    , p [ class "yf_logoout_butbox" ]
+        [ div [ class "button is-danger logout_danger" 
+        , onClick (ReRegistExercise model.falseData.product_no)
+        ]
+            [ text "확인"]
+        , div [ class "button is-light logout_cencel" , onClick PayConfirm]
+            [ text "취소" ]
+        ]
+    ]
+    ]
