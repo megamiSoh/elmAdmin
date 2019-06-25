@@ -1098,7 +1098,7 @@ paperweightStart model =
                 ]
                 ]
             ]
-            , progress [ class "progress is-large is-info", Attr.max "100" , id "paperWeightProgress"]
+            , progress [ class "progress is-large is-info mj_probar", Attr.max "100" , id "paperWeightProgress"]
                 [ text "60%" ]
             ]
         "paperweightResult" ->

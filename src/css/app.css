@@ -1686,10 +1686,6 @@ margin-top: 2rem;
   min-height: 6rem;
   border-radius: 5px;
 }
-.m_myCalendar_infotitle,.m_myCalendar_textbox
-{
-  /* font-size: 3rem; */
-}
 
 .m_myCalendar_workbox
 {
@@ -3036,4 +3032,14 @@ display: table;
   font-weight: bold;
   display: flex;
   align-items: center;
+}
+
+.m_myCalendar_infotitle
+{
+  margin-right: .5rem;
+}
+
+.m_myCalendar_photo,.m_myCalendar_photo1
+{
+margin: 0 .5rem 0 .5rem; 
 }
