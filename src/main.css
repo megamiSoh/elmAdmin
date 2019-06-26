@@ -6368,11 +6368,13 @@ font-size: .8rem;
 }
 .paperweightSelectedItem_first .mj_title {
   font-weight: bold;
-  font-size: 1.4rem;
+  font-size: 1.2rem;
 }
 .paperweightSelectedItem_first .mj_title_part {
   font-size: 1rem;
   margin-left: 3rem;
+  display: block;
+  text-align: left;
 }
 .paperweightSelectedItem_first .mj_title_duration {
   display: flex;
@@ -6471,6 +6473,7 @@ font-size: .8rem;
   display: flex;
   flex-direction: column;
   margin: 1rem 0;
+  cursor: pointer;
 }
 .makeExerMjBoxWrap_Container{
 display: flex;

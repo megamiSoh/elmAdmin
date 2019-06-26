@@ -1497,8 +1497,10 @@ selectedItemApp model =
             img [src model.askDetail.thumbnail ][]
             , div [class "askDetailFirstContainer_app"]
             [ div [class "askDetailFirstContainer_App_Text"]
-                [ div [class "mj_title"][text model.askDetail.title]
-                , div [class "mj_title_part_app"][text (model.askDetail.exercise_part_name ++ " - " ++ model.askDetail.difficulty_name)
+                [ 
+                --     div [class "mj_title"][text model.askDetail.title]
+                -- , 
+                div [class "mj_title_part_app"][text (model.askDetail.exercise_part_name ++ " - " ++ model.askDetail.difficulty_name)
                 ]
                 , span [class "mj_title_duration"]
                 [ i [ class "fas fa-stopwatch" , style "padding-right" "3px"] []

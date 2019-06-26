@@ -21,7 +21,7 @@ searchResult model scrollEvent detail =
                 [ tr []
                     [ th []
                         [ text "음식이름" ]
-                    , th []
+                    , th [style "min-width" "75px"]
                         [ text "칼로리" ]
                     ]
                 ]
@@ -39,7 +39,7 @@ mealLayout idx item model detail =
     ]
 
 selectedItem selectData delete totalKcal editshow direct=
-    div [ class "settingbox" ]
+    div []
         [ table [ class "table is-fullwidth yf_table" ]
             [ thead []
                 [ tr []
@@ -47,7 +47,7 @@ selectedItem selectData delete totalKcal editshow direct=
                         [ text "이름" ]
                     , th []
                         [ text "칼로리" ]
-                    , th []
+                    , th [style "min-width" "70px", style "text-align" "center"]
                         [text "삭제"]
                     ]
                 ]
@@ -61,7 +61,14 @@ selectedItem selectData delete totalKcal editshow direct=
                         [ text totalKcal ]
                     ]
                 ]
-            , tbody []
+            , if List.isEmpty selectData then
+            tbody [][
+                tr [][
+                    td [style "text-align" "center", style "font-size" "1rem"][text "선택 된 식단이 없습니다."]
+                ]
+            ]
+            else 
+            tbody []
                 (List.map(\x -> selectTableLayout x delete editshow direct ) selectData)
             ]
         ]
@@ -82,7 +89,7 @@ selectTableLayout item delete editshow direct=
         editshow (item.food_name, {kcal = item.one_kcal, one_kcal = item.food_count}, (Just (String.fromInt item.diary_no))
         )
     )] [text item.kcal],
-        td[onClick (delete (String.fromInt item.diary_no))] [
+        td[onClick (delete (String.fromInt item.diary_no)), style "text-align" "center"] [
             i [ class "far fa-trash-alt" ]
                 []
         ]

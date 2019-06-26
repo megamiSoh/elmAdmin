@@ -288,7 +288,7 @@ update msg model =
                 _ ->
                     (model, Cmd.none)
         GetFalseData (Ok ok) ->
-            ({model | falseData = ok.data, showDetail = True , whatKindOfData = True}, Cmd.none)
+            ({model | falseData = ok.data, showDetail = True , loading = False , whatKindOfData = True}, Cmd.none)
         GetFalseData (Err err) ->
             let
                 serverErrors =
@@ -354,12 +354,12 @@ view model =
             , content = 
                 div [] [
                         div [class ("topSearch_container " ++ (if model.showDetail then "fadeContainer" else ""))] [
-                        appHeaderRDetail "문진운동 리스트" "myPageHeader  whiteColor" Route.MyPage "fas fa-angle-left", 
-                        div [class "spinnerBack", style "display" (if model.loading then "flex" else "none" )] [
-                            spinner
-                            ]
-                        , div [class "noResult", style "display" (if List.isEmpty model.getList then "fixed" else "none")] [
-                                text "스크랩한 게시물이 없습니다."
+                        appHeaderRDetail "문진운동 리스트" "myPageHeader  whiteColor" Route.MyPage "fas fa-angle-left"
+                        -- , div [class "spinnerBack", style "display" (if model.loading then "flex" else "none" )] [
+                        --     spinner
+                        --     ]
+                        , div [class "noResult", style "display" (if List.isEmpty model.getList then "flex" else "none")] [
+                                text "문진운동이 없습니다."
                             ]
                         , div [ class "scrollheight" ] 
                             -- [listappDetail model]
@@ -395,7 +395,7 @@ view model =
                     [ commonJustHeader "/image/icon_list.png" "문진운동 ",
                     div [ class "yf_yfworkout_search_wrap" ]
                     [
-                        div [] [
+                        div [ style "display" (if List.isEmpty model.getList then "none" else "flex")] [
                             div [class "myScrap_mediabox"]
                              (
                             List.map (\x -> listwebDetail x model) model.getList
@@ -405,6 +405,9 @@ view model =
                             model.pagenation
                             model.pageNum
                         ]
+                        , div [class "noResult", style "display" (if List.isEmpty model.getList then "flex" else "none")] [
+                                text "문진운동이 없습니다."
+                            ]
                     ]
                 ]]
         }
