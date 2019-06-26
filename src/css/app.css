@@ -51,15 +51,7 @@ a {
   margin: 0 auto;
 }
 
-.m_home_maintext
-{
-  /* font-size: 1.5rem; */
-}
 
-.m_home_subtext
-{
-  /* font-size: 2rem; */
-}
 
 .m_home_menutext
 {
@@ -163,10 +155,6 @@ a {
   margin-top:20px;
 }
 
-.sign_icon{
-  /* font-size: 2rem; */
-  /* margin: 2rem 0 0 1rem; */
-}
 
 .m_signup_yf_box2
 {
@@ -461,10 +449,7 @@ ul.commonHeaderBack li {
   -webkit-overflow-scrolling: touch;
 }
 
-.m_menubox_wrap
-{
-  /* height: 25rem; */
-}
+
 .notification.m_yfwo_menubox1 {
     margin-bottom: 0;
 }
@@ -653,10 +638,6 @@ position: relative;
  margin: 0.3rem .3rem 0 0;
 }
 
-.m_partbox
-{
-  /* margin-left: 10rem; */
-}
 
 /* youtfitdetailpage */
 
@@ -670,14 +651,7 @@ position: relative;
   /* font-size: 1.5rem; */ 
 }
 
-.m_backbtn
-{ 
-  /* height: 128px; */
- /* width: 128px;
- padding: .3rem;
- float: left; */
-  /* font-size: 5rem; */
-}
+
 
 .m_topboxtitle
 {text-align: center;
@@ -786,10 +760,6 @@ margin-left: 2rem;}
    /* font-size: 2rem; */
  }
 
- .m_make_box_title
- {
-   /* margin-top: 3rem; */
- }
 
  .m_make_yf_h2
  {
@@ -856,10 +826,7 @@ margin-left: 2rem;}
   margin-right: 0.3rem;
 }
 
-.m_makeExercise_share
-{
-  /* margin-right: 2rem; */
-}
+
 
 .m_filter_yf_box
 {
@@ -911,10 +878,6 @@ font-size: .9rem;
   /* margin: 0 0 0 1rem; */
 }
 
-.m_filterinput, .m_filtersearch
-{
-  /* font-size: 2.5rem; */
-}
 
 /* .m_filtersearch
 { margin: 0 0 0 6rem;} */
@@ -972,9 +935,7 @@ padding: 10px;
   padding: 10px;
   /* font-size: 3rem; */
 }
-.appheadermakeExer {
-  /* height: 65px; */
-}
+
 /* appbreakTime */
 .m_breaktimetbox,.m_worklistbox
 {
@@ -1019,10 +980,7 @@ padding: 10px;
   width: 50%;
   text-align: left;
 }
-.m_filter_work1,.m_filter_work3,.m_filter_work2
-{
-  /* font-size: 2rem; */
-}
+
 
 .m_filter_work2
 {
@@ -1062,11 +1020,7 @@ padding: 10px;
   text-align: left;
 }
 
-.m_yf_box_top
-{
-  /* padding: 1rem; */
-  /* height: 15rem; */
-}
+
 
 .m_yf_thumbnail
 {
@@ -1090,10 +1044,7 @@ padding: 10px;
   float: left;
 }
 
-.m_yf_titleinput
-{
-  /* font-size: 3rem; */
-}
+
 
 .m_filterstep2_yf_select
 { 
@@ -1139,10 +1090,7 @@ padding: 10px;
 .m_filterstep2_textbox {
   width: 100%;
 }
-.m_filterstep2_yf_listselect .m_filterstep2_videolistbox:first-child .m_upIcon
-{
- /* margin-top: 11.2rem; */
-}
+
 
 .m_filterstep2_yf_listselect .m_filterstep2_videolistbox:last-child .m_upIcon
 {
@@ -1253,10 +1201,7 @@ padding: 10px;
   margin: 2rem 0 2rem 0;
 }
 
-.m_filterstep2_save_btn,.m_filterstep2_del_btn
-{
-  /* font-size: 2.5rem; */
-}
+
 
 .m_filterstep2_save_btn
 {
@@ -1509,10 +1454,6 @@ margin-top: 2rem;
   width: 100%;
 }
 
-.m_account_id
-{
-  /* font-size: 2rem; */
-}
 
 
 .m_mypage_loginbox_info
@@ -1784,16 +1725,7 @@ margin-top: 2rem;}
 
 
 /* The line */
-.m_cbp_tmtimeline:before {
-	/* content: '';
-	position: absolute;
-	top: 0;
-	bottom: 0;
-	width: 10px;
-	background: #019489;
-	left: 20%;
-	margin-left: -10px; */
-}
+
 
 .m_cbp_tmtimeline > li {
   position: relative;
@@ -1911,10 +1843,7 @@ padding-left: .5rem;
 }
 
 
-.m_mypost_btn
-{
-  /* font-size:2rem; */
-}
+
 
 /* info */
 
@@ -1954,10 +1883,7 @@ padding-left: .5rem;
 
 /* myStatistical */
 
-.m_myStatistical_tabs li{
-  /* height: 8rem; */
-  /* font-size: 3rem;  */
-}
+
 
 .tabs.is-toggle .m_myStatistical_yf_active {
 
@@ -2057,10 +1983,7 @@ padding-left: .5rem;
 margin-bottom: 2rem;
 }
 
-.fnqapptitle, .fnqtapbox
-{
-  /* font-size: 3rem; */
-}
+
 
 /* meallayout */
 .m_meal_box
@@ -2185,9 +2108,7 @@ margin: 3rem 0 3rem 0;
 /* Example Media Queries */
 @media screen and (min-width: 321px) {
 
-	.m_cbp_tmtimeline > li .m_cbp_tmtime span:last-child {
-		/* font-size: 1.5em; */
-	}
+
 }
 
 @media screen and (min-width: 321px) {
@@ -2236,9 +2157,7 @@ margin: 3rem 0 3rem 0;
 	}	
 }
 
-.appWrap {
-  /* height: 100vh; */
-}
+
 .appvpic1 {
   width: 100%;
   height: 100%;
@@ -2560,10 +2479,6 @@ font-size: .9rem;
   z-index: 9999;
 }
 
-.m_yf_mypage_setting {
-  /* overflow: hidden; */
-}
-
 .m_breaktimetbox {
   border-right: 1px solid #ccc;
 }
@@ -2805,9 +2720,6 @@ display: flex;
 /* .account_container.fadeContainer {
   height: 
 } */
-.background {
-  /* background-color: #000; */
-}
 
 .m_quantity_btn_wrpa {
   margin: 1rem;
@@ -3021,10 +2933,7 @@ display: table;
   z-index: 999;
   transform: scale(1);
 }
-.faqevent {
-  /* padding: 1rem;
-  background-color: rgba(10, 10, 10, 0.22); */
-}
+
 .faqevent .titleLeft  {
   height: 50px;
   border-bottom:1px solid rgba(6, 6, 6, 0.18);
