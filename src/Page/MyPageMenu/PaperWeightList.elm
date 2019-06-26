@@ -395,7 +395,7 @@ view model =
                     [ commonJustHeader "/image/icon_list.png" "문진운동 ",
                     div [ class "yf_yfworkout_search_wrap" ]
                     [
-                        div [ style "display" (if List.isEmpty model.getList then "none" else "flex")] [
+                        div [ style "display" (if List.isEmpty model.getList then "none" else "block")] [
                             div [class "myScrap_mediabox"]
                              (
                             List.map (\x -> listwebDetail x model) model.getList
