@@ -30,6 +30,7 @@ type alias Model =
     , title : String
     , page : Int
     , per_page : Int
+    , errType : String
     }
 
 type alias FilterCode =
@@ -68,7 +69,8 @@ init session mobile
         , per_page = 20
         , tool = []
         , loading = True
-        , check= mobile}
+        , check= mobile
+        , errType = ""}
         , Cmd.batch
         [ 
          Decoder.levelDecoder FilterCode CodeData
@@ -135,16 +137,22 @@ update msg model =
                         (model, Cmd.none)
         GotSession session ->
             ({model | session = session}
-            , Cmd.batch [
-                (Decoder.levelDecoder FilterCode CodeData)
-                |> Api.get GetPart Endpoint.partFilter (Session.cred session) ,
-                (Decoder.levelDecoder FilterCode CodeData)
-                |> Api.get GetLevel Endpoint.levelFilter (Session.cred session) ,
-                (Decoder.levelDecoder FilterCode CodeData)
-                |> Api.get GetTool Endpoint.toolFilter (Session.cred session) ,
-                (Decoder.levelDecoder FilterCode CodeData)
-                |> Api.get GetExer Endpoint.exerFilter (Session.cred session) 
-            ]
+            , case model.errType of
+                "part" ->
+                    (Decoder.levelDecoder FilterCode CodeData)
+                        |> Api.get GetPart Endpoint.partFilter (Session.cred session)
+                "level" ->
+                    (Decoder.levelDecoder FilterCode CodeData)
+                        |> Api.get GetLevel Endpoint.levelFilter (Session.cred session)
+                "tool" ->
+                    (Decoder.levelDecoder FilterCode CodeData)
+                        |> Api.get GetTool Endpoint.toolFilter (Session.cred session)
+                "exer" ->
+                    (Decoder.levelDecoder FilterCode CodeData)
+                        |> Api.get GetExer Endpoint.exerFilter (Session.cred session) 
+                _ ->
+                    (Decoder.levelDecoder FilterCode CodeData)
+                        |> Api.get GetExer Endpoint.exerFilter (Session.cred session) 
             )
         FilterSaveSuccess str ->
             (model,
@@ -162,23 +170,23 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             
-            (model,(Session.changeInterCeptor (Just serverErrors) model.session))
+            ({model | errType = "part"},(Session.changeInterCeptor (Just serverErrors) model.session))
         GetLevel(Ok ok) ->
             ({model | level = ok.data, loading = False }, Cmd.none)
         GetLevel(Err err) ->
-            (model,Cmd.none)
+            ({model | errType = "level"},Cmd.none)
         GetTool(Ok ok) ->
             ({model | tool = ok.data } , 
             (Decoder.levelDecoder FilterCode CodeData)
             |> Api.get GetLevel Endpoint.levelFilter (Session.cred model.session) )
         GetTool(Err err) ->
-            (model,Cmd.none)
+            ({model | errType = "tool"},Cmd.none)
         GetExer(Ok ok) ->
             ({model | exer = ok.data }, 
             (Decoder.levelDecoder FilterCode CodeData)
             |> Api.get GetTool Endpoint.toolFilter (Session.cred model.session) )
         GetExer(Err err) ->
-            (model,Cmd.none)
+            ({model | errType = "exer"},Cmd.none)
         IsActivePart part ->
             if filterItem part model.isActivePart > 0 then
                 ({model | isActivePart = leastItem part model.isActivePart} , Cmd.none)

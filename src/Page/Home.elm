@@ -15,13 +15,12 @@ import Api.Endpoint as Endpoint
 import Api.Decoder as Decoder
 import Http as Http
 
-type alias Model 
-    = {
-        session : Session,
-        title : String
-         , check : Bool
-         , image : String
-         , splash : Bool
+type alias Model = 
+    { session : Session
+    , title : String
+    , check : Bool
+    , image : String
+    , splash : Bool
     }
 
 

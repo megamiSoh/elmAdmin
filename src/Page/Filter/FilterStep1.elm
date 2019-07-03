@@ -19,31 +19,30 @@ import Swiper
 import Browser.Dom as Dom
 import Task
 
-type alias Model 
-    = {
-        session : Session
-        , workOut : List FilterData
-        , addItem : List FilterData
-        , break : FilterData
-        , next : Bool
-        , what : String
-        , loading : Bool
-        , swipingState : Swiper.SwipingState
-        , swipeCode : String
-        , filterData : List FilterData
-        , check : Bool
-        , getFilter : GetFilter
-        , menuOpen : Bool
-        , stopEvent :Bool
-        , menuleft :Bool
-        , resultCount : String
-        , screenInfo : ScreenInfo
-        , takeList : Int
-        , infiniteLoading : Bool
-        , offsetH : Int
-        , page : Int
-        , per_page : Int
-        , title : String
+type alias Model = 
+    { session : Session
+    , workOut : List FilterData
+    , addItem : List FilterData
+    , break : FilterData
+    , next : Bool
+    , what : String
+    , loading : Bool
+    , swipingState : Swiper.SwipingState
+    , swipeCode : String
+    , filterData : List FilterData
+    , check : Bool
+    , getFilter : GetFilter
+    , menuOpen : Bool
+    , stopEvent :Bool
+    , menuleft :Bool
+    , resultCount : String
+    , screenInfo : ScreenInfo
+    , takeList : Int
+    , infiniteLoading : Bool
+    , offsetH : Int
+    , page : Int
+    , per_page : Int
+    , title : String
     }
 type alias FilterResult = 
     { data : List FilterData

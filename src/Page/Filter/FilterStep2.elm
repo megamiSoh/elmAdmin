@@ -21,29 +21,28 @@ import Markdown.Config exposing (HtmlOption(..),  defaultSanitizeOptions)
 import Markdown.Inline as Inline
 import Page.Detail.Editorwirte exposing(..)
 
-type alias Model 
-    = {
-        session : Session,
-        addData : List FilterData,
-        what: String,
-        style: String,
-        setData : Int,
-        checkDevice : String
-        , check : Bool
-        , title : String
-        , onDemandText : String
-        , options : Markdown.Config.Options
-        , selectedTab : EditorTab
-        , selectedPreviewTab : PreviewTab
-        , showToC : Bool
-        , validation : String
-        , validation2 : String
-        , errTitle : String
-        , loading : Bool
-        , cannotSave : String
-        , saveItem : List Item
-        , sbuttonHidden : String
-        , workoutDescription : String
+type alias Model = 
+    { session : Session
+    , addData : List FilterData
+    , what: String
+    , style: String
+    , setData : Int
+    , checkDevice : String
+    , check : Bool
+    , title : String
+    , onDemandText : String
+    , options : Markdown.Config.Options
+    , selectedTab : EditorTab
+    , selectedPreviewTab : PreviewTab
+    , showToC : Bool
+    , validation : String
+    , validation2 : String
+    , errTitle : String
+    , loading : Bool
+    , cannotSave : String
+    , saveItem : List Item
+    , sbuttonHidden : String
+    , workoutDescription : String
     }
 type EditorTab
     = Editor
@@ -233,7 +232,7 @@ update msg model =
             ({model | addData = result, style = ""}, Cmd.none)
         GotSession session ->
             ({model | session = session}
-            , registVideo model model.saveItem model.session
+            , registVideo model model.saveItem session
             )
         SessionCheck check ->
             let

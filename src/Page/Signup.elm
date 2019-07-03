@@ -57,11 +57,6 @@ signupEncoder model session =
         wrap = 
             Encode.object
                 [("user", datalist model)]
-        -- datalist = 
-        --     Encode.object
-        --         [ ("username", Encode.string model.mail)
-        --         , ("password" , Encode.string model.password)
-        --         , ("password_confirmation", Encode.string model.repwd)]
         body = 
             wrap
                 |> Http.jsonBody

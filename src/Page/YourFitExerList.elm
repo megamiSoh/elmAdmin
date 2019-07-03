@@ -43,6 +43,7 @@ type alias Model  =
     , videoId : String
     , listData : YfD.DetailData
     , loading : Bool
+    , errType : String
     }
 
 
@@ -78,9 +79,9 @@ type alias ScreenInfo =
     { scrollHeight : Int
     , scrollTop : Int
     , offsetHeight : Int}
--- levelDecoder
 
-detailEncoder part level session page per_page= 
+detailEncoder: String -> List String -> Session -> Int -> Int -> Cmd Msg
+detailEncoder part level session page per_page = 
     let
         list = 
             Encode.object
@@ -96,7 +97,7 @@ detailEncoder part level session page per_page=
     (Decoder.yourfitDetailListData ListData DetailData Paginate)
     |> Api.post Endpoint.yfDetail (Session.cred session) GetList body 
 
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+init : Session -> Bool -> (Model, Cmd Msg)
 init session mobile =
      (
         { session = session
@@ -142,6 +143,7 @@ init session mobile =
         , listyourfitData = []
         , levelData = []
         , partDataName = []
+        , errType = ""
         },
          Cmd.batch
             [ Decoder.levelDecoder LevelData Level
@@ -152,9 +154,12 @@ init session mobile =
             , mydata session
             ]
     )
+mydata: Session -> Cmd Msg
 mydata session = 
     Decoder.sessionCheckMydata
         |> Api.get MyInfoData Endpoint.myInfo (Session.cred session)
+
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
@@ -192,12 +197,12 @@ toCheck : Model -> Bool
 toCheck model =
     model.check
 
+scrollEvent: (ScreenInfo -> msg) -> Attribute msg
+scrollEvent msgscroll = 
+    on "scroll" (Decode.map msgscroll scrollInfoDecoder)
 
-scrollEvent msg = 
-    on "scroll" (Decode.map msg scrollInfoDecoder)
 
-
-
+scrollInfoDecoder : Decoder ScreenInfo
 scrollInfoDecoder =
     Decode.map3 ScreenInfo
         (Decode.at [ "target", "scrollHeight" ] Decode.int)
@@ -236,10 +241,11 @@ update msg model =
                 cannotScrap = Encode.string "이미 스크랩 되었습니다."
             in
             if error == "401" then
-                ({model | need2login = True, detailShow = False}, 
+                ({model | need2login = True, detailShow = False, errType = "scrap"}, 
                 Cmd.batch [
                     Api.hideFooter () 
                     , scrollToTop NoOp
+                    , (Session.changeInterCeptor (Just error ) model.session)
                 ])
             else
                 (model, Api.showToast cannotScrap)
@@ -293,12 +299,21 @@ update msg model =
                 serverErrors =
                     Api.decodeErrors err
             in  
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            if serverErrors == "401" then
+            ({model | errType = "myInfo"}, (Session.changeInterCeptor (Just serverErrors) model.session))
+            else
+            (model, Cmd.none)
         GotSession session ->
             ({model | session = session}
-            , Cmd.batch[mydata session
-            , detailEncoder model.exercise_part_code model.difficulty_code model.session model.page model.per_page
-             ]
+            , case model.errType of
+                "scrap" ->
+                    mydata session
+            
+                "myInfo" ->
+                    Decoder.resultD
+                    |> Api.get ScrapComplete (Endpoint.scrap model.videoId)(Session.cred session)
+                _ ->
+                    mydata session
             )
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
                 (model, Cmd.none)
@@ -365,7 +380,7 @@ update msg model =
                 else
                 ( {model | isActive = level}, detailEncoder model.exercise_part_code [level] model.session 1 model.per_page )
 
-
+findFilterName: Model -> Maybe YfE.ListData
 findFilterName model=
     List.head (
         List.filter (\x -> 
@@ -466,7 +481,7 @@ view model =
                 , content = div [class "spinnerBackWeb"] [spinner]
                 }
                 
-    
+app: Model -> Html Msg
 app model =    
     div ([ class "container" ] )
     [    
@@ -478,7 +493,7 @@ app model =
         ]
                                             
     ]
-
+nocontentsapp : Model -> Html Msg
 nocontentsapp model =    
     div ([ class "container" ] ++ [style "max-height" "100%"])
     [  div [class "heightFix"] [
@@ -488,7 +503,7 @@ nocontentsapp model =
             text "검색결과가 없습니다."
         ]                       
     ]
-
+tapbox : Model -> Html Msg
 tapbox model =
     div [ class "yf_tapbox" ]
         [ div [ class "tabs is-toggle is-fullwidth is-large" ]
@@ -508,7 +523,7 @@ tapbox model =
                 )
             ]
         ]
-
+apptapbox: Model -> Html Msg
 apptapbox model =    
     div [ class "m_to_yourfitListDetail" ]
                  (
@@ -526,7 +541,7 @@ apptapbox model =
                         ) model.levelData
                 )
             
-
+goBtnBox: Msg -> Html Msg
 goBtnBox backPage = 
     div [ class "searchbox_footer" ]
         [ div [ class "yf_backbtm" ]
@@ -534,7 +549,7 @@ goBtnBox backPage =
                 [ text "뒤로" ]
             ]
         ]
-        
+contentsLayout: DetailData -> Html Msg  
 contentsLayout item = 
     div [ class "column is-multiline videoboxwrap" , onClick (DetailGo item.id)]
         [ div [ class "video_image" ]
@@ -556,7 +571,7 @@ contentsLayout item =
         , div [ class "levelbox" ]
             [ text item.difficulty_name ]
         ]
-
+contentsLayout2: Int -> DetailData -> Html Msg
 contentsLayout2 idx item = 
     div [ class "column is-multiline m_videoboxwrap" , onClick (DetailGo item.id)]
         [ div [ class "m_work_videobox" ]

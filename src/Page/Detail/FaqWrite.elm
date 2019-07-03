@@ -14,13 +14,12 @@ import Http as Http
 import Api.Endpoint as Endpoint
 import Api.Decoder as Decoder
 
-type alias Model 
-    = {
-        session : Session
-        , checkDevice : String
-        , check : Bool
-        , title : String
-        , content : String
+type alias Model =
+    { session : Session
+    , checkDevice : String
+    , check : Bool
+    , title : String
+    , content : String
     }
 
 init : Session -> Bool ->(Model, Cmd Msg)
@@ -86,7 +85,7 @@ update msg model =
         ClickLeft ->
             (model , Api.scrollLeft ())
         GotSession session ->
-            ({model | session = session },faqEncode model.title model.content model.session RegistSuccess)
+            ({model | session = session },faqEncode model.title model.content session RegistSuccess)
         GoBack ->
             (model, Route.pushUrl (Session.navKey model.session) Route.C)
         GoRegist ->

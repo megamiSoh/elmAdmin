@@ -18,23 +18,23 @@ import Http as Http
 import Api.Endpoint as Endpoint
 import Page.Edit.MakeExerEdit as Me
 
-type alias Model 
-    = {
-        session : Session,
-        addData : List FilterData,
-        what: String,
-        style: String,
-        setData : Int,
-        checkDevice : String
-        , check : Bool
-        , title : String
-        , validation : String
-        , errTitle : String
-        , loading : Bool
-        , cannotSave : String
-        , saveItem : List Item
-        , videoId : String
-        , description : String
+type alias Model = 
+    { session : Session
+    , addData : List FilterData
+    , what: String
+    , style: String
+    , setData : Int
+    , checkDevice : String
+    , check : Bool
+    , title : String
+    , validation : String
+    , errTitle : String
+    , loading : Bool
+    , cannotSave : String
+    , saveItem : List Item
+    , videoId : String
+    , description : String
+    , errType : String
     }
 
 type alias FilterData =
@@ -145,6 +145,7 @@ init session mobile
         , errTitle = ""
         , loading = True
         , description = ""
+        , errType = ""
         } 
         ,Cmd.batch[Api.sendData ()
         , Api.getId ()]
@@ -215,7 +216,7 @@ update msg model =
                 serverErrors = 
                     Api.decodeErrors err  
             in
-             (model,(Session.changeInterCeptor (Just serverErrors) model.session))
+             ({model | errType = "getlist"},(Session.changeInterCeptor (Just serverErrors) model.session))
         GetId id ->
             let
                 result = Decode.decodeValue Decode.string id
@@ -230,7 +231,14 @@ update msg model =
                     (model,Cmd.none)
         GotSession session ->
             ({model | session = session}
-            , registVideo model model.saveItem model.session
+            , case model.errType of
+                "getlist" ->
+                    Decoder.makeEdit Me.DetailData Me.DetailItem Me.ExItem Me.Pair
+                    |> Api.get GetList (Endpoint.makeDetail model.videoId) (Session.cred session)
+                "regist" ->
+                    registVideo model model.saveItem session
+                _ ->
+                    registVideo model model.saveItem session
             )
         SessionCheck check ->
             let
@@ -267,7 +275,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session)) 
+            ({model | errType = "regist"}, (Session.changeInterCeptor (Just serverErrors) model.session)) 
         SwitchItem idx ->
             let 
                 before = 

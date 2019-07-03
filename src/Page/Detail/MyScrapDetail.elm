@@ -28,6 +28,7 @@ type alias Model =
     , need2login : Bool
     , zindex : String
     , videoId : CodeId
+    , errType : String
     }
 -- Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
 type alias GetData = 
@@ -87,6 +88,7 @@ init session mobile
             , nickname = Nothing
             , thumbnail = ""
             , description = Nothing}
+        , errType = ""
         }
         , Api.getId ()
     )
@@ -140,6 +142,12 @@ update msg model =
         VideoRecordComplete (Ok ok) ->
             (model, Cmd.none)
         VideoRecordComplete (Err err) ->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            ({model | errType = "record"}, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
             (model, Cmd.none)
         VideoEnd complete ->
             let
@@ -166,8 +174,15 @@ update msg model =
             ({model | zindex = "zindex"}, Api.videoData pList)
         GotSession session ->
             ({model | session = session},
-            Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
-            |> Api.get GetListData (Endpoint.scrapDetail model.videoId.code model.videoId.id ) (Session.cred session) 
+                case model.errType of
+                    "record" ->
+                        Api.get VideoRecordComplete  (Endpoint.videoCompleteRecord model.videoId.id)  (Session.cred session) Decoder.resultD
+                    "getlist" ->
+                        Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
+                        |> Api.get GetListData (Endpoint.scrapDetail model.videoId.code model.videoId.id ) (Session.cred session)
+                    _ ->
+                        Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
+                        |> Api.get GetListData (Endpoint.scrapDetail model.videoId.code model.videoId.id ) (Session.cred session) 
             )
         BackDetail ->
             ({model | need2login = False}, 
@@ -196,7 +211,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "getlist"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         Loading success ->

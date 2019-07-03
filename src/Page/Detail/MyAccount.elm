@@ -19,35 +19,34 @@ import File as Files
 import Task
 import Page.MyPageMenu.MyPageInfoLayout exposing(..)
 
-type alias Model 
-    = {
-        session : Session
-        , check : Bool
-        , mydata : MyData
-        , currentPage : String
-        , nickname : String
-        , sex : String
-        , weight : String
-        , goal_weight : String
-        , height : String
-        , birthday : String
-        , is_male: Bool
-        , notmatchPwd : String
-        , oldpwd : String
-        , newpwd : String
-        , pwd : String
-        , deleteAuth : String
-        , showbottomtoast : String  
-        , profileImg : List Files.File
-        , cannotChange : String
-        , profileFileName : Maybe String
-        , preview : List String
-        , show : String
-        , deleteOrNot : String
-        , canNotUpdateField : String
-        , showDetail : String
-        , protain : Protain
-        }
+type alias Model = 
+    { session : Session
+    , check : Bool
+    , mydata : MyData
+    , currentPage : String
+    , nickname : String
+    , sex : String
+    , weight : String
+    , goal_weight : String
+    , height : String
+    , birthday : String
+    , is_male: Bool
+    , notmatchPwd : String
+    , oldpwd : String
+    , newpwd : String
+    , pwd : String
+    , deleteAuth : String
+    , showbottomtoast : String  
+    , profileImg : List Files.File
+    , cannotChange : String
+    , profileFileName : Maybe String
+    , preview : List String
+    , show : String
+    , deleteOrNot : String
+    , canNotUpdateField : String
+    , showDetail : String
+    , protain : Protain
+    }
 
 type alias BodyData = 
     {data : BodyInfoData }
@@ -130,7 +129,8 @@ init session mobile
                 , nickname = Nothing
                 , username = ""
                 , profile = Nothing}
-             }}
+             }
+        }
         ,Cmd.batch [
         Decoder.dataWRap My.DataWrap MyData UserData
              |> Api.get MyInfoData Endpoint.myInfo (Session.cred session) 
@@ -294,7 +294,7 @@ update msg model =
                     Api.decodeErrors err
             in  
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            ({model | deleteAuth = "profileChange" }, (Session.changeInterCeptor (Just serverErrors) model.session))
             else
             ({model | currentPage = "", showbottomtoast = "showbottomToast  lastShowToast"}, Api.showToast (Encode.string "프로필을 변경할 수 없습니다."))
         ResetComplete (Ok ok) ->
@@ -310,7 +310,7 @@ update msg model =
                         Api.decodeErrors err
             in  
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            ({model | deleteAuth = "resetImg"}, (Session.changeInterCeptor (Just serverErrors) model.session))
             else
             ({model | showbottomtoast = "showbottomToast  lastShowToast"}, Api.showToast (Encode.string "기본 이미지를 변경할 수 없습니다."))
         ResetProfileImg ->
@@ -323,17 +323,27 @@ update msg model =
             else
             ({model | showbottomtoast = "showbottomToast  lastShowToast"}, Cmd.none)
         GotSession session ->
-            if model.deleteAuth == "pwd" then
-            update ChangePwd {model | session = session}
-            else if model.deleteAuth == "bodyInfo" then
-            update SaveBody {model | session = session}
-            else if model.deleteAuth == "accountDelete" then
-            update (AccountDelete model.deleteOrNot) {model | session =session}
-            else if model.deleteAuth == "nick" then
-            update ChangeGo {model | session =session}
-            else
-            ({model | session = session},
-            Cmd.none)
+            case model.deleteAuth of
+                "pwd" ->
+                    update ChangePwd {model | session = session}
+                "bodyInfo" ->
+                    update SaveBody {model | session = session}
+                "accountDelete" ->
+                    update (AccountDelete model.deleteOrNot) {model | session =session}
+                "nick" ->
+                    update ChangeGo {model | session =session}
+                "resetImg" ->
+                    update ResetProfileImg {model | session = session}
+                "profileChange" ->
+                    update ChangeProfile {model | session = session}
+                "save" ->
+                    ({model | session = session }, saveEncode model)
+                "myInfo" ->
+                    ({model | session = session} , 
+                    Decoder.dataWRap My.DataWrap MyData UserData
+                        |> Api.get MyInfoData Endpoint.myInfo (Session.cred session) )
+                _ ->
+                    ({model | session = session},Cmd.none)
         PwdComplete (Ok ok) ->
             let
                 textEncode = Encode.string "변경되었습니다."
@@ -389,7 +399,7 @@ update msg model =
                 serverErrors =
                     Api.decodeErrors err
             in  
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            ({model | deleteAuth = "save"}, (Session.changeInterCeptor (Just serverErrors) model.session))
         SaveBody ->
             if model.weight == "0" || model.goal_weight == "0" || model.height == "0" || model.birthday == "" || model.weight == "" || model.goal_weight == "" || model.height == "" then
             ({model | canNotUpdateField = "항목을 정확히 입력 해 주세요."}, Cmd.none)
@@ -526,7 +536,7 @@ update msg model =
                 serverErrors =
                     Api.decodeErrors err
             in  
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            ({model | deleteAuth = "myInfo"}, (Session.changeInterCeptor (Just serverErrors) model.session))
         BackBtn ->
             ( model, 
             Route.pushUrl (Session.navKey model.session) Route.MyPage 

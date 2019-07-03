@@ -39,54 +39,53 @@ import LineChart.Axis.Ticks as Ticks
 import LineChart.Axis.Tick as Tick
 import LineChart.Axis.Title as Title
 
-type alias Model 
-    = {
-        session : Session,
-        activeTab : String,
-        checkDevice : String
-        , check : Bool
-        , statistics : List  Statistical
-        , maxTime : Float
-        , minTime : Float
-        , weightData : List Float
-        , hovering : Maybe Point
-        , barChartForm : List Info
-        , date : String
-        , hover : String
-        , dateList : List String
-        , todayWeight : Float
-        , exerciseChartForm : List String
-        , exerciseData : List Float
-        , maxTimeString : String
-        , calData : List String
-        , maxCal : Float
-        , minCal : Float
-        , maxCalString : String
-        , calFloatData : List Float
-        , hovered : Maybe Info
-        , dateToInt : List Int
-        , monthExerLine : List Info
-        , monthCalLine : List Info
-        , weightBarChart : List Float
-        , weightBarChartString : List String
-        , maxWeight : Float
-        , minWeight : Float
-        , showInfo : Bool
-        , getWeightInfo : String
-        , getWeightInfoDate : String
-        , getExerciseInfo: String
-        , getExerciseInfoDate : String
-        , getCalInfo : String
-        , getCalInfoDate : String
-        , selectedChart : String
-        , currentDay : Date
-        , currentMonth : String
-        , today : String
-        , hoverWeight : Maybe Info
-        , hoverExercise : Maybe Info
-        , hoverCal : Maybe Info
-        , monthExerUnit : 
-            List UnitMonthExer
+type alias Model = 
+    { session : Session
+    , activeTab : String
+    , checkDevice : String
+    , check : Bool
+    , statistics : List  Statistical
+    , maxTime : Float
+    , minTime : Float
+    , weightData : List Float
+    , hovering : Maybe Point
+    , barChartForm : List Info
+    , date : String
+    , hover : String
+    , dateList : List String
+    , todayWeight : Float
+    , exerciseChartForm : List String
+    , exerciseData : List Float
+    , maxTimeString : String
+    , calData : List String
+    , maxCal : Float
+    , minCal : Float
+    , maxCalString : String
+    , calFloatData : List Float
+    , hovered : Maybe Info
+    , dateToInt : List Int
+    , monthExerLine : List Info
+    , monthCalLine : List Info
+    , weightBarChart : List Float
+    , weightBarChartString : List String
+    , maxWeight : Float
+    , minWeight : Float
+    , showInfo : Bool
+    , getWeightInfo : String
+    , getWeightInfoDate : String
+    , getExerciseInfo: String
+    , getExerciseInfoDate : String
+    , getCalInfo : String
+    , getCalInfoDate : String
+    , selectedChart : String
+    , currentDay : Date
+    , currentMonth : String
+    , today : String
+    , hoverWeight : Maybe Info
+    , hoverExercise : Maybe Info
+    , hoverCal : Maybe Info
+    , monthExerUnit : 
+        List UnitMonthExer
     }
 
 type alias UnitMonthExer =
@@ -217,12 +216,12 @@ update msg model =
             ({model | session = session}, 
             case model.activeTab of
                 "weekly" ->
-                    weekApi model.session
+                    weekApi session
             
                 "monthly" ->
-                    monthApi model.session model.today
+                    monthApi session model.today
                 _ ->
-                     weekApi model.session
+                     weekApi session
                     )
         ChangeDate when ->
             let

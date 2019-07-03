@@ -54,6 +54,8 @@ type alias Model =
     , btnDisabled : Bool
     , scrHeight : Float
     , scrCount : Int
+    , errType : String
+    , deleteId : String
     }
 
 type alias Food = 
@@ -232,6 +234,8 @@ init session mobile = (
             , total_count = 0
             , user_id = 0 }
         }
+    , errType = ""
+    , deleteId = ""
     }
     , Cmd.batch [ Api.getKey ()
     , Date.today |> Task.perform ReceiveDate]
@@ -320,7 +324,20 @@ update msg model =
             (model, Cmd.batch[foodEncode model.page model.per_page model.searchFoodName model.session GetFoodData
             , (scrollToTop NoOp)])
         GotSession session ->
-            ({model | session = session}, dayKindOfMealEncode model.meal_page model.meal_per_page model.session model.key model.date )
+            ({model | session = session}, 
+             case model.errType of
+                "delete" ->
+                     Api.get MealDeleteComplete (Endpoint.mealDelete model.date model.deleteId)(Session.cred session) Decoder.resultD
+                "getmeal" ->
+                     dayKindOfMealEncode model.meal_page model.meal_per_page session model.key model.date
+                "regist" ->
+                    mealRegistInfo model.mealRegistInfo session
+                "getFood" ->
+                    foodEncode model.page model.per_page model.searchFoodName session GetFoodData
+                "addFood" ->
+                    foodEncode (model.page) model.per_page model.searchFoodName session AddFoodData
+                _ ->
+                    dayKindOfMealEncode model.meal_page model.meal_per_page session model.key model.date )
         GoEdit is_direct ->
             let
                 old = model.mealRegistInfo
@@ -357,7 +374,7 @@ update msg model =
                     , kcal = justToFloat model.directKcal
                     , is_direct = True}
             in
-            (model, mealRegistInfo result model.session)
+            ({model |mealRegistInfo = result}, mealRegistInfo result model.session)
         DirectRegistInput category contents ->
             case category of
                 "food" ->
@@ -386,11 +403,11 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "delete"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         DeleteItem id ->
-            (model, Api.get MealDeleteComplete (Endpoint.mealDelete model.date id)(Session.cred model.session) Decoder.resultD)
+            ({model | deleteId = id}, Api.get MealDeleteComplete (Endpoint.mealDelete model.date id)(Session.cred model.session) Decoder.resultD)
         ShowRegistList ->
             ({model | showList = not model.showList}, Cmd.none)
         GetMealData (Ok ok) ->
@@ -404,7 +421,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "getmeal"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         ReceiveDate today ->
@@ -417,7 +434,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "regist"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         GoRegist ->
@@ -432,7 +449,7 @@ update msg model =
                     , food_count = model.foodQuantity
                     , is_direct = False}
             in
-            ({model | active = "", btnDisabled = True}, Cmd.batch[mealRegistInfo result model.session
+            ({model | active = "", btnDisabled = True, mealRegistInfo = result}, Cmd.batch[mealRegistInfo result model.session
             ])
         PlusOrMinus what ->
             -- case String.toFloat model.foodQuantityString of
@@ -518,7 +535,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "getFood"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         AddFoodData (Ok ok) ->
@@ -528,7 +545,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "addFood"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         SaveKey key ->

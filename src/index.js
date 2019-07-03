@@ -33,7 +33,6 @@ var flags =
             executed = true;
             alert ("로그아웃되었습니다.")
             location.replace("/")
-            // location.replace("/");
         }
     };
 })();
@@ -42,58 +41,8 @@ var flags =
 
 var app = Elm.Main.init({
   node: document.getElementById('root'),
-  flags : flags,
-  // mobileCheck : mobileCheck
-  
+  flags : flags
 });
-
-
-
-setInterval(async function() {
-  if (localStorage.getItem ("refresh") ==  undefined && localStorage.getItem ("token") !== null && localStorage.getItem("token") !== "undefined")
-    {
-      var fetchSuccess = function () {
-        var parse = JSON.parse(localStorage.getItem("token"))
-        var myHeaders =  new Headers({
-          "Content-Type": "application/json",
-          "authorization": ("bearer " + parse.token)
-        });
-        var myInit = 
-          { method: 'GET',
-          headers: myHeaders,
-          mode: 'cors',
-          cache: 'default' };
-          fetch(url + 'auth/front/refresh',myInit)
-          .then(response => {
-            if(response.status == 401) {
-              localStorage.removeItem("token")
-              localStorage.removeItem("refresh")
-              return location.replace("/")
-            } else  {
-            return  response.json()}
-          })
-          .then(data => {
-            parse = data.token
-            var refresh = JSON.stringify(data)
-            localStorage.setItem ("refresh", refresh)
-          })
-          .catch(error => 
-          console.log(error)
-          
-            )
-        }
-        if(localStorage.getItem("refresh") == null) {
-          console.log(3)
-          return await fetchSuccess();
-        } else {
-        }
-      
-        
-    } else {
-      return;
-    }
-}, 10000)
-
 
 
 app.ports.sendData.subscribe(function () {
@@ -207,60 +156,97 @@ app.ports.storeCache.subscribe(function(token) {
 var t = JSON.stringify(token)
 if (token === null) {
   localStorage.removeItem("token")
-  localStorage.removeItem ("refresh")
+  localStorage.removeItem("refresh")
   location.replace("/")
     
 } else {
   localStorage.setItem("token", t)
+  setTimeout(() => {
+    refreshFetch ()
+  }, 1000);
 }
+
+
 app.ports.onStoreChange.send(token);
 
 });
 
 
-app.ports.secRefreshFetch.subscribe(function() {
-  var retoken = localStorage.getItem ("refresh")
-  if (retoken ==undefined) {
-    localStorage.removeItem("token")
-    location.replace("/")
-  }    
-  var freshParse = JSON.parse(retoken)
-    var refreshTokenHeader =  new Headers({
+
+function refreshFetch () {
+  let token = localStorage.getItem("token")
+  var freshParse = JSON.parse(token)
+  var refreshTokenHeader =  new Headers({
     "Content-Type": "application/json",
     "authorization": ("bearer " + freshParse.token)
   });
 
 var tokenInit = 
-  { method: 'GET',
-  headers: refreshTokenHeader,
-  mode: 'cors',
-  cache: 'default' };
+{ method: 'GET',
+headers: refreshTokenHeader,
+mode: 'cors',
+cache: 'default' };
 
-  fetch(url + 'auth/front/refresh',tokenInit)
-    .then(response => {
-      if(response.status == 401) {
-        localStorage.removeItem("token")
-        localStorage.removeItem("refresh")
-        something();
-        return location.replace("/")
-      } else {
-      return  response.json()
-    }
-    })
-    .then(data => {
-      var token = JSON.stringify(data)
-      localStorage.setItem ("token", token)
-      app.ports.onStoreChange.send(data); 
-      app.ports.onSucceesSession.send("complete")
+fetch(url + 'auth/front/refresh',tokenInit)
+  .then(response => {
+    if(response.status == 401) {
+      localStorage.removeItem("token")
       localStorage.removeItem("refresh")
-    
-    })
-    
-})
+      something();
+      return location.replace("/")
+    } else {
+    return  response.json()
+  }
+  })
+  .then(data => {
+    var token = JSON.stringify(data)
+    localStorage.setItem("refresh", token)
+  
+  })
+}
 
 app.ports.refreshFetchData.subscribe(function() {
-  // not yet
+    if (new Boolean (localStorage.getItem("refresh")) == true){
+    let retoken =  localStorage.getItem ("refresh")
+      let freshParse = JSON.parse(retoken)
+        let refreshTokenHeader =  new Headers({
+        "Content-Type": "application/json",
+        "authorization": ("bearer " + freshParse.token)
+      });
+
+    let tokenInit = 
+      { method: 'GET',
+      headers: refreshTokenHeader,
+      mode: 'cors',
+      cache: 'default' };
+
+      fetch(url + 'auth/front/token',tokenInit)
+        .then(response => {
+          if(response.status == 401) {
+            localStorage.removeItem("token")
+            localStorage.removeItem("refresh")
+            something();
+            return location.replace("/")
+          } else {
+          return  response.json()
+        }
+        })
+        .then(data => {
+          let token = JSON.stringify(data)
+          localStorage.setItem ("token", token)
+          app.ports.onStoreChange.send(data); 
+          app.ports.onSucceesSession.send("complete")
+          refreshFetch ();
+        
+        })
+      }
+      else {
+        return;
+      }
 })
+
+
+
 
 app.ports.toJs.subscribe(function(data) {
   console.log(data)
@@ -353,12 +339,6 @@ app.ports.showToast.subscribe(function (text) {
     setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
     return false;
 })
-
-// app.ports.blur.subscribe(function() {
-//   var id = document.getElementById("keyboardBlur")
-//   id.blur();
-
-// })
 
 app.ports.getscrollHeight.subscribe(function(data) {
   var heightValue = document.documentElement.scrollTop
@@ -467,11 +447,12 @@ if (checkDisplay.className == "logoutShow")  {
     }
 }
 })
-// window.onscroll = function(ev) {
-//   if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
-//       alert("you're at the bottom of the page");
-//   }
-// };
+
+app.ports.valueReset.subscribe(function (id) {
+  alert(document.getElementById(id +"after"))
+  // document.getElementById(id +"before").value = ""
+  // document.getElementById(id +"after").value = ""
+})
 
 
 

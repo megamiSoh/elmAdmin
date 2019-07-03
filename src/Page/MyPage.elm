@@ -308,7 +308,7 @@ update msg model =
                     Api.decodeErrors err
             in  
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            ({model | deleteAuth = "reset"}, (Session.changeInterCeptor (Just serverErrors) model.session))
             else
             (model, Api.showToast (E.string "기본 이미지를 변경할 수 없습니다."))
         ResetProfileImg ->
@@ -328,7 +328,7 @@ update msg model =
                         Api.decodeErrors err
             in  
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            ({model | deleteAuth = "change"}, (Session.changeInterCeptor (Just serverErrors) model.session))
             else
             (model, Api.showToast (E.string "이미지를 변경할 수 없습니다."))
         GoProfileImage ->
@@ -379,6 +379,13 @@ update msg model =
             |> Api.get BodyInfoComplete Endpoint.getBodyInfo( Session.cred model.session) 
             ])
         SaveComplete (Err err)->
+            let
+                    serverErrors =
+                        Api.decodeErrors err
+            in  
+            if serverErrors == "401" then
+            ({model | deleteAuth = "save"}, (Session.changeInterCeptor (Just serverErrors) model.session))
+            else
             (model, Cmd.none)
         IsMale str ->
             ({model | is_male = str}, Cmd.none)
@@ -394,7 +401,7 @@ update msg model =
                 serverErrors =
                     Api.decodeErrors err
             in  
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            ({model | deleteAuth = "bodyInfo"}, (Session.changeInterCeptor (Just serverErrors) model.session))
         BodyRecordsInput category str ->
             let 
                 split = String.split "." str
@@ -481,7 +488,7 @@ update msg model =
                     Api.decodeErrors err    
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            ({model | deleteAuth = "delete"}, (Session.changeInterCeptor (Just serverErrors) model.session))
             else
             ({model | deleteAuth = "delete"},
             Cmd.batch [
@@ -544,7 +551,7 @@ update msg model =
                 serverError = Api.decodeErrors err
             in
             
-            (model, (Session.changeInterCeptor (Just serverError) model.session))
+            ({model | deleteAuth = "myInfo"}, (Session.changeInterCeptor (Just serverError) model.session))
         ClickRight ->
             ( model, Api.scrollRight () )
         ClickLeft ->
@@ -558,17 +565,30 @@ update msg model =
             else
             ({model | selecTab = tab} , Cmd.none)
         GotSession session ->
-            if model.deleteAuth =="delete" then
-            update (AccountDelete model.accountDeleteGo) {model | session = session}
-            else if model.deleteAuth == "nick" then
-            update ChangeGo {model | session =session}
-            else if model.deleteAuth == "pwd" then
-            update ChangePwd {model| session = session}
-            else
-           ({model | session = session}, 
-             (Decoder.dataWRap DataWrap MyData UserData)
-            |> Api.get MyInfoData Endpoint.myInfo (Session.cred session)
-           )
+            case model.deleteAuth of
+                "reset" ->
+                    update ResetProfileImg {model | session = session} 
+                "change" ->
+                    update GoProfileImage  {model | session = session} 
+                "save" ->
+                    update BodySave  {model | session = session} 
+                "bodyInfo" ->
+                    ({model | session = session}, (Decoder.bodyInfo BodyData BodyInfoData Protain)
+                    |> Api.get BodyInfoComplete Endpoint.getBodyInfo( Session.cred session) )
+                "myInfo" ->
+                    ({model | session = session},(Decoder.dataWRap DataWrap MyData UserData)
+                    |> Api.get MyInfoData Endpoint.myInfo (Session.cred session))
+                "delete" ->
+                    update (AccountDelete model.accountDeleteGo) {model | session = session}
+                "nick" ->
+                        update ChangeGo {model | session = session}
+                "pwd" ->
+                        update ChangePwd {model| session = session}
+                _ ->
+                    ({model | session = session}, 
+                    (Decoder.dataWRap DataWrap MyData UserData)
+                    |> Api.get MyInfoData Endpoint.myInfo (Session.cred session)
+                    )
 
 
 

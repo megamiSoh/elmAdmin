@@ -28,6 +28,7 @@ type alias Model =
     , videoId : String
     , zindex : String
     , video : String
+    , errType : String
     }
 -- Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
 type alias GetData = 
@@ -82,6 +83,7 @@ init session mobile
             , thumbnail = ""
             , description = Nothing}
         , video = ""
+        , errType = ""
         }
         , Cmd.batch [
             Api.getId ()
@@ -133,6 +135,12 @@ update msg model =
         VideoRecordComplete (Ok ok) ->
             (model, Cmd.none)
         VideoRecordComplete (Err err) ->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            ({model | errType = "record"}, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
             (model, Cmd.none)
         VideoEnd complete ->
             let
@@ -147,20 +155,29 @@ update msg model =
         MyInfoData (Ok ok) ->
             (model, Cmd.none) 
         MyInfoData (Err err) ->
-           let 
+            let 
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "myInfo"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         GotSession session ->
             ({model | session = session}
-            , Cmd.batch[
-                (Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing)
-                |>Api.get GetListData (Endpoint.yfDetailDetail model.videoId ) (Session.cred session)
-            , mydata session
-            ]
+            , case model.errType of
+                "record" ->
+                    Api.get VideoRecordComplete  (Endpoint.videoCompleteRecord model.videoId)  (Session.cred session) Decoder.resultD
+                "myInfo" -> 
+                    mydata session
+                "scrap" ->
+                    Decoder.resultD
+                    |> Api.get ScrapComplete (Endpoint.scrap model.videoId)(Session.cred session)
+                "getList" ->
+                    Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
+                        |>Api.get GetListData (Endpoint.yfDetailDetail model.videoId ) (Session.cred session)
+                _ ->
+                    Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
+                        |>Api.get GetListData (Endpoint.yfDetailDetail model.videoId ) (Session.cred session)
             )
         BackDetail ->
             ({model | need2login = False}, 
@@ -179,7 +196,7 @@ update msg model =
                 cannotScrap = Encode.string "이미 스크랩 되었습니다."
             in
             if error == "401" then
-                ({model | need2login = True}, Cmd.none )
+                ({model | need2login = True, errType = "scrap"}, (Session.changeInterCeptor(Just error)model.session))
             else
                 (model, Api.showToast cannotScrap)
         Scrap ->
@@ -207,7 +224,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "getList" }, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         Loading success ->

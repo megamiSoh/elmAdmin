@@ -37,6 +37,8 @@ type alias Model =
     , showMenu : Bool
     , currentPage : String
     , preview : List String
+    , errType : String
+    , beforeOrAfter : String
     }
 
 type alias Meal = 
@@ -163,6 +165,8 @@ init session mobile
         , currentDay = Date.fromCalendarDate 2019 Jan 1
         , today = ""
         , completeExerciseList = []
+        , errType = ""
+        , beforeOrAfter = ""
         }
         , Cmd.batch[Date.today |> Task.perform ReceiveDate
         , scrollToTop NoOp
@@ -232,7 +236,22 @@ update msg model =
         NoOp -> 
             (model, Cmd.none)
         GotSession session ->
-            ({model | session = session}, diaryApi model.date model.session)
+            ({model | session = session}, 
+            case model.errType of
+                "getExer" ->
+                    exerciseCompleteList model.exerPage model.exerPer_page model.today session
+                "imgupload" ->
+                    case model.beforeOrAfter of
+                        "after" ->
+                            imgEncoder model.afterImg model.date session "after" Endpoint.afterImg
+                        "before" ->
+                            imgEncoder model.afterImg model.date session "before" Endpoint.afterImg
+                        _ ->
+                            Cmd.none
+                "getData" ->
+                    diaryApi model.date session
+                _ ->
+                    diaryApi model.date session)
         GetExerciseCompleteList (Ok ok) ->
             ({model | completeExerciseList = ok.data}, Cmd.none)
         GetExerciseCompleteList (Err err) ->
@@ -240,7 +259,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "getExer"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         ChangeDate when ->
@@ -254,21 +273,35 @@ update msg model =
             
             case when of
                 "next" ->
-                    let
+                    let _ = Debug.log "formatDateString" formatDateString 1
                         date = String.dropLeft 8 model.date
                         today = String.dropLeft 8 model.today
                     in
-                    if justToint date >= justToint today  then
-                    (model, Cmd.none)
-                    else
+                    -- if justToint date >= justToint today  then
+                    -- let _ = Debug.log "inhere" "here"
+                    -- in
+
+                    -- (model, Cmd.none)
+                    -- else
                     ({model | date = formatDateString 1, currentDay = formatDate 1}, 
                     Cmd.batch[diaryApi (formatDateString 1) model.session
-                    , exerciseCompleteList model.exerPage model.exerPer_page (formatDateString 1) model.session])
+                    , exerciseCompleteList model.exerPage model.exerPer_page (formatDateString 1) model.session
+                    , 
+                    if model.check then
+                    Cmd.none
+                    else
+                    Api.valueReset (E.string (formatDateString 1))]
+                    )
                 "before" ->
                     ({model | date = formatDateString -1, currentDay = formatDate -1}, 
                     Cmd.batch [
                         diaryApi (formatDateString -1) model.session
-                    , exerciseCompleteList model.exerPage model.exerPer_page (formatDateString -1) model.session]
+                    , exerciseCompleteList model.exerPage model.exerPer_page (formatDateString -1) model.session
+                    , if model.check then
+                    Cmd.none
+                    else
+                    Api.valueReset (E.string (formatDateString -1))
+                    ]
                     )
                 _ ->
                     (model, Cmd.none)
@@ -291,19 +324,12 @@ update msg model =
             
             (model,Api.saveKey (E.string (code ++ "," ++model.date)))
         ImgUploadAfter img ->
-            ({model | afterImg = img}, imgEncoder img model.date model.session "after" Endpoint.afterImg)
+            ({model | afterImg = img , beforeOrAfter = "after"}, imgEncoder img model.date model.session "after" Endpoint.afterImg)
         ImgUploadBefore img ->
-            -- -- if model.check then
-            -- ({model | beforeImg = img 
-            -- -- , currentPage = "image"
-            -- },
-            -- imgEncoder img model.date model.session "before" Endpoint.beforeImg) 
-            -- -- Cmd.batch[Task.perform GotPreviews <| Task.sequence <|
-            -- --         List.map Files.toUrl (img)]
-            -- --         )
-            
-            -- -- else
-            ({model | beforeImg = img}, imgEncoder img model.date model.session "before" Endpoint.beforeImg) 
+            let _ = Debug.log "img" img
+            in
+
+            ({model | beforeImg = img, beforeOrAfter = "before"}, imgEncoder img model.date model.session "before" Endpoint.beforeImg) 
         ImgUploadComplete (Ok ok) ->
             (model, Cmd.batch[Api.showToast (E.string "등록 되었습니다."), diaryApi model.date model.session]) 
         ImgUploadComplete (Err err) ->
@@ -311,7 +337,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "imgupload"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         GetData (Ok ok)->
@@ -321,7 +347,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "getData" }, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         BackBtn ->
@@ -398,8 +424,13 @@ calendarDate model =
                 div [class "date_container"] [text model.date, span [class"today"] [text "today"] ]
                 else 
                 div [class "date_container"] [text model.date, span [class"today"] [] ]
-            , i [ class "fas fa-angle-right myCalendar_yf_right", onClick (ChangeDate "next") , style "color" (if model.date == model.today then "#d2caca" else "#000" )]
-                []
+            , 
+                if model.date == model.today then
+                i [ class "fas fa-angle-right myCalendar_yf_right", style "color" "#d2caca"]
+                    []
+                else
+                i [ class "fas fa-angle-right myCalendar_yf_right", onClick (ChangeDate "next") , style "color" "#000" ]
+                    []
             ]
         ]
 
@@ -411,7 +442,11 @@ appcalendarDate model  =
                 div [class "date_container"] [text model.date, span [class"today"] [text "today"] ]
                 else 
                 div [class "date_container"] [text model.date, span [class"today"] [] ]
-            , i [ class "fas fa-angle-right m_myCalendar_yf_right", onClick (ChangeDate "next") , style "color" (if model.date == model.today then "#d2caca" else "#000" ) ]
+            , if model.date == model.today then
+            i [ class "fas fa-angle-right m_myCalendar_yf_right", style "color" "#d2caca" ]
+                []
+            else
+            i [ class "fas fa-angle-right m_myCalendar_yf_right", onClick (ChangeDate "next") , style "color" "#000"  ]
                 []
             ]
         ]
@@ -551,14 +586,14 @@ bodyPhoto model =
                         [ label [] [
                             div [ class "button yf_is-dark myCalendar_btn" ]
                             [ text "비포사진 올리기" ]
-                        , input [ type_ "file", style "display" "none",  on "change" (Decode.map ImgUploadBefore targetFiles)] []
+                        , input [ type_ "file", style "display" "none" , id (model.date ++ "before"),  on "change" (Decode.map ImgUploadBefore targetFiles)] []
                         ]
                         ]
                     , li []
                         [ label [] [
                             div [ class "button is-dark yf_is-dark myCalendar_btn" ]
                             [ text "에프터사진 올리기" ]
-                            , input [ type_ "file", style "display" "none",  on "change" (Decode.map ImgUploadAfter targetFiles)] []
+                            , input [ type_ "file", style "display" "none", id (model.date ++ "after"),  on "change" (Decode.map ImgUploadAfter targetFiles)] []
                         ]
                         ]
                     ]
@@ -581,7 +616,7 @@ appbodyPhoto model =
                             "/image/photo.png"
                 ) ]
                     []
-                    ,input [ class "appFile", type_ "file", multiple False, id "thumbFile", accept "image/*" , style "display" "none"
+                    ,input [ class "appFile", type_ "file", id (model.date ++ "before"), accept "image/*" , style "display" "none"
                             , on "change" (Decode.map ImgUploadBefore targetFiles)  
                             ]
                                 []
@@ -597,7 +632,7 @@ appbodyPhoto model =
                             "/image/photo.png"
                 ) ]
                     []
-                  , input [ class "appFile", type_ "file", multiple False, id "thumbFile", accept "image/*" , style "display" "none"
+                  , input [ class "appFile", type_ "file", id (model.date ++ "after"), accept "image/*" , style "display" "none"
                             , on "change" (Decode.map ImgUploadAfter targetFiles)  
                             ]
                                 []

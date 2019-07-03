@@ -43,12 +43,7 @@ type alias Model =
     , currentEtcAsk : EtcDataItem
     , idxSearch : Int
     , trialShow : Bool
-    , yesformat: 
-        { ask_id : Int
-        , content : String
-        , is_yes : Bool
-        , exercise_part_code : String
-        }
+    , yesformat: Format
     , resultData : AskResult
     , askExerList : List AskExer
     , askDetail : AskDetail
@@ -56,6 +51,17 @@ type alias Model =
     , productId : Int
     , trialNo : String
     , trialId : String 
+    , birthData : AskBirth
+    , birthDay : String
+    , year : String
+    , month : String
+    , day : String
+    }
+type alias Format = 
+    { ask_id : Int
+    , content : String
+    , is_yes : Bool
+    , exercise_part_code : String
     }
 
 type alias AskDetailData = 
@@ -187,6 +193,15 @@ type alias AskResultDetail =
     , name : String
     , sort : Int }
 
+type alias AskBirthData = 
+    { data : AskBirth }
+
+type alias AskBirth =   
+    { content : String
+    , default : String
+    , name : String }
+
+bodyEncode : Int -> Int -> String -> Session -> Cmd Msg
 bodyEncode page perpage title session = 
     let
         list = 
@@ -201,8 +216,8 @@ bodyEncode page perpage title session =
     (Decoder.makeExerList GetListData ListData Paginate)
     |> Api.post Endpoint.makeExerList (Session.cred session) GetData body 
     
-
-askAsnwer point male answers session format=
+askAsnwer : String -> Bool -> List EtcDataItem  -> Session -> Format -> String -> Cmd Msg
+askAsnwer point male answers session format birthday=
     let 
         format_change = format
         is_yes_to_bool = 
@@ -227,15 +242,17 @@ askAsnwer point male answers session format=
             Encode.object   
                 [ ("exercise_point_code", Encode.string point)
                 , ("is_male", Encode.bool male)
+                , ("birthday", Encode.string birthday)
                 , ("answers", Encode.list answerList is_yes_to_bool)
                 ] |> Http.jsonBody    
     in
     Api.post Endpoint.askAnswer (Session.cred session) AskAnswerComplete body Decoder.resultD
 
+askExerData : Session -> Cmd Msg
 askExerData session = 
     Api.get GetListComplete Endpoint.askExer (Session.cred session) (Decoder.askExer AskExerData AskExer)
 
-init : Session -> Bool ->(Model, Cmd Msg)
+init : Session -> Bool -> (Model, Cmd Msg)
 init session mobile =
     let
         listmodel = 
@@ -334,6 +351,14 @@ init session mobile =
         , productId = 0
         , trialId = ""
         , trialNo = ""
+        , birthData = 
+            { content = ""
+            , default = ""
+            , name = ""}
+        , year = ""
+        , month = ""
+        , day = ""
+        , birthDay = ""
         }, 
         Cmd.batch 
         [ bodyEncode 1 10 "" session
@@ -373,6 +398,8 @@ type Msg
     | AskDetailMsg (Result Http.Error AskDetailData)
     | GoProduct Int
     | CompleteProductWeekRegist (Result Http.Error Decoder.Success)
+    | AskBirthComplete (Result Http.Error AskBirthData)
+    | BirthInput String String
 
 toSession : Model -> Session
 toSession model =
@@ -382,9 +409,11 @@ toCheck : Model -> Bool
 toCheck model =
     model.check
 
+scrollEvent : (ScreenInfo -> msg) -> Attribute msg
 scrollEvent msg = 
     on "scroll" (Decode.map msg scrollInfoDecoder)
 
+scrollInfoDecoder : Decode.Decoder ScreenInfo
 scrollInfoDecoder =
     Decode.map3 ScreenInfo
         (Decode.at [ "target", "scrollHeight" ] Decode.int)
@@ -401,9 +430,11 @@ subscriptions model=
         , Api.calcurationComplete CalcurationComplete
     ]
 
+onLoad : msg -> Attribute msg
 onLoad msg =
     on "load" (Decode.succeed msg)
 
+askYourDataPost : Model -> Cmd Msg
 askYourDataPost model = 
     let
         body =
@@ -415,9 +446,11 @@ askYourDataPost model =
     
     Api.post Endpoint.askSearch (Session.cred model.session) AskYourDataPost body (Decoder.askSearch AskSearch AskSearchData)
 
+askYourData : Model -> (Result Http.Error a -> msg)-> Endpoint.Endpoint -> Decode.Decoder a -> Cmd msg
 askYourData model msg endpoint decoder= 
     Api.get msg endpoint (Session.cred model.session) decoder
 
+indexItem : Int -> List AskSearchData -> AskSearchData
 indexItem idx item = 
     case List.head(List.drop (idx - 1)  item) of
         Just a ->
@@ -428,6 +461,8 @@ indexItem idx item =
             , exercise_part_code = ""
             , id = 0 }
 
+
+goProductBody : Int -> Session -> Cmd Msg
 goProductBody id session =
     let
         body = 
@@ -441,6 +476,48 @@ goProductBody id session =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        BirthInput category date ->
+            case String.toInt date of
+                Just ok ->
+                    case category of
+                        "year" ->
+                            if ok > 9999 || ok < 1 then
+                            (model, Cmd.none)
+                            else
+                            ({model | year = date}, Cmd.none)
+                    
+                        "month" ->
+                            if ok > 12 || ok < 1 then 
+                                (model, Cmd.none)
+                            else
+                            ({model | month = date}, Cmd.none)
+                        "day" ->
+                            if ok > 31 || ok < 1 then
+                            (model, Cmd.none)
+                            else
+                            ({model | day = date}, Cmd.none)
+                        _ ->
+                            (model, Cmd.none)
+                Nothing ->
+                    case category of
+                        "year" ->
+                            ({model | year = "" }, Cmd.none)
+                    
+                        "month" ->
+                           
+                            ({model | month = "" }, Cmd.none)
+                        "day" ->
+                            ({model | day = "" }, Cmd.none)
+                        _ ->
+                            (model, Cmd.none)
+        AskBirthComplete (Ok ok) ->
+            ({model | birthData = ok.data, year = String.dropRight 6 ok.data.default, day = String.dropLeft 8 ok.data.default, month = String.dropLeft 5 (String.dropRight 3 ok.data.default), birthDay = ok.data.default}, Cmd.none)
+        AskBirthComplete (Err err) ->   
+            let _ = Debug.log "err" err
+                
+            in
+            
+            (model, Cmd.none)
         CompleteProductWeekRegist (Ok ok) ->
             ({model | trialShow = False}, Cmd.batch[askExerData model.session
             , Api.showToast (Encode.string "구입이 완료 되었습니다.")])
@@ -513,7 +590,7 @@ update msg model =
              Api.get AskResultComplete Endpoint.askResult (Session.cred model.session ) (Decoder.askResultData AskResultData AskResult AskResultResult AskResultDetail) )
         CompletePaperWeight ->
             (model, Cmd.batch[Api.progressGo ()
-            , askAsnwer model.axerCode model.askSelected model.etcAsk model.session model.yesformat])
+            , askAsnwer model.axerCode model.askSelected model.etcAsk model.session model.yesformat model.birthDay])
         EtcAsk etcData direction->
             let
                 initValue = 
@@ -560,7 +637,7 @@ update msg model =
                     update (SelectedAnswer "completePaperWeight" "") {model | etcAsk =  etcData :: model.etcAsk,   askSearchItem = indexItem (model.idxSearch + 1) model.askSearchData , idxSearch = model.idxSearch + 1, currentEtcAsk = nextR}  
                 "saveNbefore" ->
                         if model.idxSearch <= 1 then
-                        ({model | categoryPaperWeight = "exerpoint", etcAsk = [], currentEtcAsk = initValue}, Cmd.none)
+                        ({model | categoryPaperWeight = "birth", etcAsk = [], currentEtcAsk = initValue}, Cmd.none)
                         else
                             if f then
                             ({model | etcAsk = m,   askSearchItem = indexItem (model.idxSearch - 1) model.askSearchData , idxSearch = model.idxSearch - 1, currentEtcAsk = beforeR},Cmd.none) 
@@ -587,7 +664,7 @@ update msg model =
             ({model | errType = "GetQuestions2"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
             ])
         GetQuestions (Ok ok) ->
-            ({model | askyours = ok.data, askSelected = caseItem ok.data.default True}, Cmd.none)
+            ({model | askyours = ok.data, askSelected = caseItem ok.data.default True, isActive = "paperweightStart"}, Cmd.none)
         GetQuestions (Err err) ->
             let
                 serverErrors =
@@ -601,8 +678,10 @@ update msg model =
                  ({model | askSelected = if answer == "true" then True else False, categoryPaperWeight = category, askIndex = 1, etcAsk = []}, Cmd.none)   
                 "exerpoint" ->
                     ({model | categoryPaperWeight = category, askIndex = 2, axerCode = answer, etcAsk = []} , askYourData model GetQuestions2 Endpoint.askExercise_point (Decoder.askyoursPoint AskYoursPoint AskYourDataPoint AskItemsPoint))
+                "birth" ->
+                    ({model | categoryPaperWeight = category, askIndex = 3, etcAsk = []} , askYourData model AskBirthComplete Endpoint.askBirth (Decoder.myaskBirthData AskBirthData AskBirth))
                 "etcStart" ->
-                    ({model | askIndex = 2, categoryPaperWeight = category, etcAsk = [], idxSearch = 1}, askYourDataPost model )
+                    ({model | categoryPaperWeight = category, etcAsk = [], idxSearch = 1, birthDay = if String.isEmpty model.year then model.birthDay else model.year ++ "-" ++( if String.length model.month == 1 then "0" ++ model.month else model.month )++ "-" ++ (if String.length model.day == 1 then "0" ++ model.day else model.day)}, askYourDataPost model )
                 "completePaperWeight" ->
                     update CompletePaperWeight {model | categoryPaperWeight = category}
                 _ ->
@@ -615,7 +694,7 @@ update msg model =
                 "makeExer" ->
                     ({model | isActive = category, etcAsk = [], askIndex = 1, categoryPaperWeight = "", axerCode = "", askSelected = caseItem model.askyours.default True} , Cmd.none)
                 "paperweightStart" ->
-                    ({model | isActive = category, categoryPaperWeight = "sex", axerCode = "", askSelected = caseItem model.askyours.default True} , Cmd.batch[askYourData model  GetQuestions Endpoint.askgender (Decoder.askyours AskYours AskYourData AskItems)
+                    ({model | categoryPaperWeight = "sex", axerCode = "", askSelected = caseItem model.askyours.default True} , Cmd.batch[askYourData model  GetQuestions Endpoint.askgender (Decoder.askyours AskYours AskYourData AskItems)
                     , Api.hideFooter ()])
                 "paperWeightConfirm" ->
                     -- if model.check then
@@ -675,18 +754,18 @@ update msg model =
             , 
             case model.errType of
                 "CompleteProductWeekRegist" ->
-                    goProductBody model.productId model.session
+                    goProductBody model.productId session
             
                 "AskDetailMsg" ->
-                    Api.get AskDetailMsg (Endpoint.askdetail model.trialNo model.trialId) (Session.cred model.session) (Decoder.askDetailData AskDetailData AskDetail AskDetailItem)
+                    Api.get AskDetailMsg (Endpoint.askdetail model.trialNo model.trialId) (Session.cred session) (Decoder.askDetailData AskDetailData AskDetail AskDetailItem)
                 "AskRecommendComplete" ->
-                    Api.post Endpoint.askRecommend (Session.cred model.session) AskRecommendComplete Http.emptyBody Decoder.resultD
+                    Api.post Endpoint.askRecommend (Session.cred session) AskRecommendComplete Http.emptyBody Decoder.resultD
                 "GetListComplete" ->
-                    askExerData model.session
+                    askExerData session
                 "AskResultComplete" ->
-                    Api.get AskResultComplete Endpoint.askResult (Session.cred model.session ) (Decoder.askResultData AskResultData AskResult AskResultResult AskResultDetail)
+                    Api.get AskResultComplete Endpoint.askResult (Session.cred session ) (Decoder.askResultData AskResultData AskResult AskResultResult AskResultDetail)
                 "AskAnswerComplete" ->
-                    askAsnwer model.axerCode model.askSelected model.etcAsk model.session model.yesformat
+                    askAsnwer model.axerCode model.askSelected model.etcAsk session model.yesformat model.birthDay
                 "AskYourDataPost" ->
                     askYourDataPost model
                 "GetQuestions2" ->
@@ -695,11 +774,11 @@ update msg model =
                     askYourData model  GetQuestions Endpoint.askgender (Decoder.askyours AskYours AskYourData AskItems)
                 "DeleteSuccess" ->
                      Decoder.resultD
-                    |> Api.get DeleteSuccess (Endpoint.makeDelete (String.fromInt (model.contentsId)))(Session.cred model.session) 
+                    |> Api.get DeleteSuccess (Endpoint.makeDelete (String.fromInt (model.contentsId)))(Session.cred session) 
                 "GetData" ->
-                    bodyEncode (model.page)  model.per_page model.title model.session
+                    bodyEncode (model.page)  model.per_page model.title session
                 _ ->
-                    bodyEncode (model.page)  model.per_page model.title model.session
+                    bodyEncode (model.page)  model.per_page model.title session
             )
         SessionCheck check ->
             let
@@ -827,7 +906,7 @@ view model =
             
         
 
-
+makeExerBody : Model -> Html Msg
 makeExerBody model = 
     div [ class "customContainerwrap" ]
             [ bodyContentTitle,deltelayer model,
@@ -852,7 +931,9 @@ makeExerBody model =
                         ]
 
                 ]
-            ]
+           ]
+
+app: Model -> Html Msg
 app model =
     div [ class "container", class "scroll", scrollEvent ScrollEvent
     , style "height" "85vh" 
@@ -871,6 +952,7 @@ app model =
             ]
     ]
 
+appStartBox : Html Msg
 appStartBox = 
     div [ class "make_m_yf_box" ]
         [ h1 [ class "m_make_yf_h1" ]
@@ -880,6 +962,8 @@ appStartBox =
         , br []
             []
         ]
+
+paperWeightStartApp : Model -> Html Msg
 paperWeightStartApp model = 
      div [ class "container", class "scroll", scrollEvent ScrollEvent, style "height" "85vh" ][
          activeTab model ,
@@ -910,14 +994,15 @@ paperWeightStartApp model =
             , div [class "button reset_mj_exer", onClick (IsActive "newRecommend"), style "display" (if model.isActive == "calcuration" then "none" else "flex")] [text "운동 새로 받기"]
     ]
     
-
+listTitle : Html msg
 listTitle = 
     div [ class "m_make_box_title" ]
         [ h1 [ class "m_make_yf_h2" ]
             [ text "맞춤운동 리스트" ]
         ]
 
-appItemContent item=
+appItemContent : ListData -> Html Msg
+appItemContent item =
     let
         titleReplace = 
             item.title 
@@ -963,6 +1048,7 @@ appItemContent item=
             ]
             ]
 
+bodyItem : ListData -> Html Msg
 bodyItem item=
     let
         titleReplace = 
@@ -1017,7 +1103,7 @@ bodyItem item=
 
 
 
-
+bodyContentTitle : Html msg
 bodyContentTitle =
           div [ class "make_yf_box" ] 
         
@@ -1033,6 +1119,7 @@ bodyContentTitle =
                 []
             ]
 
+appdeltelayer: Model -> Html Msg
 appdeltelayer model =
     div [class ("m_delete_post " ++ model.show)] [
          div [ class "yf_delete_popup" ]
@@ -1047,6 +1134,8 @@ appdeltelayer model =
             ]
     ]
 
+
+deltelayer : Model -> Html Msg
 deltelayer model =
     div [class ("delete_post " ++ model.show)] [
          div [ class "yf_delete_popup" ]
@@ -1062,6 +1151,7 @@ deltelayer model =
     ]
 
 
+paperWeight : Model -> Html Msg
 paperWeight model = 
     div [ class "make_yf_box" ] 
         
@@ -1082,6 +1172,7 @@ paperWeight model =
                 []
             ]
 
+activeTab : Model -> Html Msg
 activeTab model =
     ul [class "tabs is-toggle is-fullwidth is-large make_tag" ]
         [ li [ classList [
@@ -1098,6 +1189,9 @@ activeTab model =
             [  text "직접 만들기" 
             ]
         ]
+
+
+paperWeightBody : Model -> Html Msg
 paperWeightBody model =
     div [ class "customContainerwrap" ]
             [ paperWeight model 
@@ -1121,10 +1215,13 @@ paperWeightBody model =
                 ]
             ]
 
+stopPaperWeight : Html Msg
 stopPaperWeight = 
     div [ class "button is-link is-medium mj_backbtn" , onClick (IsActive "paperweight")]
             [ text "닫기" ]
 
+
+paperweightStart : Model -> Html Msg
 paperweightStart model = 
     div [ classList 
         [ ( "mj_yf_box" , model.categoryPaperWeight /= "")
@@ -1135,7 +1232,7 @@ paperweightStart model =
             div [class "paperweightStartItem" ]
             [ div [ class "mj_box_title" ]
             [ h1 [ class "mj_yf_title" ]
-                [ text ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 2 )") ]   
+                [ text ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " /3 )") ]   
             ]
             , paperweightSex model "mj_text_web" "mj_movebtn" "mj_boxwrap_web"
             , stopPaperWeight
@@ -1145,9 +1242,18 @@ paperweightStart model =
             div [class "paperweightStartItem" ]
             [ div [ class "mj_box_title" ]
             [ h1 [ class "mj_yf_title" ]
-                [ text ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 2 )") ]
+                [ text ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 3 )") ]
             ]
              , paperweightPoint model "mj_text_web" "mj_movebtn" "mj_boxwrap_web"
+             , stopPaperWeight
+            ]
+        "birth" ->
+            div [class "paperweightStartItem" ]
+            [ div [ class "mj_box_title" ]
+            [ h1 [ class "mj_yf_title" ]
+                [ text ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 3 )") ]
+            ]
+             , paperweightBirth model "mj_text_web" "mj_movebtn" "mj_boxwrap_web" "askBirthStyle"
              , stopPaperWeight
             ]
         "etcStart" ->
@@ -1194,7 +1300,7 @@ paperweightStart model =
             ]
     ]
 
-
+paperweightStartMobile : Model -> Html Msg
 paperweightStartMobile model = 
     div [ 
         class ("container myaccountStyle " ++ (if model.isActive == "paperweightStart" then "account" else "") ++ (if model.categoryPaperWeight == "paperweightResult" then " paperWeightResultStyle" else ""))
@@ -1205,14 +1311,19 @@ paperweightStartMobile model =
         "sex" ->
             div [class "inheritHeight"]
             [ 
-            appHeaderRDetailClick  ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 2 )") "makeExerHeader paperweightmobileFontsize" (IsActive "paperweight") "fas fa-times"
+            appHeaderRDetailClick  ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 3 )") "makeExerHeader paperweightmobileFontsize" (IsActive "paperweight") "fas fa-times"
             , paperweightSex model "mj_text" "m_mj_move_btn" "mj_boxwrap"
             ]
     
         "exerpoint" ->
             div [class "inheritHeight"]
-            [ appHeaderRDetailClick  ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 2 )") "makeExerHeader paperweightmobileFontsize" (IsActive "paperweight") "fas fa-times"
+            [ appHeaderRDetailClick  ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 3 )") "makeExerHeader paperweightmobileFontsize" (IsActive "paperweight") "fas fa-times"
              , paperweightPoint model  "mj_text" "m_mj_move_btn" "mj_boxwrap"
+            ]
+        "birth" ->
+            div [class "inheritHeight"]
+            [ appHeaderRDetailClick  ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 3 )") "makeExerHeader paperweightmobileFontsize" (IsActive "paperweight") "fas fa-times"
+             , paperweightBirth model  "mj_text" "m_mj_move_btn" "mj_boxwrap" "askBirthStyle"
             ]
         "etcStart" ->
             div [class "inheritHeight"]
@@ -1254,6 +1365,7 @@ paperweightStartMobile model =
             ]
     ]
 
+paperweightAnswer : AskResult -> Html Msg
 paperweightAnswer item = 
     div [ class "mj_boxwrap2"]
     [ div [ class "mj_result_box1" ]
@@ -1282,6 +1394,7 @@ paperweightAnswer item =
         ]
     ]
 
+paperweightAnswerDetail : AskResultDetail -> Html Msg
 paperweightAnswerDetail item = 
             div [ class "column" ]
                 [ text item.name , div [ class "mj_columns_icon" ]
@@ -1319,6 +1432,7 @@ paperweightAnswerDetail item =
         
                 ]
 
+etcAsk : Model -> String -> String -> String -> Html Msg
 etcAsk model textStyle moveBtn boxStyle= 
     div [ class boxStyle ]
         [ p [ class  textStyle ]
@@ -1359,16 +1473,17 @@ etcAsk model textStyle moveBtn boxStyle=
                 [ text "다음" ]
             ]
         ]
-
-etcExample idx model item =
-                label [ classList 
-                [(("answer_btn"++(String.fromInt (idx + 1))), True)
-                , ("sexSelected" , model.askSelected == item.is_yes)
-                ] 
-                , onClick (SelectedAnswer "sex" (if item.is_yes == True then "true" else "false"))
-                 ]
-                [  text item.text
-                ]
+-- etcExample : Int -> Model -> 
+-- etcExample idx model item =
+--                 label [ classList 
+--                 [(("answer_btn"++(String.fromInt (idx + 1))), True)
+--                 , ("sexSelected" , model.askSelected == item.is_yes)
+--                 ] 
+--                 , onClick (SelectedAnswer "sex" (if item.is_yes == True then "true" else "false"))
+--                  ]
+--                 [  text item.text
+--                 ]
+paperweightSex : Model -> String -> String -> String -> Html Msg
 paperweightSex model textStyle moveBtn boxStyle=
     div [ class boxStyle ]
         [ p [ class textStyle ]
@@ -1379,6 +1494,9 @@ paperweightSex model textStyle moveBtn boxStyle=
                 [ text "다음" ]
             ]
         ]
+        
+
+paperweightPoint : Model -> String -> String -> String -> Html Msg
 paperweightPoint model textStyle moveBtn boxStyle =
     div [ class boxStyle  ]
         [ p [ class textStyle ]
@@ -1392,10 +1510,39 @@ paperweightPoint model textStyle moveBtn boxStyle =
             div [ class "button mj_next  mj_disabled" ]
                 [ text "다음" ]
             else
+            div [ class "button is-dark mj_next" , onClick (SelectedAnswer "birth" "")]
+                [ text "다음" ]
+            ]
+        ]
+
+paperweightBirth : Model -> String -> String -> String -> String -> Html Msg
+paperweightBirth model textStyle moveBtn boxStyle birthStyle=
+    div [ class boxStyle  ]
+        [ p [ class textStyle ]
+            [ text ("Q. " ++ model.birthData.content) ]
+        , div [ class birthStyle][
+            input [class "input", onInput (BirthInput "year"), value model.year] [] 
+            , span [] [text "년"]
+            , input [class "input", onInput (BirthInput "month"), value model.month][] 
+            , span [] [text "월"]
+            , input [class "input", onInput (BirthInput "day"), value model.day][] 
+            , span [] [text "일"]
+        ]
+        , p [ class moveBtn ]
+            [ div [ class "button  mj_before" , onClick (SelectedAnswer "sex" (if model.askSelected == True then "true" else "false"))]
+                [ text "이전" ]
+            , 
+            if String.isEmpty model.year  || String.isEmpty model.month || String.isEmpty model.day || String.length model.year < 4 then
+            div [ class "button mj_next  mj_disabled" ]
+                [ text "다음" ]
+            else
             div [ class "button is-dark mj_next" , onClick (SelectedAnswer "etcStart" "")]
                 [ text "다음" ]
             ]
         ]
+
+
+answerExample : Int -> Model -> AskItems -> Html Msg
 answerExample idx model item =
                 label [ classList 
                 [(("answer_btn"++(String.fromInt (idx + 1))), True)
@@ -1406,7 +1553,7 @@ answerExample idx model item =
                 [  text item.text
                 ]
 
-
+answerExamplePoint : Int -> Model -> AskItemsPoint -> Html Msg
 answerExamplePoint idx model item =
                 label [ classList 
                 [(("answer_btn"++(String.fromInt (idx + 1))), True)
@@ -1416,7 +1563,6 @@ answerExamplePoint idx model item =
                  ]
                 [  text item.name
                 ]
-
 
 
 caseItem item charaterType =

@@ -28,6 +28,8 @@ type alias Model =
     , screenInfo : ScreenInfo
     , infiniteLoading : Bool
     , newList : List ListData
+    , errType : String
+    , deleteId : Int
     }
 
 type alias ScreenInfo = 
@@ -117,6 +119,8 @@ init session mobile =
                 , total_count = 0
                 }
             }
+        , errType = ""
+        , deleteId = 0
         }, 
         Cmd.none
     )
@@ -198,14 +202,27 @@ update msg model =
         DeleteSuccess (Ok ok) ->
             (model, bodyEncode model.page model.per_page model.title model.session)
         DeleteSuccess (Err err) ->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            ({model | errType = "delete"}, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
             (model, Cmd.none)
         Delete id ->
-            (model, 
+            ({model | deleteId = id}, 
             Decoder.resultD
                 |> Api.get DeleteSuccess (Endpoint.makeDelete (String.fromInt (id)))(Session.cred model.session)  )
         GotSession session ->
             ({model | session = session}
-            , Cmd.none
+            , case model.errType of
+                "delete" ->
+                    Decoder.resultD
+                    |> Api.get DeleteSuccess (Endpoint.makeDelete (String.fromInt (model.deleteId)))(Session.cred session)
+                "data" ->
+                    bodyEncode model.page model.per_page model.title session
+                _ ->
+                    bodyEncode model.page model.per_page model.title session
             )
         SessionCheck check ->
             let
@@ -238,11 +255,13 @@ update msg model =
             else
             ({model | getlistData = ok, newList = model.newList ++ ok.data, infiniteLoading = False}, Cmd.none)
         GetData (Err err) -> 
-            let
-                serverErrors =
-                    Api.decodeErrors err
-            in  
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            ({model | errType = "data"}, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
+            (model, Cmd.none)
         
 onKeyDown:(Int -> msg) -> Attribute msg
 onKeyDown tagger = 

@@ -15,30 +15,29 @@ import Json.Decode as Decode
 import Api.Decoder as Decoder
 import Page.Detail.PaperWeightDetail as MyD
 
-type alias Model 
-    = {
-        session : Session
-        , check : Bool
-        , infiniteLoading : Bool
-        , checkList : List String
-        , page : Int
-        , per_page :Int
-        , count : Int
-        , loading : Bool
-        , pageNum : Int
-        , zindex : String
-        , listData : MyD.DetailData
-        , scrap : Bool
-        , showDetail : Bool
-        , videoId : String
-        , showMenu : Bool
-        , getList : List PaperWeightList
-        , pagenation : ListPagenate
-        , falseData : MyD.AskDetail
-        , whatKindOfData : Bool
-        , isActive : Bool
-        , errType : String
-        , product_no : Int
+type alias Model = 
+    { session : Session
+    , check : Bool
+    , infiniteLoading : Bool
+    , checkList : List String
+    , page : Int
+    , per_page :Int
+    , count : Int
+    , loading : Bool
+    , pageNum : Int
+    , zindex : String
+    , listData : MyD.DetailData
+    , scrap : Bool
+    , showDetail : Bool
+    , videoId : String
+    , showMenu : Bool
+    , getList : List PaperWeightList
+    , pagenation : ListPagenate
+    , falseData : MyD.AskDetail
+    , whatKindOfData : Bool
+    , isActive : Bool
+    , errType : String
+    , product_no : Int
     }
 
 
@@ -70,7 +69,7 @@ type alias ListPagenate =
     , total_count : Int
     , user_id : Int }
 
-
+paperweightEncoder : Int -> Int -> Session -> Cmd Msg
 paperweightEncoder page per_page session=
     let
         body = Encode.object 
@@ -81,7 +80,7 @@ paperweightEncoder page per_page session=
     Api.post Endpoint.myPaperweightList (Session.cred session) GetList body (Decoder.myPaperweightList PaperweightData PaperWeightList DetailPaperWeight ListPagenate)
 
 
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
         {session = session
@@ -316,18 +315,18 @@ update msg model =
             ({model | session = session}, 
              case model.errType of
                 "ProductComplete" ->
-                    Api.post Endpoint.renewWeekExercise (Session.cred model.session) ProductComplete body Decoder.resultD
+                    Api.post Endpoint.renewWeekExercise (Session.cred session) ProductComplete body Decoder.resultD
                 "GetList" ->
-                    paperweightEncoder model.page model.per_page model.session
+                    paperweightEncoder model.page model.per_page session
                 "VideoRecordComplete" ->
-                    Api.get VideoRecordComplete  (Endpoint.videoCompleteRecord model.videoId)  (Session.cred model.session) Decoder.resultD
+                    Api.get VideoRecordComplete  (Endpoint.videoCompleteRecord model.videoId)  (Session.cred session) Decoder.resultD
                 "GetListData" ->
                     Decoder.detailMypaperweight MyD.GetData MyD.DetailData MyD.DetailDataItem MyD.Pairing
-                        |>Api.get GetListData (Endpoint.mypaperweightDetail model.videoId) (Session.cred model.session)
+                        |>Api.get GetListData (Endpoint.mypaperweightDetail model.videoId) (Session.cred session)
                 "GetFalseData" ->
-                    Api.get GetFalseData (Endpoint.mypaperweightDetail model.videoId) (Session.cred model.session) (Decoder.myaskDetailData MyD.AskDetailData MyD.AskDetail MyD.AskDetailItem)
+                    Api.get GetFalseData (Endpoint.mypaperweightDetail model.videoId) (Session.cred session) (Decoder.myaskDetailData MyD.AskDetailData MyD.AskDetail MyD.AskDetailItem)
                 _ ->
-                    paperweightEncoder model.page model.per_page model.session
+                    paperweightEncoder model.page model.per_page session
             )
         SaveComplete complete ->
             let

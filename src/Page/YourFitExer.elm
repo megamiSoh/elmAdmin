@@ -18,27 +18,27 @@ import Swiper
 import Html.Lazy exposing (lazy, lazy2, lazy3)
 import Page.Common exposing (..)
 import Page.Detail.YourFitDetail as YfD
-type alias Model 
-    = {
-        session : Session
-        , title : String
-        , checkDevice : String
-        , data : List ListData
-        , check : Bool
-        , loading : Bool
-        , sumCount : Int
-        , menuOpen : Bool
-        , swipingState : Swiper.SwipingState
-        , swipeCode : String
-        , leftWidth : Int
-        , lazyImg : String
-        , count : Int
-        , scrap : Bool
-        , need2login : Bool
-        , videoId : String
-        , zindex : String
-        , listData : YfD.DetailData
-        , detailShow : Bool
+type alias Model = 
+    { session : Session
+    , title : String
+    , checkDevice : String
+    , data : List ListData
+    , check : Bool
+    , loading : Bool
+    , sumCount : Int
+    , menuOpen : Bool
+    , swipingState : Swiper.SwipingState
+    , swipeCode : String
+    , leftWidth : Int
+    , lazyImg : String
+    , count : Int
+    , scrap : Bool
+    , need2login : Bool
+    , videoId : String
+    , zindex : String
+    , listData : YfD.DetailData
+    , detailShow : Bool
+    , errType : String
     }
 
 type alias YourFitList =
@@ -93,6 +93,7 @@ init session mobile =
             , description = Nothing}
         , lazyImg = "../image/05iu6bgl-320.jpg"
         , swipingState = Swiper.initialSwipingState
+        , errType = ""
         }
         , Cmd.batch
         [  
@@ -190,10 +191,11 @@ update msg model =
                 cannotScrap = Encode.string "이미 스크랩 되었습니다."
             in
             if error == "401" then
-                ({model | need2login = True, detailShow = False}, 
+                ({model | need2login = True, detailShow = False, errType ="scrap"}, 
                 Cmd.batch [
                     Api.hideFooter () 
                     , scrollToTop NoOp
+                    , Session.changeInterCeptor (Just error) model.session
                 ])
             else
                 (model, Api.showToast cannotScrap)
@@ -210,7 +212,7 @@ update msg model =
                 serverErrors =
                     Api.decodeErrors err
             in  
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            ({model | errType = "myInfo"}, (Session.changeInterCeptor (Just serverErrors) model.session))
         MoveLeft idx ->
             (model, Api.scrollL (Encode.string (String.fromInt idx)) )
         MoveMore idx ->
@@ -230,8 +232,15 @@ update msg model =
                 ( { model | menuOpen = swipedLeft, swipingState = newState, swipeCode = str , leftWidth = -200}, Cmd.none )
         GotSession session ->
             ({model | session = session}
-            ,Cmd.batch [ mydata session
-            ]
+            , case model.errType of
+                "scrap" ->
+                    Decoder.resultD
+                    |> Api.get ScrapComplete (Endpoint.scrap model.videoId)(Session.cred session)
+                    
+                "myInfo" ->
+                    mydata session
+                _ ->
+                    mydata session
             )
         SuccessId str ->  
             (model, 

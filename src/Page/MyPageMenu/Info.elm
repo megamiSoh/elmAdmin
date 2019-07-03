@@ -49,6 +49,8 @@ type alias Model =
     , showToC : Bool
     , scrollCount : Float
     , showMenu : Bool
+    , errType : String
+    , detailId : Int
     }
 
 type alias ScreenInfo = 
@@ -142,7 +144,9 @@ init session mobile
             , id = 0
             , title = "" }
         ,  check = mobile
-        , textarea = ""}
+        , textarea = ""
+        , errType = ""
+        , detailId = 0}
         , Cmd.batch[ 
             -- Api.getCookie()
             -- ,
@@ -226,11 +230,19 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "detail"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         GotSession session ->
-            ({model | session = session}, infoEncoder (model.page) model.per_page model.session)
+            ({model | session = session}, 
+            case model.errType of
+                "detail" ->
+                    Api.get GetDetail (Endpoint.detailInfo (String.fromInt model.detailId)) (Session.cred session) (Decoder.detailInfo DetailDataWrap DetailData)
+                "list" ->
+                    infoEncoder (model.page) model.per_page session
+                _ ->
+                    infoEncoder (model.page) model.per_page session
+                )
         GetPageId str ->
             let
                 decodeV = Decode.decodeValue Decode.int str
@@ -284,7 +296,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "list"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         DetailGo id ->  
@@ -296,7 +308,7 @@ update msg model =
                 if id == 0 then
                 ({model | detailShow = False}, Cmd.none)
                 else
-                ({model | detailShow = True},  Api.get GetDetail (Endpoint.detailInfo (String.fromInt id)) (Session.cred model.session) (Decoder.detailInfo DetailDataWrap DetailData))
+                ({model | detailShow = True, detailId = id},  Api.get GetDetail (Endpoint.detailInfo (String.fromInt id)) (Session.cred model.session) (Decoder.detailInfo DetailDataWrap DetailData))
             else
             (model, Api.saveId encodeId)
         BackBtn ->

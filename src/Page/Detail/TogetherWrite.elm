@@ -25,23 +25,22 @@ defaultOptions =
     , rawHtml = ParseUnsafe
     }
 
-type alias Model 
-    = {
-        session : Session
-        , fileName : String
-        , onDemandText : String
-        , options : Markdown.Config.Options
-        , showToC : Bool
-        , checkDevice : String
-        , selectedTab : EditorTab
-        , selectedPreviewTab : PreviewTab
-        , check : Bool
-        , videoId : String
-        , content : String
-        , getData : DetailData
-        , inputValue : String
-        , listShow : Bool
-
+type alias Model = 
+    { session : Session
+    , fileName : String
+    , onDemandText : String
+    , options : Markdown.Config.Options
+    , showToC : Bool
+    , checkDevice : String
+    , selectedTab : EditorTab
+    , selectedPreviewTab : PreviewTab
+    , check : Bool
+    , videoId : String
+    , content : String
+    , getData : DetailData
+    , inputValue : String
+    , listShow : Bool
+    , errType : String
     }
 
 type alias DetailData =    
@@ -84,7 +83,8 @@ init session mobile
             , nickname = Nothing
             , thumbnail = ""
             , description = Nothing}
-        , check = mobile}
+        , check = mobile
+        , errType = ""}
         , Api.getId ()
     )
 type EditorTab
@@ -146,7 +146,13 @@ update msg model =
     case msg of
         GotSession session ->
             ({model | session = session}, 
-            Api.get GetList (Endpoint.makeDetail model.videoId) (Session.cred session)  (Decoder.yfDetailDetail YfD.GetData YfD.DetailData YfD.DetailDataItem YfD.Pairing)
+            case model.errType of
+                "getlist" ->
+                    Api.get GetList (Endpoint.makeDetail model.videoId) (Session.cred session)  (Decoder.yfDetailDetail YfD.GetData YfD.DetailData YfD.DetailDataItem YfD.Pairing)
+                "share" ->
+                    shareTogether model.videoId session model.content
+                _ ->
+                    Api.get GetList (Endpoint.makeDetail model.videoId) (Session.cred session)  (Decoder.yfDetailDetail YfD.GetData YfD.DetailData YfD.DetailDataItem YfD.Pairing)
             )
         ListShow -> 
             ({model | listShow = not model.listShow}, Cmd.none)
@@ -162,7 +168,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "getlist"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         ShareComplete (Ok ok) -> 
@@ -175,7 +181,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "share"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         Content str ->

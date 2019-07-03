@@ -16,17 +16,17 @@ import Api.Endpoint as Endpoint
 import Http as Http
 import Api.Decoder as Decoder
 
-type alias Model 
-    = {
-        session : Session
-        , check : Bool
-        , checkDevice: String
-        , getData : DetailData
-        , loading : Bool
-        , scrap : Bool
-        , videoId : String
-        , zindex : String
-        , deleteAuth: String
+type alias Model = 
+    { session : Session
+    , check : Bool
+    , checkDevice: String
+    , getData : DetailData
+    , loading : Bool
+    , scrap : Bool
+    , videoId : String
+    , zindex : String
+    , deleteAuth: String
+    , errType : String
     }
 type alias GetData = 
     { data : DetailData }
@@ -71,6 +71,7 @@ init session mobile
             , nickname = Nothing
             , thumbnail = ""
             , description = Nothing}
+        , errType = ""
         }
         , Cmd.batch 
         [  Api.getId ()
@@ -121,6 +122,12 @@ update msg model =
         VideoRecordComplete (Ok ok) ->
             (model, Cmd.none)
         VideoRecordComplete (Err err) ->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            ({model | errType = "record"}, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
             (model, Cmd.none)
         RecordComplete str ->
             let
@@ -147,8 +154,17 @@ update msg model =
                     (model, Cmd.none)
         GotSession session ->
            ({model | session = session}, 
-           (Decoder.yfDetailDetail GetData DetailData YfD.DetailDataItem YfD.Pairing)
-           |> Api.get GetList (Endpoint.makeDetail model.videoId) (Session.cred session)  
+            case model.errType of
+                "record" ->
+                    Api.get VideoRecordComplete  (Endpoint.videoCompleteRecord model.videoId)  (Session.cred session) Decoder.resultD
+                "scrap" ->
+                    Cmd.none
+                "list" ->
+                    (Decoder.yfDetailDetail GetData DetailData YfD.DetailDataItem YfD.Pairing)
+                        |> Api.get GetList (Endpoint.makeDetail model.videoId) (Session.cred session)  
+                _ ->
+                    (Decoder.yfDetailDetail GetData DetailData YfD.DetailDataItem YfD.Pairing)
+                        |> Api.get GetList (Endpoint.makeDetail model.videoId) (Session.cred session)  
            )
         ScrapComplete (Ok ok) ->
             let
@@ -157,11 +173,13 @@ update msg model =
             
             ({model | scrap = not model.scrap}, Cmd.none)
         ScrapComplete (Err err) ->
-            let
-                serverErrors = 
-                    Api.decodeErrors err  
+            let 
+                serverErrors = Api.decodeErrors err
             in
-             ({model | deleteAuth = "scrap"},(Session.changeInterCeptor (Just serverErrors) model.session))
+            if serverErrors == "401" then
+            ({model | errType = "scrap"}, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
+            (model, Cmd.none)
         GoVideo pairing->
             let
                 videoList = 
@@ -179,11 +197,13 @@ update msg model =
         GetList(Ok ok) ->
             ({model | getData = ok.data, loading = False}, Cmd.none)
         GetList(Err err) ->
-            let
-                serverErrors = 
-                    Api.decodeErrors err  
+            let 
+                serverErrors = Api.decodeErrors err
             in
-             (model,(Session.changeInterCeptor (Just serverErrors) model.session))
+            if serverErrors == "401" then
+            ({model | errType = "list"}, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
+            (model, Cmd.none)
         Loading success ->
             let
                 d = Decode.decodeValue Decode.string success

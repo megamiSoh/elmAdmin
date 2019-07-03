@@ -15,26 +15,27 @@ import Json.Decode as Decode
 import Api.Decoder as Decoder
 import Page.Detail.MyScrapDetail as MyD
 
-type alias Model 
-    = {
-        session : Session
-        , check : Bool
-        , data : Data
-        , infiniteLoading : Bool
-        , checkList : List String
-        , screenInfo : ScreenInfo
-        , dataList : List DataList
-        , page : Int
-        , per_page :Int
-        , count : Int
-        , loading : Bool
-        , pageNum : Int
-        , zindex : String
-        , listData : MyD.DetailData
-        , scrap : Bool
-        , showDetail : Bool
-        , videoId : String
-        , showMenu : Bool
+type alias Model = 
+    { session : Session
+    , check : Bool
+    , data : Data
+    , infiniteLoading : Bool
+    , checkList : List String
+    , screenInfo : ScreenInfo
+    , dataList : List DataList
+    , page : Int
+    , per_page :Int
+    , count : Int
+    , loading : Bool
+    , pageNum : Int
+    , zindex : String
+    , listData : MyD.DetailData
+    , scrap : Bool
+    , showDetail : Bool
+    , videoId : String
+    , showMenu : Bool
+    , errType : String
+    , getCode : String
     }
 
 type alias ScreenInfo = 
@@ -110,6 +111,8 @@ init session mobile
             , thumbnail = ""
             , description = Nothing}
         , showDetail = False
+        , errType = ""
+        , getCode = ""
         }
         , Cmd.batch [
             scrapDataEncoder 1 10 session
@@ -193,6 +196,12 @@ update msg model =
         VideoRecordComplete (Ok ok) ->
             (model, Cmd.none)
         VideoRecordComplete (Err err) ->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            ({model | errType = "record"}, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
             (model, Cmd.none)
         VideoEnd complete ->
             let
@@ -228,7 +237,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "getlist"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         PageBtn (idx, str) ->
@@ -243,7 +252,16 @@ update msg model =
                     (model, Cmd.none)
         GotSession session ->
             ({model | session = session},
-            scrapDataEncoder model.page model.per_page session
+            case model.errType of
+                "record" ->
+                    Api.get VideoRecordComplete  (Endpoint.videoCompleteRecord model.videoId)  (Session.cred session) Decoder.resultD
+                "getlist" ->
+                    Decoder.yfDetailDetail MyD.GetData MyD.DetailData MyD.DetailDataItem MyD.Pairing
+                    |>Api.get GetListData (Endpoint.scrapDetail model.getCode model.videoId) (Session.cred session)
+                "getlistData" ->
+                    scrapDataEncoder model.page model.per_page session
+                _ ->
+                    scrapDataEncoder model.page model.per_page session
             )
         SaveComplete complete ->
             let
@@ -268,7 +286,7 @@ update msg model =
                         , ("id", Encode.string stringInt)]
             in
             if model.check then
-            ({model | videoId = stringInt }, 
+            ({model | videoId = stringInt, getCode = code  }, 
                 Decoder.yfDetailDetail MyD.GetData MyD.DetailData MyD.DetailDataItem MyD.Pairing
                     |>Api.get GetListData (Endpoint.scrapDetail code stringInt) (Session.cred model.session) )
             else
@@ -310,7 +328,7 @@ update msg model =
                     Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            ({model | errType = "getlistData"}, (Session.changeInterCeptor (Just serverErrors) model.session))
             else 
             (model, Route.load ("#/myScrap"))
 

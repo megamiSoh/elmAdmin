@@ -25,18 +25,16 @@ defaultOptions =
     , rawHtml = ParseUnsafe
     }
 
-type alias Model 
-    = {
-        session : Session
-        , textarea : String
-        , checkDevice: String
-        , check : Bool
-        , showToC : Bool
-        , data : DetailData
-        , onDemandText : String
-        , options : Markdown.Config.Options
-        , selectedPreviewTab : PreviewTab
-
+type alias Model = 
+    { session : Session
+    , textarea : String
+    , checkDevice: String
+    , check : Bool
+    , showToC : Bool
+    , data : DetailData
+    , onDemandText : String
+    , options : Markdown.Config.Options
+    , selectedPreviewTab : PreviewTab
     }
 
 type alias Data =
@@ -107,7 +105,7 @@ update msg model =
         ClickLeft ->
             (model , Api.scrollLeft ())
         GotSession session ->
-            ({model | session = session },Api.get GetDetail (Endpoint.detailInfo model.checkDevice) (Session.cred model.session) (Decoder.detailInfo Data DetailData))
+            ({model | session = session },Api.get GetDetail (Endpoint.detailInfo model.checkDevice) (Session.cred session) (Decoder.detailInfo Data DetailData))
         GetDetail (Ok ok)->
             ({model | data = ok.data, textarea = ok.data.content}, Cmd.none)
         GetDetail (Err err)->

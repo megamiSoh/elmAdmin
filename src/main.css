@@ -1607,7 +1607,7 @@ height: 2.5rem;
  width: 70%;
  height: 3rem;
   font-size: 1.2rem;
-  margin: 0 auto;
+  margin: 1rem auto;
 }
 
 .togetherWrite_yf_butbox
@@ -6714,3 +6714,15 @@ margin: 0 1rem;
   margin-bottom: 0;
 }
 
+.askBirthStyle {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  width: 80%;
+  margin: 0 auto;
+}
+.askBirthStyle span {
+  display: inline-block;
+  padding: 0 1rem 0 .3rem; 
+}

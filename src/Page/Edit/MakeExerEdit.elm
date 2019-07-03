@@ -17,32 +17,32 @@ import Http as Http
 import Api.Decoder as Decoder
 import Swiper
 
-type alias Model 
-    = {
-        session : Session
-        , workOut : List FilterData
-        , addItem : List FilterData
-        , break : FilterData
-        , next : Bool
-        , what : String
-        , loading : Bool
-        , swipingState : Swiper.SwipingState
-        , swipeCode : String
-        , filterData : List FilterData
-        , check : Bool
-        , getFilter : GetFilter
-        , menuOpen : Bool
-        , stopEvent :Bool
-        , menuleft :Bool
-        , resultCount : String
-        , screenInfo : ScreenInfo
-        , takeList : Int
-        , infiniteLoading : Bool
-        , offsetH : Int
-        , page : Int
-        , per_page : Int
-        , title : String
-        , videoId : String
+type alias Model = 
+    { session : Session
+    , workOut : List FilterData
+    , addItem : List FilterData
+    , break : FilterData
+    , next : Bool
+    , what : String
+    , loading : Bool
+    , swipingState : Swiper.SwipingState
+    , swipeCode : String
+    , filterData : List FilterData
+    , check : Bool
+    , getFilter : GetFilter
+    , menuOpen : Bool
+    , stopEvent :Bool
+    , menuleft :Bool
+    , resultCount : String
+    , screenInfo : ScreenInfo
+    , takeList : Int
+    , infiniteLoading : Bool
+    , offsetH : Int
+    , page : Int
+    , per_page : Int
+    , title : String
+    , videoId : String
+    , errType : String
     }
 
 type alias DetailData =     
@@ -169,6 +169,7 @@ init session mobile
         , what = ""
         , filterData = []
         , check = mobile
+        , errType = ""
         }
         , 
         Cmd.batch[
@@ -355,7 +356,7 @@ update msg model =
                 serverErrors = 
                     Api.decodeErrors err  
             in
-             (model,(Session.changeInterCeptor (Just serverErrors) model.session))
+             ({model | errType = "getlist"},(Session.changeInterCeptor (Just serverErrors) model.session))
         GetId id ->
             let
                 result = Decode.decodeValue Decode.string id
@@ -437,7 +438,14 @@ update msg model =
                         (model, Cmd.none)
         GotSession session ->
             ({model | session = session}
-            , filterEncoder model.getFilter session model.page model.per_page
+            , case model.errType of
+                "getlist" ->
+                    (Decoder.makeEdit DetailData DetailItem ExItem Pair)
+                    |>Api.get GetList (Endpoint.makeDetail model.videoId) (Session.cred session) 
+                "filter" ->
+                    filterEncoder model.getFilter session model.page model.per_page
+                _ ->
+                    filterEncoder model.getFilter session model.page model.per_page
             )
         SearchExercise str ->
             let
@@ -487,7 +495,7 @@ update msg model =
                 serverErrors = 
                     Api.decodeErrors err    
             in
-            (model,(Session.changeInterCeptor (Just serverErrors) model.session))
+            ({model | errType = "filter"},(Session.changeInterCeptor (Just serverErrors) model.session))
         AddBreak ->
             if List.length model.addItem < 20 then
             ({model | addItem = model.addItem ++ [model.break]}, Cmd.none)

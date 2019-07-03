@@ -76,7 +76,8 @@ module Api.Endpoint exposing
     , productWeek
     , myPaperweightList
     , mypaperweightDetail
-    , renewWeekExercise)
+    , renewWeekExercise
+    , askBirth)
 
 import Http
 import Url.Builder exposing (QueryParameter)
@@ -112,7 +113,7 @@ url paths queryParams =
 
 refresh : Endpoint
 refresh =
-    url [ "auth", "front", "refresh"] []
+    url [ "auth", "front", "token"] []
 
 login : Endpoint
 login =
@@ -363,3 +364,6 @@ mypaperweightDetail no =
 
 renewWeekExercise = 
     url ["front", "product", "renew", "week"][]
+
+askBirth = 
+    url ["front" , "ask" , "birthday"][]

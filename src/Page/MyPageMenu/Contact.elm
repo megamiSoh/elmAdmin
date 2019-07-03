@@ -15,26 +15,26 @@ import Api.Decoder as Decoder
 import Page.Detail.ContactDetail as CD
 import Page.Detail.FaqWrite as Fw
 
-type alias Model 
-    = {
-        session : Session
-        , checkDevice : String
-        , idx : String
-        , check : Bool
-        , faq : Faq
-        , getId : Int
-        , pageNum : Int
-        , page : Int
-        , per_page : Int
-        , detail : Detail
-        , screenInfo : ScreenInfo
-        , ofheight : Bool
-        , appFaqData : List Data
-        , title : String
-        , content : String
-        , showWrite : Bool
-        , showDetail : Bool
-        , scrollCount : Float
+type alias Model = 
+    { session : Session
+    , checkDevice : String
+    , idx : String
+    , check : Bool
+    , faq : Faq
+    , getId : Int
+    , pageNum : Int
+    , page : Int
+    , per_page : Int
+    , detail : Detail
+    , screenInfo : ScreenInfo
+    , ofheight : Bool
+    , appFaqData : List Data
+    , title : String
+    , content : String
+    , showWrite : Bool
+    , showDetail : Bool
+    , scrollCount : Float
+    , errType : String
     }
 
 type alias Faq =
@@ -115,6 +115,7 @@ init session mobile
             , title = ""
             , username = "" }
         , showDetail = False
+        , errType = ""
         }
         , Cmd.batch[faqEncode 1 10 session
         , scrollToTop NoOp
@@ -217,12 +218,24 @@ update msg model =
         EditComplete (Ok ok) ->
             ({model | showDetail = False}, Cmd.batch[Api.showToast (E.string "수정이 완료 되었습니다."), faqEncode model.page model.per_page model.session])
         EditComplete (Err err) ->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            ({model | errType = "edit"}, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
             (model, Cmd.none)
         GoEdit ->
             (model , CD.editEncoder model.title model.content model.session (String.fromInt model.getId) EditComplete)
         DetailData (Ok ok) ->
             ({model | detail = ok.data, title = ok.data.title, content = ok.data.content}, Cmd.none)
         DetailData (Err err) ->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            ({model | errType = "detail"}, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
             (model, Cmd.none)
         RegistSuccess (Ok ok) ->
             ({model | title = "" , content = "", showWrite = False}, Cmd.batch [
@@ -230,12 +243,11 @@ update msg model =
                 , faqEncode model.page model.per_page model.session
             ])
         RegistSuccess (Err err) ->
-            let
-                serverErrors =
-                    Api.decodeErrors err
+            let 
+                serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model,(Session.changeInterCeptor (Just serverErrors) model.session))
+            ({model | errType = "regist"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         Title titleStr ->
@@ -257,7 +269,23 @@ update msg model =
             Fw.faqEncode model.title model.content model.session RegistSuccess
             )
         GotSession session ->
-            ({model | session = session}, faqEncode  (model.page + 1) model.per_page model.session)
+            ({model | session = session}, 
+            case model.errType of
+                "edit" ->
+                    CD.editEncoder model.title model.content session (String.fromInt model.getId) EditComplete
+                "detail" ->
+                    CD.detailApi (String.fromInt model.getId) session DetailData
+                "regist" ->
+                    Fw.faqEncode model.title model.content session RegistSuccess
+                "delete" ->
+                    Api.get DeleteSuccess (Endpoint.faqDelete (String.fromInt model.getId)) (Session.cred session) (Decoder.resultD)
+                "appDetail" ->
+                    detailApi (String.fromInt model.getId) session
+                "faq" ->
+                    faqEncode  (model.page + 1) model.per_page session
+                _ ->
+                    faqEncode  (model.page + 1) model.per_page session
+                )
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
             -- let 
             --     endOfPage =  model.faq.paginate.total_count // model.per_page 
@@ -279,7 +307,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "delete"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         GoDelete id ->
@@ -291,7 +319,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "appDetail"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         PageBtn (idx, str) ->
@@ -325,7 +353,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            ({model | errType = "faq"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         CheckDevice str ->

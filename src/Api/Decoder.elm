@@ -969,3 +969,14 @@ myaskDetailItem item =
         |> required "sort" int
         |> required "title" string
         |> required "value" int
+
+
+myaskBirthData data birth = 
+    Decode.succeed data
+        |> required "data" (myaskBirth birth)
+
+myaskBirth birth =
+    Decode.succeed birth
+        |> required "content" string
+        |> required "default" string
+        |> required "name" string

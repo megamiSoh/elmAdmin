@@ -238,7 +238,7 @@ subscriptions model =
         PrivateModel item ->
             Sub.none
         SetPwdModel item ->
-            Sub.none
+            Sub.map SetPwdMsg (SetPwd.subscription item)
         FPwdModel item ->
             Sub.none
         TAModel item ->

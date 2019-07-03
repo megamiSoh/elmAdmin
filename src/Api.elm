@@ -77,6 +77,7 @@ port sendHeight : (Value -> msg) -> Sub msg
 port touch : (Value -> msg) -> Sub msg
 port progressComplete : (Value -> msg) -> Sub msg
 port calcurationComplete : (Value -> msg) -> Sub msg
+
 viewerChanges toMsg decoder =
     onStoreChange (\value -> toMsg (decodeFromChange decoder value))
 
@@ -148,18 +149,8 @@ port bodyInfo : () -> Cmd msg
 port hideFooter : () -> Cmd msg
 port progressGo : () -> Cmd msg
 port progressCalcuration : () -> Cmd msg
--- port logout : () -> Cmd msg
--- application :
-    -- Decoder (Cred -> viewer)
-    -- ->
-    --     { init : Maybe viewer -> Url -> Nav.Key -> ( model, Cmd msg )
-    --     , onUrlChange : Url -> msg
-    --     , onUrlRequest : Browser.UrlRequest -> msg
-    --     , subscriptions : model -> Sub msg
-    --     , update : msg -> model -> ( model, Cmd msg )
-    --     , view : model -> Browser.Document msg
-    --     }
-    -- -> Program Value model msg
+port valueReset : Value -> Cmd msg
+
 type alias Flags = 
     { token : String
     -- , checkBrowser : Bool
@@ -201,26 +192,9 @@ application config =
         }
 
 
--- storageDecoder : Decoder (Cred -> viewer) -> Decoder viewer
 storageDecoder  =
     Decode.field "token" credDecoder
 
--- mobileCheckDecoder =
---     Decode.filed "mobileCheck"
-
--- HTTP
--- refreshGet msg url maybeCred headerAuth= 
---     Endpoint.request
---         { method = "GET"
---         , url = url
---         , expect = Http.expectJson msg decoder
---         , header = Just headerAuth
---         , body = Http.emptyBody
---         , timeout = Nothing
---         , tracker = Nothing
---         }
-
--- get : tag ->Endpoint -> Maybe Cred -> Decoder success -> Cmd msg
 get msg url maybeCred decoder =
     Endpoint.request
         { method = "GET"
@@ -297,8 +271,6 @@ delete tagger url cred body decoder =
 
 login body msg decoder =
     post Endpoint.login Nothing msg body decoder
-
-
 
 
 -- settings : Cred -> Http.Body -> Decoder (Cred -> a) -> Cmd msg

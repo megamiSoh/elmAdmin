@@ -22,19 +22,19 @@ defaultOptions =
     , rawHtml = ParseUnsafe
     }
 
-type alias Model 
-    = {
-        session : Session
-        , checkDevice : String
-        , check : Bool
-        , getId : String
-        , detail : Detail
-        , edit : Bool
-        , onDemandText : String
-        , options : Markdown.Config.Options
-        , selectedPreviewTab : PreviewTab
-        , showToC : Bool
-        , textarea : String
+type alias Model = 
+    { session : Session
+    , checkDevice : String
+    , check : Bool
+    , getId : String
+    , detail : Detail
+    , edit : Bool
+    , onDemandText : String
+    , options : Markdown.Config.Options
+    , selectedPreviewTab : PreviewTab
+    , showToC : Bool
+    , textarea : String
+    , errType : String
     }
 
 type PreviewTab
@@ -75,8 +75,8 @@ editEncoder title content session id msg =
 init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile = 
     (
-        {session = session
-        ,checkDevice = ""
+        { session = session
+        , checkDevice = ""
         , check = mobile
         , getId = ""
         , edit = True
@@ -89,6 +89,7 @@ init session mobile =
             { content = ""
             , id = 0 
             , title = "" }
+        , errType = ""
         }
         , Cmd.batch[Api.getKey ()
         , scrollToTop NoOp]
@@ -153,7 +154,17 @@ update msg model =
         GoBack ->
             (model, Route.pushUrl(Session.navKey model.session) Route.C)
         GotSession session ->
-            ({model | session = session},detailApi model.getId session GetDetail)
+            ({model | session = session},
+            case model.errType of
+                "edit" ->
+                    editEncoder model.detail.title model.detail.content session model.getId EditComplete
+                "delete" ->
+                    Api.get DeleteSuccess (Endpoint.faqDelete model.getId) (Session.cred session) (Decoder.resultD)
+                "detail" ->
+                    detailApi model.getId session GetDetail
+                _ ->
+                    detailApi model.getId session GetDetail
+                    )
         EditComplete (Ok ok) ->
             if model.check then
             (model, Cmd.batch[
@@ -163,6 +174,12 @@ update msg model =
             else
             ({model | edit = not model.edit}, Api.showToast (E.string "수정이 완료 되었습니다."))
         EditComplete (Err err) ->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            ({model | errType = "edit"}, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
             (model, Cmd.none)
         Title title ->
             ({model | detail = (recordsUpdateTitle title) } , Cmd.none)
@@ -177,6 +194,12 @@ update msg model =
             (model, Cmd.batch[Api.showToast (E.string "문의가 삭제되었습니다.")
             , Route.pushUrl (Session.navKey model.session) Route.C])
         DeleteSuccess (Err err) ->
+            let 
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            ({model | errType = "delete"}, (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
             (model, Api.showToast (E.string "문의를 삭제 할 수 없습니다."))
         GoDelete ->
             (model, Api.get DeleteSuccess (Endpoint.faqDelete model.getId) (Session.cred model.session) (Decoder.resultD) )
@@ -187,7 +210,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "detail"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         GetId id ->

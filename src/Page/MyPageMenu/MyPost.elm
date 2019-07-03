@@ -16,29 +16,29 @@ import Http as Http
 import Page.Detail.MyPostDetail as MyD
 
 
-type alias Model 
-    = {
-        session : Session
-        ,checkDevice : String
-        , check : Bool
-        , page : Int
-        , per_page : Int
-        , data : DataList
-        , infiniteLoading : Bool
-        , checkList : List String
-        , screenInfo : ScreenInfo
-        , dataList : List Data
-        , deleteComplete : Bool
-        , errAuth : String
-        , deleteId : Int
-        , pageNum : Int
-        , loading : Bool
-        , show : String
-        , getData : MyD.TogetherData
-        , postId : String
-        , zindex : String
-        , showDetail : Bool
-        , showMenu : Bool
+type alias Model = 
+    { session : Session
+    ,checkDevice : String
+    , check : Bool
+    , page : Int
+    , per_page : Int
+    , data : DataList
+    , infiniteLoading : Bool
+    , checkList : List String
+    , screenInfo : ScreenInfo
+    , dataList : List Data
+    , deleteComplete : Bool
+    , errAuth : String
+    , deleteId : Int
+    , pageNum : Int
+    , loading : Bool
+    , show : String
+    , getData : MyD.TogetherData
+    , postId : String
+    , zindex : String
+    , showDetail : Bool
+    , showMenu : Bool
+    , errType : String
     }
 
 type alias ScreenInfo = 
@@ -104,7 +104,8 @@ init session mobile
                 , page = 0
                 , per_page = 0
                 , total_count = 0 }
-            }}
+            }
+        , errType = ""}
         , Cmd.batch [
             mypostList 1 10 session
             , Api.removeJw ()
@@ -203,18 +204,25 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "getdetail"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         NoOp ->
             (model, Cmd.none)
         GotSession session ->
-            if model.errAuth == "delete" then
             ({model | session =session},  
-            (Decoder.resultD)
-            |> Api.get DeleteComplete (Endpoint.myPostDelete (String.fromInt(model.deleteId))) (Session.cred session ) )
-            else
-            ({model | session =session}, mypostList model.page model.per_page session)
+            case model.errType of
+                "getdetail"->
+                    Decoder.mypostDataWrap MyD.TogetherDataWrap MyD.TogetherData MyD.DetailTogether MyD.TogetherItems MyD.Pairing
+                    |>Api.get GetDetailList (Endpoint.postList model.postId) (Session.cred session)  
+                "delete" ->
+                    (Decoder.resultD)
+                    |> Api.get DeleteComplete (Endpoint.myPostDelete (String.fromInt(model.deleteId))) (Session.cred session ) 
+                "getList" ->
+                    mypostList model.page model.per_page session
+                _ ->
+                    mypostList model.page model.per_page session
+            )
         SaveId complete ->
             let
                 c = Decode.decodeValue Decode.string complete
@@ -277,7 +285,7 @@ update msg model =
                     Api.decodeErrors err    
             in
             
-            ({model | errAuth = "delete"}, (Session.changeInterCeptor (Just serverErrors) model.session))
+            ({model | errType = "delete"}, (Session.changeInterCeptor (Just serverErrors) model.session))
         DeleteConfirm id ->
             if id == 0 then
             ({model | deleteId = id, show = ""},Cmd.none)
@@ -300,7 +308,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             
-            (model, Session.changeInterCeptor (Just serverErrors) model.session) 
+            ({model | errType = "getList"}, Session.changeInterCeptor (Just serverErrors) model.session) 
         BackBtn ->
             (model, Route.backUrl(Session.navKey model.session) 1)
             

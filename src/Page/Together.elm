@@ -46,6 +46,7 @@ type alias Model =
     , cnt : Int
     , webtogetherData : WebToghtherDataWrap
     , scrollCount : Float
+    , errType : String
     }
 
 type alias WebToghtherDataWrap =
@@ -186,6 +187,7 @@ init session mobile
                 , per_page = 0
                 , total_count = 0 }
             }
+        , errType = ""
         }
         ,  Cmd.batch 
         [ (
@@ -346,13 +348,17 @@ update msg model =
                 serverErrors =
                     Api.decodeErrors err
             in  
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            ({model | errType = "myInfo"}, (Session.changeInterCeptor (Just serverErrors) model.session))
         GotSession session ->
             ({model | session = session},
-            Cmd.batch [
-                likeApi session (String.fromInt model.like)
-                , mydata session
-            ])
+                case model.errType of
+                    "myInfo" ->
+                        mydata session
+                    "like" ->
+                        likeApi session (String.fromInt model.like)
+                    _ ->
+                        mydata session
+            )
         GetHeight height ->
             let
                 heightDecoding =
@@ -397,7 +403,7 @@ update msg model =
                 serverErrors =
                     Api.decodeErrors err
             in  
-            (model, (Session.changeInterCeptor (Just serverErrors) model.session))
+            ({model | errType = "like"}, (Session.changeInterCeptor (Just serverErrors) model.session))
 
         ShowAllText ->
             ({model | showAllText = not model.showAllText}, Cmd.none)

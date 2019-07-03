@@ -15,16 +15,15 @@ import Api.Endpoint as Endpoint
 import Http as Http
 import Api.Decoder as Decoder
 
-type alias Model 
-    = {
-        session : Session
-        , check : Bool
-        , checkDevice: String
-        , getData : TogetherData
-        , loading : Bool
-        , scrap : Bool
-        , postId : String
-        , zindex : String
+type alias Model = 
+    { session : Session
+    , check : Bool
+    , checkDevice: String
+    , getData : TogetherData
+    , loading : Bool
+    , scrap : Bool
+    , postId : String
+    , zindex : String
     }
 
 type alias TogetherDataWrap = 

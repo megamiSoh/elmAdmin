@@ -51,7 +51,7 @@ changeInterCeptor error sessionHere=
             if err == "401" then
                 case sessionHere of
                     LoggedIn _ val ->
-                        Api.secRefreshFetch ()
+                        Api.refreshFetchData ()
                 
                     Guest _ ->
                        Cmd.none
@@ -61,8 +61,6 @@ changeInterCeptor error sessionHere=
     
         Nothing ->
                 Cmd.none
-
-
 
 
 navKey : Session -> Nav.Key

@@ -39,6 +39,11 @@ type Msg
     | PwdInput String
     | ChangePwd
     | PwdComplete (Result Http.Error Decoder.Success)
+    | GotSession Session
+
+
+subscription model = 
+    Session.changes GotSession (Session.navKey model.session)
 
 toSession : Model -> Session
 toSession model =
@@ -63,6 +68,8 @@ pwdEncode model session =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GotSession session ->
+            update ChangePwd {model | session = session}
         NoOp ->
             ( model, Cmd.none )
         OldPwd str ->

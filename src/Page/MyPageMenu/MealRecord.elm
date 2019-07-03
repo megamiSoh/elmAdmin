@@ -49,6 +49,9 @@ type alias Model =
     , showMenu : Bool
     , currentDay : Date
     , today : String
+    , errType : String
+    , getId : String
+    , registOrEdit : String
     }
 
 type alias Data = 
@@ -164,6 +167,9 @@ init session mobile =
         , food_count = 0
         , is_direct = False 
         } 
+    , errType = ""
+    , getId = ""
+    , registOrEdit = ""
     }
     , Cmd.batch[Api.getKey () 
     , Api.scrollControl ()
@@ -322,7 +328,21 @@ update msg model =
             -- in
             -- update (SearchInput model.foodSearch) model
         GotSession session ->
-            ({model | session = session }, dayKindOfMealEncode model.mealPage model.mealPer_page model.session model.code model.date)
+            ({model | session = session }, 
+            case model.errType of 
+                "getmeal" ->
+                    dayKindOfMealEncode model.mealPage model.mealPer_page session model.code model.date
+                "foodData" ->
+                    foodEncode model.page model.per_page model.foodSearch session
+                "edit" ->
+                    mealEditInfo model.mealRegistInfo session model.diary_no
+                "regist" ->
+                    mealRegistInfo model.mealRegistInfo session
+                "delete" ->
+                    Api.get MealDeleteComplete (Endpoint.mealDelete model.date model.getId)(Session.cred session) Decoder.resultD 
+                _ ->
+                    dayKindOfMealEncode model.mealPage model.mealPer_page session model.code model.date
+                    )
         ReceiveDate today ->
             let 
                 dateString = getFormattedDate Nothing (Just today)
@@ -393,11 +413,11 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "delete"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         MealDelete id ->
-            (model, Api.get MealDeleteComplete (Endpoint.mealDelete model.date id)(Session.cred model.session) Decoder.resultD )
+            ({model | getId = id}, Api.get MealDeleteComplete (Endpoint.mealDelete model.date id)(Session.cred model.session) Decoder.resultD )
         RegistOrEditMeal category->
             let 
                 old = model.mealRegistInfo
@@ -417,9 +437,9 @@ update msg model =
                     else
                     case category of
                         "regist" ->
-                            ({model | mealRegistInfo = new}, mealRegistInfo new model.session)    
+                            ({model | mealRegistInfo = new , registOrEdit = category}, mealRegistInfo new model.session)    
                         "edit" ->
-                            ({model | mealRegistInfo = new}, mealEditInfo new model.session model.diary_no) 
+                            ({model | mealRegistInfo = new , registOrEdit = category}, mealEditInfo new model.session model.diary_no) 
                         _ ->
                             (model, Cmd.none)
             
@@ -436,7 +456,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = model.registOrEdit}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         FoodQuantityClose ->
@@ -495,7 +515,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "foodData"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         GetMealData (Ok ok) ->
@@ -509,7 +529,7 @@ update msg model =
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model, (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "getmeal"}, (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Cmd.none)
         ReceiveKey code ->
