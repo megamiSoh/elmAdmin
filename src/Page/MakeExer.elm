@@ -512,11 +512,7 @@ update msg model =
                             (model, Cmd.none)
         AskBirthComplete (Ok ok) ->
             ({model | birthData = ok.data, year = String.dropRight 6 ok.data.default, day = String.dropLeft 8 ok.data.default, month = String.dropLeft 5 (String.dropRight 3 ok.data.default), birthDay = ok.data.default}, Cmd.none)
-        AskBirthComplete (Err err) ->   
-            let _ = Debug.log "err" err
-                
-            in
-            
+        AskBirthComplete (Err err) ->  
             (model, Cmd.none)
         CompleteProductWeekRegist (Ok ok) ->
             ({model | trialShow = False}, Cmd.batch[askExerData model.session

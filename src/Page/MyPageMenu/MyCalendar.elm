@@ -273,7 +273,7 @@ update msg model =
             
             case when of
                 "next" ->
-                    let _ = Debug.log "formatDateString" formatDateString 1
+                    let
                         date = String.dropLeft 8 model.date
                         today = String.dropLeft 8 model.today
                     in
@@ -326,9 +326,6 @@ update msg model =
         ImgUploadAfter img ->
             ({model | afterImg = img , beforeOrAfter = "after"}, imgEncoder img model.date model.session "after" Endpoint.afterImg)
         ImgUploadBefore img ->
-            let _ = Debug.log "img" img
-            in
-
             ({model | beforeImg = img, beforeOrAfter = "before"}, imgEncoder img model.date model.session "before" Endpoint.beforeImg) 
         ImgUploadComplete (Ok ok) ->
             (model, Cmd.batch[Api.showToast (E.string "등록 되었습니다."), diaryApi model.date model.session]) 
