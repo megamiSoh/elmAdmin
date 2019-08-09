@@ -980,3 +980,12 @@ myaskBirth birth =
         |> required "content" string
         |> required "default" string
         |> required "name" string
+
+shareData data share= 
+    Decode.succeed data 
+        |> required "data" (Decode.list (shareType share))
+
+shareType share = 
+    Deocde.succeed share
+        |> required "code" string
+        |> required "name" string

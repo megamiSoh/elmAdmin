@@ -129,7 +129,15 @@ type alias ScreenInfo =
     , scrollTop : Int
     , offsetHeight : Int}
 
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+type alias ShareTypeData = 
+    { data : List ShareType }
+
+type alias ShareType = 
+    { code : String
+    , name : String }
+
+
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     =
      (
@@ -456,22 +464,7 @@ update msg model =
             ({model | loading = False}, Cmd.none)
         
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
-            --  if (scrollHeight - scrollTop) <= (offsetHeight + 77) then
-            --     if model.togetherData.paginate.total_count // model.per_page + 1 > model.page then
-            --     ({model | infiniteLoading = True, ofheight = 
-            --     case model.ofheight of
-            --         Just a ->
-            --             Just (a + 200)
-                
-            --         Nothing ->
-            --             Nothing
-            --             }, Cmd.batch[loadingEncoder (model.page + 1)  model.per_page model.session])
-            --     else
-            --     ({model | ofheight = Nothing}, Cmd.none)
-                
-            -- else
                 (model, Cmd.none)
-                -- ({model | ofheight = scrollHeight}, Cmd.none)
         PageBtn (idx, str) ->
             case str of
                 "prev" ->
@@ -501,24 +494,6 @@ update msg model =
                 else
                     ({model | likeList= model.likeList ++ [model.like]}
                     , likeApi model.session (String.fromInt model.like))
-            -- else
-            --     if ok.data.count == 0 then
-            --         let
-            --             listF = 
-            --                 List.filter(\x->
-            --                     model.like /= x
-            --                 )model.likeList
-            --         in
-            --         ({model | likeList= listF}
-            --         , dataEncoder model.page model.per_page model.session)
-            --     else
-            --         ({model | likeList= model.likeList ++ [model.like]}
-            --         , dataEncoder model.page model.per_page model.session)
-            -- (model
-            -- , dataEncoder model.page model.per_page model.session)
-            -- else
-            -- ({model | like = 0}
-            -- , dataEncoder model.page model.per_page model.session)
         LikeComplete (Err err) ->
             let
                 serverErrors = Api.decodeErrors err
@@ -534,17 +509,7 @@ update msg model =
             ({model | like = id, cnt = idx}, 
             (Decoder.togetherLike Like LikeData)
              |> Api.get LikeComplete (Endpoint.togetherLike (String.fromInt id)) (Session.cred model.session) )
-        -- Loading success ->
-        --     let
-        --         d = Decode.decodeValue Decode.string success
-        --     in
-        --         case d of
-        --             Ok item ->
-        --                 ({model | loading = False},Cmd.none)
-        --                 -- (model, Cmd.none)
-                
-        --             Err _->
-        --                  ({model | loading = False},Cmd.none)
+
         GetData (Ok ok) ->
             ({model | togetherData = ok, appData = ok.data, loading = False} , (scrollToTop NoOp) )
         GetData (Err err) ->
@@ -622,7 +587,7 @@ web model contentsItem=
                         div [] [
                             commonHeader "../image/icon_together.png" "함께해요",
                         div [class "yf_yfworkout_search_wrap together"] [
-                            -- tabbox model,
+                            tabbox model,
                             lazy contentsItem model
                         ]
                         
@@ -642,16 +607,7 @@ app model =
             div [  scrollEvent ScrollEvent, class "scrollHegiht", id "searchHeight"] [
                 -- appTab model,
                 appStartBtn,
-                div [class "togetherscrollContent"
-                -- , 
-                --     case model.ofheight of
-                --         Just a ->
-                --             (style "height" ((String.fromInt a) ++ "vh"))
-                    
-                --         Nothing ->
-                --             (style "overflow" "hidden")
-                            
-                ] (List.indexedMap (
+                div [class "togetherscrollContent" ] (List.indexedMap (
                         \idx x -> appContentsItem idx x model ) model.appData )
                 -- ,if model.infiniteLoading then
                 , div [class "loadingPosition", style "display" (if model.infiniteLoading then "block" else "none")] [
@@ -820,51 +776,55 @@ appContentsItem idx item model=
         --     ] 
         
         ]
-   
+
+
+tabItem model = 
+    li [ classList [
+            ("together_yf_active" , model.isActive == "All")
+        ], onClick (IsActive "All") ]
+            [ p []
+                [ span []
+                    [ text "전체" ]
+                ]
+                    ]
+
 tabbox model=
     div [ class "tapbox" ]
         [ div [ class "tabs is-toggle is-fullwidth is-large" ]
             [ ul []
-                [ li [ classList [
-                    ("together_yf_active" , model.isActive == "All")
-                ], onClick (IsActive "All") ]
-                    [ p []
-                        [ span []
-                            [ text "전체" ]
-                        ]
-                    ]
-                , li [ classList [
-                    ("together_yf_active" , model.isActive == "people")
-                ], onClick (IsActive "people")]
-                    [ p []
-                        [ span []
-                            [ text "피플" ]
-                        ]
-                    ]
-                , li [ classList [
-                    ("together_yf_active" , model.isActive == "recipe")
-                ], onClick (IsActive "recipe")]
-                    [ p []
-                        [ span []
-                            [ text "레시피" ]
-                        ]
-                    ]
-                , li [ classList [
-                    ("together_yf_active" , model.isActive == "news")
-                ], onClick (IsActive "news")]
-                    [ p []
-                        [ span []
-                            [ text "뉴스" ]
-                        ]
-                    ]
-                , li [ classList [
-                    ("together_yf_active" , model.isActive == "fitness")
-                ], onClick (IsActive "fitness")]
-                    [ p []
-                        [ span []
-                            [ text "피트니스" ]
-                        ]
-                    ]
+                [ 
+                -- , li [ classList [
+                --     ("together_yf_active" , model.isActive == "people")
+                -- ], onClick (IsActive "people")]
+                --     [ p []
+                --         [ span []
+                --             [ text "피플" ]
+                --         ]
+                --     ]
+                -- , li [ classList [
+                --     ("together_yf_active" , model.isActive == "recipe")
+                -- ], onClick (IsActive "recipe")]
+                --     [ p []
+                --         [ span []
+                --             [ text "레시피" ]
+                --         ]
+                --     ]
+                -- , li [ classList [
+                --     ("together_yf_active" , model.isActive == "news")
+                -- ], onClick (IsActive "news")]
+                --     [ p []
+                --         [ span []
+                --             [ text "뉴스" ]
+                --         ]
+                --     ]
+                -- , li [ classList [
+                --     ("together_yf_active" , model.isActive == "fitness")
+                -- ], onClick (IsActive "fitness")]
+                --     [ p []
+                --         [ span []
+                --             [ text "피트니스" ]
+                --         ]
+                --     ]
                 ]
             ]
         ]
