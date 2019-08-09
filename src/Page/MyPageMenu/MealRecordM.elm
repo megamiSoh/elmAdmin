@@ -425,7 +425,7 @@ update msg model =
             else
             (model, Cmd.none)
         ReceiveDate today ->
-            ({model | date = getFormattedDate Nothing (Just today)} , dayKindOfMealEncode 1 10 model.session "10" (getFormattedDate Nothing (Just today)))
+            ({model | date = getFormattedDate Nothing (Just today)} , Cmd.none)
         RegistMealComplete (Ok ok) ->
             ({model | detailShow = False, foodQuantity = 0, foodQuantityString = "0", derectRegistShow = False, directFoodName = "", directKcal = "", active = ""}, Cmd.batch[Api.showToast (E.string "등록되었습니다.")
             , dayKindOfMealEncode model.meal_page model.meal_per_page model.session model.key model.date])
@@ -555,7 +555,7 @@ update msg model =
             
             case decodeKey of
                 Ok ok ->
-                    ({model | key = ok, stepDisplay = "secStep"}, dayKindOfMealEncode model.meal_page model.meal_per_page model.session ok model.date)
+                    ({model | key = String.left 2 ok, stepDisplay = "secStep"}, dayKindOfMealEncode model.meal_page model.meal_per_page model.session (String.left 2 ok) (String.dropLeft 3 ok))
                 Err err ->
                     (model, Cmd.none)
         CheckDevice str ->

@@ -54,6 +54,21 @@ app.ports.sendData.subscribe(function () {
  
 });
 
+app.ports.dateValidate.subscribe(function (date){
+  let char = date.split(',')
+  let dateFormat = char
+  let dateCheck = new Date (date)
+  let oldDate = new Date(1900, 1, 1) < dateCheck
+  let validate =  dateFormat[0] == dateCheck.getFullYear() && (dateFormat[1] - 1)  == dateCheck.getMonth() && dateFormat[2] == dateCheck.getDate() && new Date () > dateCheck && oldDate
+  console.log(validate)
+  app.ports.dateValidResult.send(validate)
+  // if (validate) {
+  //   app.ports.dateValidResult.send(validate)
+  // } else {
+  //   return;
+  // }
+})
+
 app.ports.hideFooter.subscribe(function () {
   if (document.getElementById("myElement") == null) { return; 
   } else {
@@ -449,7 +464,7 @@ if (checkDisplay.className == "logoutShow")  {
 })
 
 app.ports.valueReset.subscribe(function (id) {
-  alert(document.getElementById(id +"after"))
+  // alert(document.getElementById(id +"after"))
   // document.getElementById(id +"before").value = ""
   // document.getElementById(id +"after").value = ""
 })

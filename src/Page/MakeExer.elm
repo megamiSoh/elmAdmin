@@ -56,6 +56,7 @@ type alias Model =
     , year : String
     , month : String
     , day : String
+    , dateValidate : Bool
     }
 type alias Format = 
     { ask_id : Int
@@ -359,6 +360,7 @@ init session mobile =
         , month = ""
         , day = ""
         , birthDay = ""
+        , dateValidate = False
         }, 
         Cmd.batch 
         [ bodyEncode 1 10 "" session
@@ -400,6 +402,7 @@ type Msg
     | CompleteProductWeekRegist (Result Http.Error Decoder.Success)
     | AskBirthComplete (Result Http.Error AskBirthData)
     | BirthInput String String
+    | DateValidate Encode.Value
 
 toSession : Model -> Session
 toSession model =
@@ -428,6 +431,7 @@ subscriptions model=
         , Api.successId SaveIdComplete
         , Api.progressComplete ProgressComplete
         , Api.calcurationComplete CalcurationComplete
+        , Api.dateValidResult DateValidate
     ]
 
 onLoad : msg -> Attribute msg
@@ -471,31 +475,35 @@ goProductBody id session =
                     |> Http.jsonBody
     in
     Api.post Endpoint.productWeek (Session.cred session) CompleteProductWeekRegist body Decoder.resultD
-    
+
+
+
+
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        DateValidate dateValue ->
+            case Decode.decodeValue Decode.bool dateValue of
+                Ok ok ->
+                    let _ = Debug.log "ok" ok
+                    in
+
+                    ({model | dateValidate = ok}, Cmd.none)
+                Err err ->
+                    (model, Cmd.none)
+
         BirthInput category date ->
             case String.toInt date of
                 Just ok ->
                     case category of
                         "year" ->
-                            if ok > 9999 || ok < 1 then
-                            (model, Cmd.none)
-                            else
-                            ({model | year = date}, Cmd.none)
+                            ({model | year = date}, Api.dateValidate(Encode.string (date ++ "," ++ model.month ++ "," ++ model.day)))
                     
                         "month" ->
-                            if ok > 12 || ok < 1 then 
-                                (model, Cmd.none)
-                            else
-                            ({model | month = date}, Cmd.none)
+                            ({model | month = date}, Api.dateValidate(Encode.string (model.year ++ "," ++ date ++ "," ++ model.day)))
                         "day" ->
-                            if ok > 31 || ok < 1 then
-                            (model, Cmd.none)
-                            else
-                            ({model | day = date}, Cmd.none)
+                            ({model | day = date}, Api.dateValidate(Encode.string (model.year ++ "," ++ model.month ++ "," ++ date)))
                         _ ->
                             (model, Cmd.none)
                 Nothing ->
@@ -511,7 +519,8 @@ update msg model =
                         _ ->
                             (model, Cmd.none)
         AskBirthComplete (Ok ok) ->
-            ({model | birthData = ok.data, year = String.dropRight 6 ok.data.default, day = String.dropLeft 8 ok.data.default, month = String.dropLeft 5 (String.dropRight 3 ok.data.default), birthDay = ok.data.default}, Cmd.none)
+            ({model | birthData = ok.data, year = String.dropRight 6 ok.data.default, day = String.dropLeft 8 ok.data.default, month = String.dropLeft 5 (String.dropRight 3 ok.data.default), birthDay = ok.data.default}, 
+            Api.dateValidate(Encode.string (String.dropRight 6 ok.data.default ++ "," ++ String.dropLeft 5 (String.dropRight 3 ok.data.default) ++ "," ++ String.dropLeft 8 ok.data.default)))
         AskBirthComplete (Err err) ->  
             (model, Cmd.none)
         CompleteProductWeekRegist (Ok ok) ->
@@ -1528,7 +1537,7 @@ paperweightBirth model textStyle moveBtn boxStyle birthStyle=
             [ div [ class "button  mj_before" , onClick (SelectedAnswer "sex" (if model.askSelected == True then "true" else "false"))]
                 [ text "이전" ]
             , 
-            if String.isEmpty model.year  || String.isEmpty model.month || String.isEmpty model.day || String.length model.year < 4 then
+            if String.isEmpty model.year  || String.isEmpty model.month || String.isEmpty model.day || not model.dateValidate then
             div [ class "button mj_next  mj_disabled" ]
                 [ text "다음" ]
             else

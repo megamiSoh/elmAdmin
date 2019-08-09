@@ -347,7 +347,7 @@ update msg model =
             let 
                 dateString = getFormattedDate Nothing (Just today)
             in
-            ({model | date = getFormattedDate Nothing (Just today), currentDay = today, today = dateString} , dayKindOfMealEncode 1 10 model.session "10" (getFormattedDate Nothing (Just today)))
+            ({model | date = getFormattedDate Nothing (Just today), currentDay = today, today = dateString} , Cmd.none)
         DirectMealInput category contents->
             ( case category of
                 "food" ->
@@ -535,7 +535,7 @@ update msg model =
         ReceiveKey code ->
             case Decode.decodeValue Decode.string code of
                 Ok ok ->
-                    ({model | code = String.left 2 ok, activeBtn = Just (String.left 2 ok), date = String.dropLeft 3 ok}, dayKindOfMealEncode model.mealPage model.mealPer_page model.session ok model.date)
+                    ({model | code = String.left 2 ok, activeBtn = Just (String.left 2 ok), date = String.dropLeft 3 ok}, dayKindOfMealEncode model.mealPage model.mealPer_page model.session (String.left 2 ok) (String.dropLeft 3 ok))
                 Err err ->
                     (model, Cmd.none)
         ActiveTab item ->
@@ -585,14 +585,15 @@ view model =
 calendarDate model = 
     div [ class "myCalendar_tapbox" ]
         [ div [ class "myCalendar_datebox" ]
-            [ i [ class "fas fa-angle-left myCalendar_yf_left", onClick (ChangeDate "before") ]
-                [], 
+            [ 
+                -- i [ class "fas fa-angle-left myCalendar_yf_left", onClick (ChangeDate "before") ]
+                -- [], 
                 if model.date == model.today then 
                 div [class "date_container"] [text model.date, span [class"today"] [text "today"] ]
                 else 
                 div [class "date_container"] [text model.date, span [class"today"] [] ]
-            , i [ class "fas fa-angle-right myCalendar_yf_right", onClick (ChangeDate "next") , style "color" (if model.date == model.today then "#d2caca" else "#000" )]
-                []
+            -- , i [ class "fas fa-angle-right myCalendar_yf_right", onClick (ChangeDate "next") , style "color" (if model.date == model.today then "#d2caca" else "#000" )]
+            --     []
             ]
         ]
 
