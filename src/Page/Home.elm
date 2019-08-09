@@ -108,70 +108,217 @@ webOrApp model =
             home,
             hometopTitle,
             div [class "homemenu"]
-            (List.indexedMap menuLayout menu)
-        ]
-    else 
+            
+
+            [div [ class "home_main_middle" ]
+    [ div [ class "columns home_yf_columns" ]
+        [ div [ class "home_yf_columns_column1" ]
+            [ p [ class "main_middle_1" ]
+          
+                      [ i [ class "fas fa-align-justify" ]
+                            []
+                        , text "공지사항"
+                        ]
+            ]
+            
+          , div [ class "home_yf_columns_column1" ]
+                    [ p [ class "main_middle_1" ]
+                        [ i [ class "fas fa-won-sign" ]
+                            []
+                        , text "유어핏 가격"
+                        ]
          
-         div [ class "yf_contentswarp" ]
+                    ]
+
+          , div [ class "home_yf_columns_column1" ]
+                    [ p [ class "main_middle_1" ]
+                        [ i [ class "fas fa-question" ]
+                            []
+                        , text "자주하는 질문"
+                        ]
+         
+                    ]
+        ]
+                   
+    ] ,  
+
+
+    div [ class "home_videobox" ]
+    [ h1 [ class "home_videobox_title1" ]
+        [ text "추천합니다" ]
+    , h1 [ class "home_videobox_title2" ]
+        [ text "오늘의 유어핏 운동" ]
+    , div [ class "main_videowrap" ]
+        [ div [ class "main_videobox1" ]
+            [ div [ class "main_videobox1_thumbnail" ]
+                []
+            , h1 [ class "main_videobox_text" ]
+                [ text "식스팩운동" ]
+            ]
+        , div [ class "main_videobox1" ]
+             [ div [ class "main_videobox1_thumbnail" ]
+                []
+            , h1 [ class "main_videobox_text" ]
+                 [ text "식스팩운동" ]
+            ]
+        ,div [ class "main_videobox1" ]
+             [ div [ class "main_videobox1_thumbnail" ]
+                []
+            , h1 [ class "main_videobox_text" ]
+                 [ text "식스팩운동" ]
+            ]
+        , div [ class "main_videobox1" ]
+             [ div [ class "main_videobox1_thumbnail" ]
+                []
+            , h1 [ class "main_videobox_text" ]
+                 [ text "식스팩운동" ]
+            ]
+        , div [ class "main_videobox1" ]
+             [ div [ class "main_videobox1_thumbnail" ]
+                []
+            , h1 [ class "main_videobox_text" ]
+                 [ text "식스팩운동" ]
+            ]
+        ]
+       ]
+      ]
+    ]
+       
+
+
+
+    else 
+         div [class"yf_home_wrap"]
+        [div [ class "home_main_top lazyimage"
+
+                    
+                     ]
+        [ div [ class "home_main_box_warp" ]
+            [ div [ class "home_main_box" ]
+              [] ],
+            img [src "image/bg_back.png", onLoad LoadImg, class "shut"] []
+        ],
+
+         
+         div [ class "container is-widescreen" ]
                  [
                     --  div [class "splash", style "display" (if model.splash then "block" else "none")][],
                      
-                     lazy lazyview model.image 
+        --              lazy lazyview model.image 
                      
-        , 
+        -- , 
+
+        --    div[class "home_main_text"]
+        --     [h1 [ class "home_main_text_h1" ]
+        --         [ text "나를 위한 운동 방법 유어핏은 간단합니다." ],
+        --         h1 [ class "home_main_text_h1" ]
+        --         [ text "지금 PC와 모바일 어디서나 접속하세요!" ],
+        --     img [ src "image/device.png", alt "device" ]
+        --         []
+        --          ]
+        --    ,
+
     div [ class "home_main_middle" ]
     [ div [ class "columns home_yf_columns" ]
-        [ div [ class "column1" ]
+        [ div [ class "home_yf_columns_column1" ]
             [ p [ class "main_middle_1" ]
-                [ i [ class "fas fa-arrow-circle-right" ]
-                    []
-                , text "D.I.Y"
-                ]
-            , h1 [ class "main_middle_2" ]
-                [ text "사용자 직접 만드는 운동 커리큘럼" ]
+          
+                      [ i [ class "fas fa-align-justify" ]
+                            []
+                        , text "공지사항"
+                        ]
             ]
             
-        , div [ class "column2" ]
-            [ p [ class "main_middle_1" ]
-                [ i [ class "fas fa-arrow-circle-right" ]
-                    []
-                , text "743"
-                ]
-
-                ,
-                 h1 [ class "main_middle_2" ]
-                  [ text "743개의 다양한 운동영상" ]
-             ]
-
-          , div [ class "column3" ]
+          , div [ class "home_yf_columns_column1" ]
                     [ p [ class "main_middle_1" ]
-                        [ i [ class "fas fa-arrow-circle-right" ]
+                        [ i [ class "fas fa-won-sign" ]
                             []
-                        , text "나,너,우리"
+                        , text "유어핏 가격"
                         ]
-                    , h1 [ class "main_middle_2" ]
-                        [ text "사용자 커뮤니티형 운동 시스템" ]
+         
+                    ]
 
+          , div [ class "home_yf_columns_column1" ]
+                    [ p [ class "main_middle_1" ]
+                        [ i [ class "fas fa-question" ]
+                            []
+                        , text "자주하는 질문"
+                        ]
+         
                     ]
         ]
-    ,
-            div [ class "main_end" ]
-                    [ img [ src "image/login_logo.png", alt"logo"]
-                        []
+                   
+    ] ,  
 
-                    , h1 [ class "home_last_title" ]
-                     [text "사용자 커스텀 D.I.Y 트레이닝 유어핏 PC나 모바일 어디서나 접속하세요!"]
 
-                    
-                    ]                       
-    ]   
-                ,P.viewFooter
+    div [ class "home_videobox" ]
+    [ h1 [ class "home_videobox_title1" ]
+        [ text "추천합니다" ]
+    , h1 [ class "home_videobox_title2" ]
+        [ text "오늘의 유어핏 운동" ]
+    , div [ class "main_videowrap" ]
+        [ div [ class "main_videobox1" ]
+            [ div [ class "main_videobox1_thumbnail" ]
+                []
+            , h1 [ class "main_videobox_text" ]
+                [ text "식스팩운동" ]
             ]
+        , div [ class "main_videobox1" ]
+             [ div [ class "main_videobox1_thumbnail" ]
+                []
+            , h1 [ class "main_videobox_text" ]
+                 [ text "식스팩운동" ]
+            ]
+        ,div [ class "main_videobox1" ]
+             [ div [ class "main_videobox1_thumbnail" ]
+                []
+            , h1 [ class "main_videobox_text" ]
+                 [ text "식스팩운동" ]
+            ]
+        , div [ class "main_videobox1" ]
+             [ div [ class "main_videobox1_thumbnail" ]
+                []
+            , h1 [ class "main_videobox_text" ]
+                 [ text "식스팩운동" ]
+            ]
+        , div [ class "main_videobox1" ]
+             [ div [ class "main_videobox1_thumbnail" ]
+                []
+            , h1 [ class "main_videobox_text" ]
+                 [ text "식스팩운동" ]
+            ]
+        ]
+    ]
+                 
+              
+                   ,P.viewFooter
+                 ]
+        ]
+        
   
 
 
 lazyview image= 
-    div [ class "home_main_top lazyimage", 
+    -- div [class "yf_banner_wrap"]
+    --    [div [class "yf_banner_menu"]
+       
+    --    [div [ class "yf_banner_side_menu" ]
+    -- [ div [ class "yf_banner_side_menu1" ]
+    --     [ text "공지사항" ]
+    -- , div [ class "yf_banner_side_menu2" ]
+    --     [ text "요금제보기" ]
+    -- , div [ class "yf_banner_side_menu3" ]
+    --     [ text "자주하는질문" ]
+    -- , div [ class "yf_banner_side_menu4" ]
+    --     [ text "1:1문의" ]
+    -- ]
+
+    --     ]
+           
+    --    ,
+     
+     
+     div [ class "home_main_top lazyimage", 
                      style "background-size" "cover" ,
                      style "background" ("0px -20rem / cover no-repeat url(" ++ image ++") fixed") 
                     --  , style "filter" "blur(4px)"
@@ -181,14 +328,16 @@ lazyview image=
                      ]
         [ div [ class "home_main_box_warp" ]
             [ div [ class "home_main_box" ]
-                [ h1 [ class "home_main_title" ]
-                    [ text "당신만을 위한 운동트레이닝" ]
-                , p [ class "home_main_title2" ]
-                    [ text "YOUR FIT" ]
-                ]
+              []
             ]
-            , img [src "image/bg_back.png", onLoad LoadImg, class "shut"] []
-        ] 
+            ,
+            img [src "image/bg_back.png", onLoad LoadImg, class "shut"] []
+        ]
+    
+
+
+
+    
         
 home =
      div [class "headerSpace"] [
@@ -198,12 +347,13 @@ home =
             ]
      ]
 hometopTitle = 
-    div [class "home_subtitle"] [
-         text "안녕하세요!" ,br []
-        [] , text "당신만의 트레이너" 
-        , span [ class "yourfit_text" ]
-        [ text "유어핏" ], text "입니다."    
-    ]
+    div [class "home_subtitle"] []
+        --  text "안녕하세요!" ,br []
+        -- [] , text "당신만의 트레이너" 
+        -- , span [ class "yourfit_text" ]
+        -- [ text "유어핏" ], text "입니다."    
+    
+    
 
 menuLayout idx item = 
         a [ class ("titlemenu" ++ String.fromInt (idx + 1)) , Route.href item.routing]

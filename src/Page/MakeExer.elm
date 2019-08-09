@@ -793,31 +793,47 @@ app model =
     ]
 
 appStartBox = 
-    div [ class "make_m_yf_box" ]
-        [ h1 [ class "m_make_yf_h1" ]
-            [ text "하나뿐인 나만의 운동을 만들어보세요!" ]
-        , a [ class "button is-dark m_make_yf_darkbut", Route.href Route.Filter ]
-            [ text "시작하기" ]
-        , br []
+   div [ class "columns make_mj_box" ]
+    [ div [ class "column mj_box_img" ]
+        [ img [ src "../image/makeimage.png" ]
             []
         ]
+    , div [ class "column " ]
+        [ p [ class "mj_yf_h1" ]
+            [ text "유어핏 만들기로 나만의 운동을 만들어보세요." ]
+        , p []
+            [ text "사용자가 필터를 통해 직접 나만의 유어핏 운동을 제작합니다." ]
+        , p []
+            [ text "나에게 꼭 필요한 운동으로 개성있는 내 운동을 만들어보세요." ]
+        -- , a [ class "button is-link yf_make_b" ]
+        --     [ text "요금제 선택" ]
+        , a [ class "button yf_make_b" ]
+            [ text "시작하기" ]
+        ]
+    ]
+
 paperWeightStartApp model = 
      div [ class "container", class "scroll", scrollEvent ScrollEvent, style "height" "85vh" ][
          activeTab model ,
-         div [ class "make_m_yf_box" ]
-        [ h1 [ class "m_make_yf_h1" ]
-            [ text "유어핏 문진을 통해서 나만의 운동을 만들어보세요!" ]
-        , div [ class "button is-dark m_make_yf_darkbut", onClick (
-            if List.isEmpty model.askExerList then
-            IsActive "paperweightStart"
-            else
-
-            IsActive "paperWeightConfirm"
-        ) ]
-            [ text "시작하기" ]
-        , br []
+   div [ class "columns make_mj_box" ]
+    [ div [ class "column mj_box_img" ]
+        [ img [ src "../image/mj_image.png" ]
             []
         ]
+    , div [ class "column " ]
+        [ p [ class "mj_yf_h1" ]
+            [ text "유어핏 문진을 통해 건강의 가치를 높혀보세요." ]
+        , p []
+            [ text "문진 결과데이터에 따라 자신만의 유어핏 운동이 제작됩니다." ]
+        , p []
+            [ text "체계적인 문진문항으로 나만의 운동을 만들어보세요." ]
+        , a [ class "button is-link yf_make_b" ]
+            [ text "요금제 선택" ]
+        , a [ class "button yf_make_b" ]
+            [ text "문진하기" ]
+        ]
+    ]
+
         , listTitle
             , if List.isEmpty model.askExerList then
                 div [class "nopaperWeightResult"] [
@@ -833,9 +849,9 @@ paperWeightStartApp model =
     
 
 listTitle = 
-    div [ class "m_make_box_title" ]
+    div [ class "m_mj_box_title" ]
         [ h1 [ class "m_make_yf_h2" ]
-            [ text "맞춤운동 리스트" ]
+            [ text "문진운동 리스트" ]
         ]
 
 appItemContent item=
@@ -940,19 +956,24 @@ bodyItem item=
 
 
 bodyContentTitle =
-          div [ class "make_yf_box" ] 
-        
-                [ 
-            img [ src "image/makeimage.png", alt "makeimage" ]
-                []
-           ,
-                    h1 [ class "make_yf_h1" ]
-                [ text "하나뿐인 나만의 운동을 만들어보세요!" ]
-             , a [ class "button is-dark make_yf_darkbut", Route.href Route.Filter ]
-                [ text "시작하기" ]
-            , br []
-                []
-            ]
+   div [ class "columns make_mj_box" ]
+    [ div [ class "column mj_box_img" ]
+        [ img [ src "../image/makeimage.png" ]
+            []
+        ]
+    , div [ class "column " ]
+        [ p [ class "mj_yf_h1" ]
+            [ text "유어핏 만들기로 나만의 운동을 만들어보세요." ]
+        , p []
+            [ text "사용자가 필터를 통해 직접 나만의 유어핏 운동을 제작합니다." ]
+        , p []
+            [ text "나에게 꼭 필요한 운동으로 개성있는 내 운동을 만들어보세요." ]
+        -- , a [ class "button is-link yf_make_b" ]
+        --     [ text "요금제 선택" ]
+        , a [ class "button yf_make_b" ]
+            [ text "시작하기" ]
+        ]
+    ]
 
 appdeltelayer model =
     div [class ("m_delete_post " ++ model.show)] [
@@ -984,24 +1005,25 @@ deltelayer model =
 
 
 paperWeight model = 
-    div [ class "make_yf_box" ] 
-        
-                [ 
-            img [ src "image/mj_image.png", alt "makeimage" ]
-                []
-           ,
-                    h1 [ class "make_yf_h1" ]
-                [ text "유어핏 문진을 통해서 나만의 운동을 만들어보세요!" ]
-             , div [ class "button is-dark make_yf_darkbut",  onClick (
-                    if List.isEmpty model.askExerList then
-                    IsActive "paperweightStart"
-                    else
-                    IsActive "paperWeightConfirm"
-                )]
-                [ text "시작하기" ]
-            , br []
-                []
-            ]
+   div [ class "columns make_mj_box" ]
+    [ div [ class "column mj_box_img" ]
+        [ img [ src "../image/mj_image.png" ]
+            []
+        ]
+    , div [ class "column " ]
+        [ p [ class "mj_yf_h1" ]
+            [ text "유어핏 문진을 통해 건강의 가치를 높혀보세요." ]
+        , p []
+            [ text "문진 결과데이터에 따라 자신만의 유어핏 운동이 제작됩니다." ]
+        , p []
+            [ text "체계적인 문진문항으로 나만의 운동을 만들어보세요." ]
+        , a [ class "button is-link yf_make_b" ]
+            [ text "요금제 선택" ]
+        , a [ class "button yf_make_b" ]
+            [ text "문진하기" ]
+        ]
+    ]
+
 
 activeTab model =
     ul [class "tabs is-toggle is-fullwidth is-large make_tag" ]
@@ -1432,7 +1454,10 @@ selectedItemApp model =
                 text model.askDetail.description
             ]
         ]
-        , div [class "button is-link freeTrial", onClick (GoProduct model.askDetail.exercise_id)][text "1주일 무료 체험"]
+        , div [class "button is-link freeTrial", onClick (GoProduct model.askDetail.exercise_id)][text "1분 미리보기"]
+            
+        
+            
             ]
         ]
         
@@ -1470,7 +1495,8 @@ selectedItem model =
             ]
         ]
         , div [class "paperweightSelectedItem_third"]
-        [ div [class "button is-link", onClick (GoProduct model.askDetail.exercise_id)][text "1주일 무료 체험"]
+        [ div [class "button is-link", onClick (GoProduct model.askDetail.exercise_id)][text "1분 미리보기"]
+        , div [class "button is-info", onClick (CloseTrial 0 0)][text "유료 결제"]
         , div [class "button is-danger", onClick (CloseTrial 0 0)][text "닫기"]
         ]
         ]

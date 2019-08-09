@@ -786,9 +786,9 @@ margin-left: 2rem;}
    /* font-size: 2rem; */
  }
 
- .m_make_box_title
+ .m_mj_box_title
  {
-   /* margin-top: 3rem; */
+   background-color: #148ACD;
  }
 
  .m_make_yf_h2
@@ -2579,15 +2579,14 @@ font-size: .9rem;
 
 .home_subtitle
 {
-  background: url(/image/anigif.gif) repeat;
-
-
-  height: 85px;
+  background-color: #e3e3e3;
+  height: 250px;
   color: white;
-  padding: 1rem;
-  font-size: 1.1rem;
+  /* padding: 1rem;
+  font-size: 1.1rem; */
   text-align: center;
   width: 100%;
+  
 }
 
 
@@ -3043,3 +3042,6 @@ display: table;
 {
 margin: 0 .5rem 0 .5rem; 
 }
+
+.togetherWrite_yf_dark
+{margin-top: 1rem;}
