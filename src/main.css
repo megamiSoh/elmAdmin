@@ -3940,7 +3940,7 @@ float: left;
 
 .yf_footer
 {
-  /* position: fixed; */
+  position: fixed;
   left: 0;
   bottom: 0;
   width: 100%;
@@ -4707,11 +4707,23 @@ width: 100%;
 .lazyimage {
   width: 100%;
   background-size: cover;
-  height: 40rem;
-  background-color: #e3e3e3;
-
-
+  height: 200%;
+  background-color: rgb(179, 179, 179);
 }
+
+.footer
+
+{
+  background-color: white;
+padding: 0;}
+
+
+.lazyimage
+{
+  padding: 0 20% 0 20%;;
+}
+
+
 .shut {
   display: none;
 }
@@ -6905,6 +6917,7 @@ display: block;
   {
     text-align: left;
     font-size: .7rem;
+    background-color: white
   }
   .yf_banner_wrap
   {
@@ -6915,7 +6928,24 @@ display: block;
   {
     margin-top: 0;
   }
+
+  .lazyimage
+  {
+    padding: 0;
+    height: 200%;
+ 
+  }
 }
+
+@media screen and (max-width: 745px) {
+  .lazyimage
+  {
+    padding: 0;
+    height: 200%;
+ 
+  }
+}
+
 
 .yf_banner_side_menu div
 {

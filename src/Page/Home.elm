@@ -189,15 +189,11 @@ webOrApp model =
 
     else 
          div [class"yf_home_wrap"]
-        [div [ class "home_main_top lazyimage"
+        [div [ class "home_main_top lazyimage"]
+                   
 
-                    
-                     ]
-        [ div [ class "home_main_box_warp" ]
-            [ div [ class "home_main_box" ]
-              [] ],
-            img [src "image/bg_back.png", onLoad LoadImg, class "shut"] []
-        ],
+          [img [src "image/banner_03.png"] []
+          ],
 
          
          div [ class "container is-widescreen" ]
