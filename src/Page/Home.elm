@@ -192,7 +192,7 @@ webOrApp model =
         [div [ class "home_main_top lazyimage"]
                    
 
-          [img [src "image/banner_03.png"] []
+          [img [src "image/banner_01.png"] []
           ],
 
          
