@@ -809,9 +809,9 @@ menu =
             {icon = "/image/icon_list.png", title ="스크랩리스트", route = Route.MyScrap},
             {icon = "/image/icon_management.png", title ="내 게시물 관리", route= Route.MyPost},
             {icon = "/image/icon_mj.png", title ="문진운동 리스트", route= Route.MJList},
-            {icon = "/image/icon_notice.png", title ="공지사항", route = Route.Info},
+            -- {icon = "/image/icon_notice.png", title ="공지사항", route = Route.Info},
             {icon = "/image/icon_qna.png", title ="1:1 문의", route = Route.C},
-            {icon = "/image/icon_stats.png", title ="자주하는 질문", route = Route.Faq},
+            -- {icon = "/image/icon_stats.png", title ="자주하는 질문", route = Route.Faq},
             {icon = "/image/icon_qna.png", title ="로그아웃", route = Route.Logout} 
             
             ]

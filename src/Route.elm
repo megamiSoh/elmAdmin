@@ -63,6 +63,7 @@ type Route
     | CD
     | MJList
     | MJD
+    | YP
 
 parser : Parser (Route -> a) a
 parser =
@@ -114,6 +115,7 @@ parser =
         , Parser.map CD (s "contactDetail")
         , Parser.map MJList(s "paperweightList")
         , Parser.map MJD (s "paperweightDetail")
+        , Parser.map YP (s "yourfitPrice")
         ]
 
 
@@ -243,5 +245,7 @@ routeToString page =
                     ["paperweightList"]
                 MJD ->
                     ["paperweightDetail"]
+                YP ->
+                    ["yourfitPrice"]
     in
     "#/" ++ String.join "/" pages

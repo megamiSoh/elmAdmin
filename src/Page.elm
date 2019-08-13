@@ -55,6 +55,7 @@ type Page
     | CD
     | MJList
     | MJD
+    | YP
 
 -- view:Maybe Cred -> Api.Check  -> Page -> {check : String , title : String, content: Html msg} -> Browser.Document msg
 view maybeViewer checkB  page { title, content}  =
@@ -79,6 +80,8 @@ footerCommon page =
     else if page == Together then
         appFooter page
     else if page == YourfitExer then
+        appFooter page
+    else if page == Home then
         appFooter page
     else
         div [] []
@@ -249,6 +252,7 @@ viewHeader page maybeViewer =
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             MJList  ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+
                             _ ->
                                 a [ class "navbar-item yf_item",Route.href Route.MyPage ]
                                 [ text "마이페이지"]

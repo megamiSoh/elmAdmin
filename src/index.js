@@ -469,6 +469,40 @@ app.ports.valueReset.subscribe(function (id) {
   // document.getElementById(id +"after").value = ""
 })
 
+  app.ports.youtubeVideo.subscribe(function (videoId) {
+  app.ports.hideThum.send(videoId)
+  var iframes = document.querySelectorAll('iframe');
+    for (var i = 0; i < iframes.length; i++) {
+        iframes[i].parentNode.removeChild(iframes[i]);
+    }
+  var innerDiv = document.createElement('div');
+  innerDiv.id = 'player';
+  document.getElementById("playerHere" + videoId).appendChild(innerDiv)
+  var player;
+    player = new YT.Player('player', {
+      height: '100%',
+      width: '100%',
+      videoId: videoId,
+      events: {
+        'onReady': onPlayerReady,
+      }
+    });
+  function onPlayerReady(event) {
+    event.target.playVideo();
+  }
+
+  document.addEventListener('touchmove', function(e)
+{
+  var dv = document.getElementById("playerHere" + videoId)
+  var st = document.getElementById("searchHeight").scrollTop
+  if ((dv.offsetTop + dv.offsetHeight) <= st ) {
+    player.stopVideo();
+  }
+}, 
+{ capture: false } )
+})
+
+
 
 
   document.addEventListener('touchmove', function(e) {

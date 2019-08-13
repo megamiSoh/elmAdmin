@@ -14,6 +14,7 @@ import Api as Api
 import Api.Endpoint as Endpoint
 import Http as Http
 import Api.Decoder as Decoder
+import Page.Together as T
 
 type alias Model = 
     { session : Session
@@ -43,13 +44,15 @@ type alias TogetherData =
 type alias DetailTogether = 
     { thembnail : String
     , difficulty_name : Maybe String
-    , duration : String
-    , exercise_items : List TogetherItems
+    , duration : Maybe String
+    , exercise_items : Maybe (List TogetherItems)
     , exercise_part_name : Maybe String
     , id : Int
-    , inserted_at : String
-    , pairing : List Pairing 
+    , inserted_at : Maybe String
+    , pairing : Maybe (List Pairing) 
     , title : String
+    , content : Maybe String
+    , snippet : Maybe Snippet
     }
 
 type alias TogetherItems = 
@@ -64,6 +67,11 @@ type alias Pairing =
     , image : String
     , title : String 
     }
+type alias Snippet = 
+    { items : List DetailItems }
+
+type alias DetailItems = 
+    { id : String }
 
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile
@@ -158,7 +166,7 @@ update msg model =
                 result = 
                     case head of
                         Just a ->
-                            a.pairing
+                            T.justListData a.pairing
                     
                         Nothing ->
                             []
@@ -202,7 +210,7 @@ update msg model =
             case result of
                 Ok string ->
                     ({model | postId = string} , 
-                    Decoder.mypostDataWrap TogetherDataWrap TogetherData DetailTogether TogetherItems Pairing
+                    Decoder.mypostDataWrap TogetherDataWrap TogetherData DetailTogether TogetherItems Pairing Snippet DetailItems
                     |>Api.get GetList (Endpoint.postList string) (Session.cred model.session)  
                     )
             
@@ -211,7 +219,7 @@ update msg model =
         
         GotSession session ->
             ({model | session = session} , 
-            Decoder.mypostDataWrap TogetherDataWrap TogetherData DetailTogether TogetherItems Pairing
+            Decoder.mypostDataWrap TogetherDataWrap TogetherData DetailTogether TogetherItems Pairing Snippet DetailItems
             |> Api.get GetList (Endpoint.postList model.postId) (Session.cred session) 
             )
         BackPage ->
@@ -290,7 +298,7 @@ contentsItem item model=
                         [ text item.title ]
                     ]
                 , div [class "postVideoWrap"] [
-                    div [ class ("imagethumb " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thembnail ++") ") , onClick (VideoCall item.pairing) ][]
+                    div [ class ("imagethumb " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thembnail ++") ") , onClick (VideoCall (T.justListData item.pairing)) ][]
 
 
                     -- img [class "postImg" ,src item.thembnail, onClick (VideoCall item.pairing) ] []
@@ -303,7 +311,7 @@ contentsItem item model=
                     [ span []
                         [ i [ class "fas fa-clock" ]
                             []
-                        ], text item.duration
+                        ], text (justokData item.duration)
                     ]
                 , div [ class "yf_part" ]
                     [ text ((justokData item.exercise_part_name) ++ " - " ++  (justokData item.difficulty_name)) ]
@@ -315,7 +323,7 @@ contentsItem item model=
                     ]
         ,
             div [ class "yf_text" ]
-               (List.indexedMap YfD.description (List.sortBy .sort item.exercise_items))
+               (List.indexedMap YfD.description (List.sortBy .sort (T.exerciseItemCase item.exercise_items)))
             ]
 
 
@@ -324,7 +332,7 @@ appcontentsItem item model video goback=
             div [ ]
             [  appHeaderRDetailClick2 item.title "myPageHeader" goback "fas fa-times" 
                 , div [class "PostVideo"] [
-                     div [ class ("appimagethumb " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thembnail ++") ") , onClick (video item.pairing) ][]
+                     div [ class ("appimagethumb " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thembnail ++") ") , onClick (video (T.justListData item.pairing)) ][]
                     , div [id "myElement"][]
                 ], 
                 div [ class "m_yf_post_textbox" ]
@@ -332,7 +340,7 @@ appcontentsItem item model video goback=
                     [ span []
                         [ i [ class "fas fa-clock m_yf_timeicon" ]
                             []
-                        ], text item.duration
+                        ], text (justokData item.duration)
                     ]
                 , div [ class "m_yf_work_text" ]
                     [ text (justokData item.exercise_part_name)
@@ -346,7 +354,7 @@ appcontentsItem item model video goback=
                     ]
                 ]
             , div [ class "m_work_script" ]
-                  (List.indexedMap YfD.description (List.sortBy .sort item.exercise_items))
+                  (List.indexedMap YfD.description (List.sortBy .sort (T.exerciseItemCase item.exercise_items)))
                 
             ]
 justokData result = 

@@ -277,7 +277,7 @@ scrInfo info =
 -- together
 webtogetherdatawrap datawrap togetherdata detail page =
     Decode.succeed datawrap
-        |> required "data" (Decode.list (webtogetherdata togetherdata detail ))
+        |> required "data" (Decode.list (webtogetherdata togetherdata detail  ))
         |> required "paginate" (paginate page)
 
 webtogetherdata togetherdata detail = 
@@ -291,6 +291,7 @@ webtogetherdata togetherdata detail =
         |> required "recommend_cnt" int
         |> optional "nickname" (Decode.map Just string) Nothing
         |> optional "profile" (Decode.map Just string) Nothing
+        |> required "share_code" string
         
 
 webdetailtogether detail = 
@@ -299,49 +300,62 @@ webdetailtogether detail =
         |> required "title" string
         |> required "thembnail" string
 
-togetherdatawrap datawrap ogetherdata detail page item pair= 
+togetherdatawrap datawrap ogetherdata detail page item pair snippet yItem = 
     Decode.succeed datawrap
-        |> required "data" (Decode.list (tdata ogetherdata detail item pair))
+        |> required "data" (Decode.list (tdata ogetherdata detail item pair snippet yItem))
         |> required "paginate" (paginate page)
 
-togetherdatalikewrap datawrap ogetherdata detail item pair= 
-    Decode.succeed datawrap
-        |> required "data" (tdata ogetherdata detail item pair)
 
-mypostDataWrap datawrap ogetherdata detail item pair= 
+        
+    
+togetherdatalikewrap datawrap ogetherdata detail item pair snippet yItem = 
     Decode.succeed datawrap
-        |> required "data" (sddata ogetherdata detail item pair)
+        |> required "data" (tdata ogetherdata detail item pair snippet yItem )
 
-sddata togetherdata detail item pair= 
+mypostDataWrap datawrap ogetherdata detail item pair snippets yItem= 
+    Decode.succeed datawrap
+        |> required "data" (sddata ogetherdata detail item pair snippets yItem)
+
+sddata togetherdata detail item pair snippets yItem = 
     Decode.succeed togetherdata
         |> optional "content" (Decode.map Just string)Nothing
-        |> optional "detail" (Decode.map Just (Decode.list (sdetailTogether detail item pair))) Nothing
+        |> optional "detail" (Decode.map Just (Decode.list (sdetailTogether detail item pair snippets yItem))) Nothing
         |> required "id" int
         |> required "inserted_at" string 
         |> required "is_delete" bool
         |> required "link_code" string
         |> required "recommend_cnt" int
         |> optional "nickname" (Decode.map Just string) Nothing
-        
+              
+
+youtubeDetailItem snippet yItem = 
+    Decode.succeed snippet 
+        |> required "items" (Decode.list (youtubeItem yItem))
+
+youtubeItem yItem = 
+    Decode.succeed yItem 
+        |> required "id" string
         
 
-sdetailTogether detail item pair= 
+sdetailTogether detail item pair snippets yItem= 
     Decode.succeed detail 
         |> required "thembnail" string
         |> optional "difficulty_name" (Decode.map Just string) Nothing
-        |> required "duration" string
-        |> required "exercise_items" (Decode.list (togetherItem item))
+        |> optional "duration" (Decode.map Just string) Nothing
+        |> optional "exercise_items" (Decode.map Just (Decode.list (togetherItem item)))Nothing
         |> optional "exercise_part_name" (Decode.map Just string) Nothing
         |> required "id" int
-        |> required "inserted_at" string
-        |> required "pairing" (Decode.list (pairing pair))
+        |> optional "inserted_at" (Decode.map Just string) Nothing
+        |> optional "pairing" (Decode.map Just (Decode.list (pairing pair)))Nothing
         |> required "title" string
+        |> optional "content" (Decode.map Just string) Nothing
+        |> optional "snippet" (Decode.map Just (youtubeDetailItem snippets yItem)) Nothing  
 
 
-tdata togetherdata detail item pair= 
+tdata togetherdata detail item pair snippets yItem = 
     Decode.succeed togetherdata
         |> optional "content" (Decode.map Just string) Nothing
-        |> optional "detail" (Decode.map Just (Decode.list (sdetailTogether detail item pair))) Nothing
+        |> optional "detail" (Decode.map Just (Decode.list (sdetailTogether detail item pair snippets yItem))) Nothing
         |> required "id" int
         |> required "inserted_at" string 
         |> required "is_delete" bool
@@ -986,6 +1000,22 @@ shareData data share=
         |> required "data" (Decode.list (shareType share))
 
 shareType share = 
-    Deocde.succeed share
+    Decode.succeed share
         |> required "code" string
         |> required "name" string
+
+
+bannerListdata data banner = 
+    Decode.succeed data
+        |> required "data" (Decode.list (bannerList banner))
+
+bannerList banner = 
+    Decode.succeed banner
+        |> required "description" string
+        |> required "id" int
+        |> required "is_link" bool
+        |> optional "link" ( Decode.map Just string ) Nothing
+        |> required "src" string
+        |> optional "target" ( Decode.map Just string ) Nothing
+        |> required "title" string
+

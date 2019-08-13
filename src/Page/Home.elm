@@ -15,18 +15,35 @@ import Api.Endpoint as Endpoint
 import Api.Decoder as Decoder
 import Http as Http
 
+
 type alias Model = 
     { session : Session
     , title : String
     , check : Bool
     , image : String
     , splash : Bool
+    , bannerList : List BannerList
     }
 
 
 type alias SessionCheck = 
     { id : Int
     , username : String }
+
+type alias BannerListData = 
+    { data : List BannerList }
+
+type alias BannerList =
+    { description : String
+    , id : Int
+    , is_link : Bool
+    , link : Maybe String
+    , src : String
+    , target : Maybe String
+    , title : String}
+
+bannerApi session = 
+    Api.get BannerComplete Endpoint.bannerList (Session.cred session)(Decoder.bannerListdata BannerListData BannerList)
 
 init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile=
@@ -35,20 +52,24 @@ init session mobile=
         , title = "" 
         , check = mobile
         , splash = if Session.viewer session == Nothing then False else True
-        , image = "/image/lazy_bg_back.jpg"}
+        , image = "/image/lazy_bg_back.jpg"
+        , bannerList = []
+        }
        , Cmd.batch[scrollToTop NoOp
        ,
        if Session.viewer session == Nothing then
        Cmd.none
        else
         Api.get Check Endpoint.sessionCheck (Session.cred session) (Decoder.sessionCheck SessionCheck)
-        , Api.progressCalcuration ()]
+        , Api.progressCalcuration ()
+        , bannerApi session]
     )
 type Msg 
     = NoOp 
     | LoadImg
     | Check (Result Http.Error SessionCheck )
     | Complete E.Value
+    | BannerComplete (Result Http.Error BannerListData)
     -- | GotSession Session
 
 toSession : Model -> Session
@@ -71,6 +92,10 @@ onLoad msg =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        BannerComplete (Ok ok) ->
+            ({model | bannerList = ok.data}, Cmd.none)
+        BannerComplete (Err err) ->
+            (model, Cmd.none)
         Complete val ->
             ({model | splash = False}, Cmd.none)
         Check (Ok ok) ->
@@ -104,8 +129,7 @@ view model =
 webOrApp model =
     if model.check then
         div [class "appWrap"] [
-            home,
-            hometopTitle,
+            -- home,
             div [class "homemenu"]
             
 
@@ -188,39 +212,25 @@ webOrApp model =
 
     else 
          div [class"yf_home_wrap"]
-        [div [ class "home_main_top lazyimage"
-
-                    
-                     ]
+        [div [ class "home_main_top lazyimage"]
         [ div [ class "home_main_box_warp" ]
-            [ div [ class "home_main_box" ]
-              [] ],
-            img [src "image/bg_back.png", onLoad LoadImg, class "shut"] []
-        ],
+          (List.map banner model.bannerList),
 
          
          div [ class "container is-widescreen" ]
-                 [
-                    --  div [class "splash", style "display" (if model.splash then "block" else "none")][],
-                     
-        --              lazy lazyview model.image 
-                     
-        -- , 
-
-        --    div[class "home_main_text"]
-        --     [h1 [ class "home_main_text_h1" ]
-        --         [ text "나를 위한 운동 방법 유어핏은 간단합니다." ],
-        --         h1 [ class "home_main_text_h1" ]
-        --         [ text "지금 PC와 모바일 어디서나 접속하세요!" ],
-        --     img [ src "image/device.png", alt "device" ]
-        --         []
-        --          ]
-        --    ,
-
+        [ homeDirectMenu
+        , recommendWorkOutList
+        , P.viewFooter
+        ]
+        ]
+        ]
+        
+  
+homeDirectMenu = 
     div [ class "home_main_middle" ]
     [ div [ class "columns home_yf_columns" ]
-        [ div [ class "home_yf_columns_column1" ]
-            [ p [ class "main_middle_1" ]
+        [ a [ class "home_yf_columns_column1" , Route.href Route.Info ]
+            [  p [ class "main_middle_1"]
           
                       [ i [ class "fas fa-align-justify" ]
                             []
@@ -228,7 +238,7 @@ webOrApp model =
                         ]
             ]
             
-          , div [ class "home_yf_columns_column1" ]
+          , a [ class "home_yf_columns_column1", Route.href Route.YP ]
                     [ p [ class "main_middle_1" ]
                         [ i [ class "fas fa-won-sign" ]
                             []
@@ -237,8 +247,8 @@ webOrApp model =
          
                     ]
 
-          , div [ class "home_yf_columns_column1" ]
-                    [ p [ class "main_middle_1" ]
+          , a [ class "home_yf_columns_column1", Route.href Route.Faq  ]
+                    [ p [ class "main_middle_1"]
                         [ i [ class "fas fa-question" ]
                             []
                         , text "자주하는 질문"
@@ -247,84 +257,14 @@ webOrApp model =
                     ]
         ]
                    
-    ] ,  
-
-
-    div [ class "home_videobox" ]
-    [ h1 [ class "home_videobox_title1" ]
-        [ text "추천합니다" ]
-    , h1 [ class "home_videobox_title2" ]
-        [ text "오늘의 유어핏 운동" ]
-    , div [ class "main_videowrap" ]
-        [ div [ class "main_videobox1" ]
-            [ div [ class "main_videobox1_thumbnail" ]
-                []
-            , h1 [ class "main_videobox_text" ]
-                [ text "식스팩운동" ]
-            ]
-        , div [ class "main_videobox1" ]
-             [ div [ class "main_videobox1_thumbnail" ]
-                []
-            , h1 [ class "main_videobox_text" ]
-                 [ text "식스팩운동" ]
-            ]
-        ,div [ class "main_videobox1" ]
-             [ div [ class "main_videobox1_thumbnail" ]
-                []
-            , h1 [ class "main_videobox_text" ]
-                 [ text "식스팩운동" ]
-            ]
-        , div [ class "main_videobox1" ]
-             [ div [ class "main_videobox1_thumbnail" ]
-                []
-            , h1 [ class "main_videobox_text" ]
-                 [ text "식스팩운동" ]
-            ]
-        , div [ class "main_videobox1" ]
-             [ div [ class "main_videobox1_thumbnail" ]
-                []
-            , h1 [ class "main_videobox_text" ]
-                 [ text "식스팩운동" ]
-            ]
-        ]
-    ]
-                 
-              
-                   ,P.viewFooter
-                 ]
-        ]
-        
-  
+    ] 
 
 
 lazyview image= 
-    -- div [class "yf_banner_wrap"]
-    --    [div [class "yf_banner_menu"]
-       
-    --    [div [ class "yf_banner_side_menu" ]
-    -- [ div [ class "yf_banner_side_menu1" ]
-    --     [ text "공지사항" ]
-    -- , div [ class "yf_banner_side_menu2" ]
-    --     [ text "요금제보기" ]
-    -- , div [ class "yf_banner_side_menu3" ]
-    --     [ text "자주하는질문" ]
-    -- , div [ class "yf_banner_side_menu4" ]
-    --     [ text "1:1문의" ]
-    -- ]
-
-    --     ]
-           
-    --    ,
-     
-     
      div [ class "home_main_top lazyimage", 
-                     style "background-size" "cover" ,
-                     style "background" ("0px -20rem / cover no-repeat url(" ++ image ++") fixed") 
-                    --  , style "filter" "blur(4px)"
-                    --  , style onLoad LoadImg 
-                   
-                    
-                     ]
+        style "background-size" "cover" ,
+        style "background" ("0px -20rem / cover no-repeat url(" ++ image ++") fixed") 
+        ]
         [ div [ class "home_main_box_warp" ]
             [ div [ class "home_main_box" ]
               []
@@ -336,63 +276,48 @@ lazyview image=
 
 
 
+recommendWorkOutList = 
+    div [ class "home_videobox" ]
+        [ h1 [ class "home_videobox_title1" ]
+            [ text "추천합니다" ]
+        , h1 [ class "home_videobox_title2" ]
+            [ text "오늘의 유어핏 운동" ]
+        , div [ class "main_videowrap" ]
+            [ div [ class "main_videobox1" ]
+                [ div [ class "main_videobox1_thumbnail" ]
+                    []
+                , h1 [ class "main_videobox_text" ]
+                    [ text "식스팩운동" ]
+                ]
+            , div [ class "main_videobox1" ]
+                [ div [ class "main_videobox1_thumbnail" ]
+                    []
+                , h1 [ class "main_videobox_text" ]
+                    [ text "식스팩운동" ]
+                ]
+            ,div [ class "main_videobox1" ]
+                [ div [ class "main_videobox1_thumbnail" ]
+                    []
+                , h1 [ class "main_videobox_text" ]
+                    [ text "식스팩운동" ]
+                ]
+            , div [ class "main_videobox1" ]
+                [ div [ class "main_videobox1_thumbnail" ]
+                    []
+                , h1 [ class "main_videobox_text" ]
+                    [ text "식스팩운동" ]
+                ]
+            , div [ class "main_videobox1" ]
+                [ div [ class "main_videobox1_thumbnail" ]
+                    []
+                , h1 [ class "main_videobox_text" ]
+                    [ text "식스팩운동" ]
+                ]
+            ]
+        ]
+
     
         
-home =
-     div [class "headerSpace"] [
-    div [ class " m_home_topbox" ]
-            [ img [ src "image/logo.png", alt "logo" ]
-                []
-            ]
-     ]
-hometopTitle = 
-    div [class "home_subtitle"] []
-        --  text "안녕하세요!" ,br []
-        -- [] , text "당신만의 트레이너" 
-        -- , span [ class "yourfit_text" ]
-        -- [ text "유어핏" ], text "입니다."    
-    
-    
-
-menuLayout idx item = 
-        a [ class ("titlemenu" ++ String.fromInt (idx + 1)) , Route.href item.routing]
-           [div [class "m_home_iconbox"] [
-                img [src item.thumb ][]
-            ]
-            , div [class "menutext"] [
-                p [class "maintext"] [text item.menuTitle]
-            ]
-    ]
-menu = 
-    [
-        {
-            thumb = "image/icon01.png",
-            menuTitle = "유어핏운동",
-            routing = Route.YourFitExer
-        },
-        {
-            thumb = "image/icon00.png",
-            menuTitle = "공지사항",
-            routing = Route.Info
-        },
-        {
-            thumb = "image/icon02.png",
-            menuTitle = "맞춤운동",
-            routing = Route.MakeExer
-        },
-        {
-            thumb = "image/icon03.png",
-            menuTitle = "함께해요",
-            routing = Route.Together
-        },
-        {
-            thumb = "image/icon04.png",
-            menuTitle = "마이페이지",
-            routing = Route.MyPage
-        },
-        {
-            thumb = "image/icon05.png",
-            menuTitle = "FAQ",
-            routing = Route.Faq
-        }
-    ]
+        
+banner item =
+    img [src item.src, onLoad LoadImg] []

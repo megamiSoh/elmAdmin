@@ -78,6 +78,7 @@ port touch : (Value -> msg) -> Sub msg
 port progressComplete : (Value -> msg) -> Sub msg
 port calcurationComplete : (Value -> msg) -> Sub msg
 port dateValidResult : (Value -> msg) -> Sub msg
+port hideThum : (Value -> msg) -> Sub msg
 
 viewerChanges toMsg decoder =
     onStoreChange (\value -> toMsg (decodeFromChange decoder value))
@@ -152,6 +153,9 @@ port progressGo : () -> Cmd msg
 port progressCalcuration : () -> Cmd msg
 port valueReset : Value -> Cmd msg
 port dateValidate : Value -> Cmd msg
+port youtubeVideo : Value -> Cmd msg
+
+
 type alias Flags = 
     { token : String
     -- , checkBrowser : Bool
