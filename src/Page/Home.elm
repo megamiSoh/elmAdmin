@@ -267,8 +267,8 @@ webOrApp model =
             [ div [ class "home_main_middle" ]
             [ 
                 apphomeDirecMenu        
-            ] ,  
-            apprecommendWorkOutList
+            ]   
+            -- , apprecommendWorkOutList
       ]
     ]
     else 
@@ -288,7 +288,7 @@ webOrApp model =
             ],
          div [ class "container is-widescreen" ]
             [ homeDirectMenu
-            , recommendWorkOutList
+            -- , recommendWorkOutList
             , P.viewFooter
             ]
         ]

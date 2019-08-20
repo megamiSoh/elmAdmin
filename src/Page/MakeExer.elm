@@ -995,7 +995,13 @@ paperWeightStartApp model =
             [ text "체계적인 문진문항으로 나만의 운동을 만들어보세요." ]
         , a [ class "button is-link yf_make_b" , Route.href Route.YP]
             [ text "요금제 선택" ]
-        , a [ class "button yf_make_b" ]
+        , div [ class "button yf_make_b" 
+            , onClick (
+                    if List.isEmpty model.askExerList then
+                    IsActive "paperweightStart"
+                    else
+                    IsActive "paperWeightConfirm"
+                )]
             [ text "문진하기" ]
         ]
     ]
@@ -1191,7 +1197,13 @@ paperWeight model =
             [ text "체계적인 문진문항으로 나만의 운동을 만들어보세요." ]
         , a [ class "button is-link yf_make_b" , Route.href Route.YP ]
             [ text "요금제 선택" ]
-        , a [ class "button yf_make_b" ]
+        , div [ class "button yf_make_b" 
+                , onClick (
+                    if List.isEmpty model.askExerList then
+                    IsActive "paperweightStart"
+                    else
+                    IsActive "paperWeightConfirm"
+                )]
             [ text "문진하기" ]
         ]
     ]
