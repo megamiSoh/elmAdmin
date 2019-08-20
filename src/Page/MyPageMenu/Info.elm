@@ -358,7 +358,7 @@ web model=
         ]
 app model = 
     div [class ("container topSearch_container " ++ if model.detailShow then "fadeContainer" else "")] [
-        appHeaderRDetail "공지사항" "myPageHeader whiteColor" Route.MyPage "fas fa-angle-left",
+        appHeaderRDetail "공지사항" "myPageHeader whiteColor" Route.Home "fas fa-angle-left",
         div ([ class "table scrollHegiht", id "searchHeight" ])
         [ 
             if List.length (model.data.data) > 0 then

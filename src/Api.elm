@@ -82,7 +82,7 @@ port hideThum : (Value -> msg) -> Sub msg
 port sliderRestart : (Value -> msg) -> Sub msg
 port autoSlide : (Value -> msg) -> Sub msg
 port transitionCheck : (Value -> msg) -> Sub msg
-
+port swipe : (Value -> msg) -> Sub msg
 viewerChanges toMsg decoder =
     onStoreChange (\value -> toMsg (decodeFromChange decoder value))
 

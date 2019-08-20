@@ -10,7 +10,7 @@ import Json.Encode as Encode
 import Api.Decoder as Decoder
 import Api.Endpoint as Endpoint
 import Http as Http
-
+import Route as Route
 type alias Model =
     { session : Session
     , check : Bool
@@ -44,6 +44,7 @@ init session mobile =
 type Msg 
     = NoOp
     | GetList (Result Http.Error PriceData)
+    | BackPage
 
 toSession : Model -> Session
 toSession model =
@@ -57,6 +58,8 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        BackPage ->
+            (model, Route.backUrl (Session.navKey model.session) 1)
         NoOp ->
             ( model, Cmd.none )
         GetList (Ok ok) ->
@@ -74,7 +77,14 @@ subscriptions model =
 view : Model -> { title : String , content : Html Msg}
 view model =
     { title = "YourFitExer"
-    , content = div [] [weblayout model ]
+    , content = 
+        if model.check then
+            div []
+                [ appHeaderRDetailClick "유어핏 가격" "myPageHeader whiteColor" BackPage "fas fa-angle-left"
+                , weblayout model
+                ]
+        else
+            div [] [weblayout model ]
     }
 
 

@@ -506,10 +506,33 @@ if (document.getElementById('slide') !== null) {
         setTimeout(() => {
           app.ports.transitionCheck.send ("remove")
           onlyOnce = true
-        }, 6000);
+        }, 30000);
       }
     }
   }, { capture: false })
+
+        var startPageX, endPageX
+        document.addEventListener('touchstart', function (e) {
+          var touchposition = e.changedTouches[0]
+          startPageX = touchposition.pageX
+          onlyOnce = false
+      
+        })
+        document.addEventListener('touchmove', function (e) {
+          e.preventDefault;
+        })
+        document.addEventListener('touchend', function (e) {
+          var touchposition = e.changedTouches[0]
+          endPageX = touchposition.pageX
+          if (startPageX - endPageX < 0) {
+            app.ports.swipe.send("left")
+          } else {
+            app.ports.swipe.send("right")
+          }
+          setTimeout(() => {
+            onlyOnce = true
+          }, 30000);
+        })
   }
 
       
@@ -618,7 +641,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   event.stopPropagation();
 }
-
 
 
 

@@ -27,6 +27,7 @@ type alias Model =
     , bannerPosition : String
     , transition : String
     , checkId : String
+    , last_bullet : Int
     }
 
 
@@ -63,6 +64,7 @@ init session mobile=
         , bannerPosition = ""
         , transition = "shiftThing"
         , checkId = ""
+        , last_bullet = 5
         }
        , Cmd.batch[scrollToTop NoOp
        ,
@@ -84,6 +86,8 @@ type Msg
     | SilderRestart E.Value
     | AutoSlide E.Value
     | TransitionCheck E.Value
+    | SwipeDirection E.Value
+    | BulletGo Int
     -- | GotSession Session
 
 toSession : Model -> Session
@@ -101,7 +105,9 @@ subscriptions model=
     [ Api.calcurationComplete Complete
     , Api.sliderRestart SilderRestart
     , Api.autoSlide AutoSlide
-    , Api.transitionCheck TransitionCheck]
+    , Api.transitionCheck TransitionCheck
+    , Api.swipe SwipeDirection
+    ]
     -- Session.changes GotSession (Session.navKey model.session)
 
 onLoad msg =
@@ -110,6 +116,22 @@ onLoad msg =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        BulletGo idx ->
+            ({model | transition = "", bannerPosition = "-" ++ String.fromInt (idx * 100), bannerIndex = idx, last_bullet = 150}, Cmd.none)
+        SwipeDirection direction ->
+            let _ = Debug.log "direction" direction
+            in
+            case Decode.decodeValue Decode.string direction of
+                Ok ok ->
+                    case ok of
+                        "right" ->
+                            update (SlideMove "right") model
+                        "left" ->
+                            update (SlideMove "left") model
+                        _ ->
+                            (model, Cmd.none)
+                Err err ->
+                    (model, Cmd.none)
         TransitionCheck check ->
             case Decode.decodeValue Decode.string check of
                 Ok ok ->
@@ -132,7 +154,8 @@ update msg model =
             else
                     ({model | bannerIndex = index
                     , bannerPosition = "-" ++ String.fromInt ((model.bannerIndex + 1) * 100)
-                    , transition = "shiftThing"}
+                    , transition = "shiftThing"
+                    , last_bullet = if List.length model.bannerList == index then 0 else 150}
                     , Cmd.none)
         SilderRestart restart ->
             (model, Cmd.none)
@@ -149,7 +172,8 @@ update msg model =
                             ({model | bannerIndex = index
                             , bannerPosition = "-" ++ String.fromInt ((model.bannerIndex + 1) * 100)
                             , transition = "shiftThing"
-                            , checkId = "stopInterval"}
+                            , checkId = "stopInterval"
+                            , last_bullet = if List.length model.bannerList == index then 0 else 150}
                             , Cmd.none)
                     
                 "left" ->
@@ -163,7 +187,8 @@ update msg model =
                     ({model | bannerIndex = index
                     , bannerPosition = "-" ++ String.fromInt ((model.bannerIndex - 1) * 100)
                     , transition = "shiftThing"
-                    , checkId = "stopInterval"}
+                    , checkId = "stopInterval"
+                    , last_bullet = if List.length model.bannerList == index then 0 else 150}
                     , Cmd.none)
                 _ ->
                     (model, Cmd.none)
@@ -222,7 +247,7 @@ webOrApp model =
         bannerFirst = 
             caseList model.bannerList
     in
-    -- if model.check then
+    if model.check then
         div [class "appWrap"] [
             home,
              div [class "home_main_top "]
@@ -233,6 +258,8 @@ webOrApp model =
                 ++ [banner bannerFirst]
                 )  
                 , i [ class "fas fa-chevron-right appsliderBtn" , onClick (SlideMove "right")] []
+                , 
+                div [class "bullet_container"] (List.indexedMap (\idx x -> bulletitems idx x model) model.bannerList)
                 ]
             
             ],
@@ -244,35 +271,40 @@ webOrApp model =
             apprecommendWorkOutList
       ]
     ]
-       
-
-
-
-    -- else 
-    --      div [class"yf_home_wrap"]
-    --     [ 
-    --         div [class "home_main_top "]
-    --         [ div [ class "bannerList_container", id model.checkId]
-    --             [ i [ class "fas fa-chevron-left sliderBtn" , onClick (SlideMove "left")]
-    --             []
-    --             , div [class ("bannerList_items " ++  model.transition), id "slide", style "left" (model.bannerPosition ++ "%")] (  List.map banner model.bannerList 
-    --             ++ [banner bannerFirst]
-    --             )  
-    --             , i [ class "fas fa-chevron-right sliderBtn" , onClick (SlideMove "right")] []
-    --             ]
-            
-    --         ],
-    --      div [ class "container is-widescreen" ]
-    --         [ homeDirectMenu
-    --         , recommendWorkOutList
-    --         , P.viewFooter
-    --         ]
-    --     ]
+    else 
+         div [class"yf_home_wrap"]
+        [ 
+            div [class "home_main_top "]
+            [ div [ class "bannerList_container", id model.checkId]
+                [ i [ class "fas fa-chevron-left sliderBtn" , onClick (SlideMove "left")]
+                []
+                , div [class ("bannerList_items " ++  model.transition), id "slide", style "left" (model.bannerPosition ++ "%")] (  List.map banner model.bannerList 
+                ++ [banner bannerFirst]
+                )  
+                , i [ class "fas fa-chevron-right sliderBtn" , onClick (SlideMove "right")] []
+                , 
+                    div [class "bullet_container"] (List.indexedMap (\idx x -> bulletitems idx x model) model.bannerList)
+                ]
+            ],
+         div [ class "container is-widescreen" ]
+            [ homeDirectMenu
+            , recommendWorkOutList
+            , P.viewFooter
+            ]
+        ]
         
-  
+bulletitems idx item model = 
+    div [classList 
+        [("bullet_items", True)
+        , ("selected_bullet", model.bannerIndex == idx)
+        , ("selected_bullet",  model.last_bullet == idx )
+        ]
+        , onClick (BulletGo idx)
+        ][]
+
 apphomeDirecMenu =
     div [ class "columns home_yf_columns" ]
-        [ div [ class "home_yf_columns_column1" ]
+        [ a [ class "home_yf_columns_column1" , Route.href Route.Info ]
             [ p [ class "main_middle_1" ]
           
                       [ i [ class "fas fa-align-justify" ]
@@ -281,7 +313,7 @@ apphomeDirecMenu =
                         ]
             ]
             
-          , div [ class "home_yf_columns_column1" ]
+          , a [ class "home_yf_columns_column1", Route.href Route.YP]
                     [ p [ class "main_middle_1" ]
                         [ i [ class "fas fa-won-sign" ]
                             []
@@ -290,7 +322,7 @@ apphomeDirecMenu =
          
                     ]
 
-          , div [ class "home_yf_columns_column1" ]
+          , a [ class "home_yf_columns_column1" , Route.href Route.Faq ]
                     [ p [ class "main_middle_1" ]
                         [ i [ class "fas fa-question" ]
                             []
@@ -437,3 +469,13 @@ caseString item=
         
 banner item =
         a [class "bannerimg_container", style "background-color" (caseString item.backcolor), Atrr.href (caseString item.link), target (caseString item.target)][img [src item.src, onLoad LoadImg, class "slideItems"] []]
+
+
+
+home =
+     div [class "headerSpace"] [
+    div [ class " m_home_topbox" ]
+            [ img [ src "image/logo.png", alt "logo" ]
+                []
+            ]
+     ]

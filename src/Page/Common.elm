@@ -12,14 +12,6 @@ import File exposing(File)
 
 
 
-home :  Html msg
-home  =
-    div [class "headerSpace"] [
-        div [ class "justHeader " ]
-        [  img [ src "/image/logo.png" , alt "icon" ]
-                        [] ]
-    ]
-
 
 
 commonHeader : String -> String -> Html msg

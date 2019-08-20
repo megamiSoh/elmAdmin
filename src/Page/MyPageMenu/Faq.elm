@@ -280,7 +280,7 @@ update msg model =
         GoBack whereIs ->
             case whereIs of
                 "home" ->
-                    (model, Route.pushUrl (Session.navKey model.session) Route.MyPage)
+                    (model, Route.pushUrl (Session.navKey model.session) Route.Home)
                 "write" ->
                     ({model | showWrite = True, title = "", content = ""}, Cmd.none)
                 "list" ->
