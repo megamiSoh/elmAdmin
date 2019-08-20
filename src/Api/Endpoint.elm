@@ -80,6 +80,7 @@ module Api.Endpoint exposing
     , askBirth
     , shareCode
     , bannerList
+    , priceData
     )
 
 import Http
@@ -376,3 +377,6 @@ shareCode =
 
 bannerList =
     url ["front", "home", "banners"][]
+
+priceData = 
+    url ["front", "products", "period"][]

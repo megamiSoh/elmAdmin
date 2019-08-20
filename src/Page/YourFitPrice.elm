@@ -7,22 +7,43 @@ import Html exposing (..)
 import Page.Common exposing(..)
 import Api as Api
 import Json.Encode as Encode
+import Api.Decoder as Decoder
+import Api.Endpoint as Endpoint
+import Http as Http
 
 type alias Model =
     { session : Session
     , check : Bool
+    , getList : List Price
     }
 
+
+type alias PriceData = 
+    { data : List Price }
+
+type alias Price = 
+    { day_num : Int
+    , description : String
+    , id : Int
+    , is_pay : Bool
+    , name : String
+    , price : Int }
+
+priceApi session = 
+    Api.get GetList Endpoint.priceData (Session.cred session) (Decoder.priceData PriceData Price)
+-- Decode.priceData
 init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile = 
     (
     { session = session 
-    , check = mobile }
-    , Cmd.none
+    , check = mobile 
+    , getList = []}
+    , priceApi session
     )
 
 type Msg 
     = NoOp
+    | GetList (Result Http.Error PriceData)
 
 toSession : Model -> Session
 toSession model =
@@ -38,6 +59,12 @@ update msg model =
     case msg of
         NoOp ->
             ( model, Cmd.none )
+        GetList (Ok ok) ->
+            ({model | getList = ok.data}, Cmd.none)
+        GetList (Err err) ->
+            let _ = Debug.log "err" err
+            in
+            (model, Cmd.none)
 
 subscriptions : Model -> Sub Msg
 subscriptions model = 
@@ -47,82 +74,53 @@ subscriptions model =
 view : Model -> { title : String , content : Html Msg}
 view model =
     { title = "YourFitExer"
-    , content = div [] [webLayout]
+    , content = div [] [weblayout model ]
     }
 
 
-webLayout = 
-    div [ class "containerwrap" ]
-        [ div [ class "container" ]
-            [ div [ class "notification yf_workout" ]
-                [ div [ class "titlewrap" ]
-                    [ div [ class "columns" ]
-                        [ div [ class "column is-full pagename" ]
-                            [ div [ class "yficon" ]
-                                [ img [  src "../image/icon_cart.png", alt "icon" ]
-                                    []
-                                ]
-                            , div [ class "yftext" ]
-                                [ strong []
-                                    [ text "유어핏 가격표" ]
-                                ]
-                            ]
-                        ]
-                    ]
-                , div [ class "searchbox_wrap" ]
-                    [ div [ class "searchbox" ]
-                        [ div [ class "mediabox" ]
-                            [ div [ class "background" ]
-                                [ div [ class "container" ]
-                                    [ div [ class "panel pricing-table" ]
-                                        [ div [ class "pricing-plan" ]
-                                            [ h2 [ class "pricing-header" ]
-                                                [ text "무료 체험" ]
-                                            , ul [ class "pricing-features" ]
-                                                [ li [ class "pricing-features-item" ]
-                                                    [ text "유어핏 맞춤 운동 서비스" ]
-                                                , li [ class "pricing-features-item" ]
-                                                    [ text "맞춤형 문진 운동 서비스 7일" ]
-                                                ]
-                                            , span [ class "pricing-price" ]
-                                                [ text "Free" ]
-                                            , a [ href "#/", class "pricing-button" ]
-                                                [ text "무료" ]
-                                            ]
-                                        , div [ class "pricing-plan" ]
-                                            [ h2 [ class "pricing-header" ]
-                                                [ text "프리미엄 서비스" ]
-                                            , ul [ class "pricing-features" ]
-                                                [ li [ class "pricing-features-item" ]
-                                                    [ text "유어핏 맞춤 운동 서비스" ]
-                                                , li [ class "pricing-features-item" ]
-                                                    [ text "맞춤형 문진 운동 서비스 7일" ]
-                                                ]
-                                            , span [ class "pricing-price" ]
-                                                [ text "₩ 3,300원" ]
-                                            , a [ href "#/", class "pricing-button is-featured" ]
-                                                [ text "결제" ]
-                                            ]
-                                        , div [ class "pricing-plan" ]
-                                            [ h2 [ class "pricing-header" ]
-                                                [ text "VIP 서비스" ]
-                                            , ul [ class "pricing-features" ]
-                                                [ li [ class "pricing-features-item" ]
-                                                    [ text "유어핏 맞춤 운동 서비스" ]
-                                                , li [ class "pricing-features-item" ]
-                                                    [ text "맞춤형 문진 운동 서비스 30일" ]
-                                                ]
-                                            , span [ class "pricing-price" ]
-                                                [ text "₩ 9,900원" ]
-                                            , a [ href "#/", class "pricing-button is-featured" ]
-                                                [ text "결제" ]
-                                            ]
-                                        ]
-                                    ]
-                                ]
-                            ]
-                        ]
-                    ]
+
+priceLayout item = 
+    div [ class ("plan " ++ if item.is_pay then (
+        if item.day_num >= 30 then "ultimite" else "standard"
+    ) else "basic")]
+    [ div [ class "plan-inner" ]
+        [ 
+            if item.is_pay then
+            div [ class "entry-title" ]
+            [ h3 []
+                [ text item.name ]
+            , h1 [ class "yf_price" ]
+                [ text ("₩ "++ String.fromInt item.price++" 원") ]
+            , h1 [ class "yf_price_date" ]
+                [ text ("서비스기간 "++ String.fromInt item.day_num ++"일") ]
+            ]
+            else
+            div [ class "entry-title" ]
+                [ h3 []
+                    [ text "무료 체험" ]
+                , h1 [ class "yf_price" ]
+                    [ text "무료" ]
+                , h1 [ class "yf_price_date" ]
+                    [ text ("체험기간 "++ String.fromInt item.day_num ++"일") ]
                 ]
+        , div [ class "entry-content" ]
+            [ text item.description]
+        , div [ class "btnprice" ]
+            [ a [ class "button is-dark" ]
+                [ text (if item.is_pay then "결제 하기" else "체험 하기") ]
+            ]
+        ]
+    ]
+
+weblayout model = 
+    div [ class "searchbox_wrap" ]
+        [ div [ class "pirce_searchbox" ]
+            [ div [ class "mediabox" ]
+                (List.map priceLayout model.getList)
+                -- [ 
+                --     basicPrice
+                -- , mediumPrice
+                -- , highPrice
+                -- ]
             ]
         ]

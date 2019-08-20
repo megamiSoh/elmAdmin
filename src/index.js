@@ -7,24 +7,33 @@ import './css/datepicker.css'
 import { Elm } from './Main.elm';
 import registerServiceWorker from './registerServiceWorker';
 
-
 if(!!document.createRange) {
   document.getSelection().removeAllRanges();
 }
 var agent = navigator.userAgent.toLowerCase();
-
+var filtercheck;
 if (agent.indexOf("msie") != -1) {
   alert("인터넷익스플로러 브라우저입니다.");
   
   }
-  
+
+  window.addEventListener('resize', () => {
+    const windowWidth = window.outerWidth;
+    windowWidth > 450 ? filtercheck = false : filtercheck = true
+});
+
 const url ='http://13.209.49.169:4000/api/v1/'
 // const url = 'https://api.yfit.co.kr/api/v1/'
 var filter = "win16|win32|win64|mac|macintel"; 
+
+if (filter.indexOf( navigator.platform.toLowerCase() ) > 0) {
+  filtercheck = filter.indexOf( navigator.platform.toLowerCase() ) < 0
+}
+
 var flags = 
   { token : 
     localStorage.getItem("token"), 
-  checkBrowser : filter.indexOf( navigator.platform.toLowerCase() ) < 0 
+  checkBrowser : filter.indexOf( navigator.platform.toLowerCase() ) < 0
   }
   var something = (function() {
     var executed = false;
@@ -458,10 +467,59 @@ if (checkDisplay.className == "logoutShow")  {
     } else {
       checkDisplay.className = "logoutShow";
       checkDisplay.style.height = "100vh"
-      // document.body.style.overflow = "scroll"
     }
 }
 })
+  
+
+
+var slideIndex;
+app.ports.slide.subscribe(function (index) {
+  slideIndex = index
+
+  })
+if (document.getElementById('slide') !== null) {
+  var timer,onlyOnce;
+  onlyOnce = true;
+  timer =  function(){
+  if (onlyOnce) {
+    app.ports.autoSlide.send ("autoSlideStart")
+  }
+  }
+  window.setInterval(timer, 6000);
+
+  document.addEventListener('transitionend', function(e){
+    if (document.getElementById('slide') !== null) {
+      if ((-(parseInt(slideIndex) * 100)+ "%")  == document.getElementById('slide').style.left) {
+        e.preventDefault();
+        app.ports.transitionCheck.send ("right")
+      }
+
+      if ("0%"  == document.getElementById('slide').style.left) {
+        e.preventDefault();
+        app.ports.transitionCheck.send ("left")
+      }
+
+      if (document.getElementById('stopInterval') !== null) {
+        e.preventDefault();
+        onlyOnce = false
+        setTimeout(() => {
+          app.ports.transitionCheck.send ("remove")
+          onlyOnce = true
+        }, 6000);
+      }
+    }
+  }, { capture: false })
+  }
+
+      
+      
+    
+
+
+
+
+  
 
 app.ports.valueReset.subscribe(function (id) {
   // alert(document.getElementById(id +"after"))
@@ -491,6 +549,10 @@ app.ports.valueReset.subscribe(function (id) {
     event.target.playVideo();
   }
 
+
+  
+
+
   document.addEventListener('touchmove', function(e)
 {
   var dv = document.getElementById("playerHere" + videoId)
@@ -501,7 +563,6 @@ app.ports.valueReset.subscribe(function (id) {
 }, 
 { capture: false } )
 })
-
 
 
 

@@ -1018,4 +1018,17 @@ bannerList banner =
         |> required "src" string
         |> optional "target" ( Decode.map Just string ) Nothing
         |> required "title" string
+        |> required "backcolor" ( Decode.nullable string )
 
+priceData  data price = 
+    Decode.succeed data
+        |> required "data" (Decode.list (priceList price))
+
+priceList price = 
+    Decode.succeed price 
+        |> required "day_num" int
+        |> required "description" string
+        |> required "id" int
+        |> required "is_pay" bool
+        |> required "name" string
+        |> required "price" int
