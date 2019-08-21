@@ -827,8 +827,8 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    -- case model.check of
-    --     True ->
+    case model.check of
+        True ->
             case model.loading of
                 True ->
                     { title = "맞춤운동"
@@ -874,37 +874,37 @@ view model =
                     
                     }
     
-        -- False ->
-        --     { title = "맞춤운동"
-        --     , content =
-        --         div [ class "customContainerwrap" ]
-        --     [ div [ class "container" ]
-        --         [ div [ class "notification yf_workout" ]
-        --             [
-        --                 commonHeader "/image/icon_customworkout.png" "맞춤운동"
-        --                 , activeTab model
-        --                 , case model.isActive of
-        --                     "paperweight" ->
-        --                         div [][
-        --                         paperWeightBody model 
-        --                         , if List.isEmpty model.askExerList then
-        --                         div [][]
-        --                         else
-        --                         div [class "button mj_new_recommend", onClick (IsActive "newRecommend")][text "새로운 추천"]
-        --                         ] 
-        --                     "makeExer" ->
-        --                         makeExerBody model
+        False ->
+            { title = "맞춤운동"
+            , content =
+                div [ class "customContainerwrap" ]
+            [ div [ class "container" ]
+                [ div [ class "notification yf_workout" ]
+                    [
+                        commonHeader "/image/icon_customworkout.png" "맞춤운동"
+                        , activeTab model
+                        , case model.isActive of
+                            "paperweight" ->
+                                div [][
+                                paperWeightBody model 
+                                , if List.isEmpty model.askExerList then
+                                div [][]
+                                else
+                                div [class "button mj_new_recommend", onClick (IsActive "newRecommend")][text "새로운 추천"]
+                                ] 
+                            "makeExer" ->
+                                makeExerBody model
                                 
-        --                     _ ->
-        --                         paperWeightBody model            
-        --             ]
+                            _ ->
+                                paperWeightBody model            
+                    ]
                      
-        --         ]
-        --         , paperweightStart model
-        --         , selectedItem model
-        --         , resetLayer "yf_popup" model
-        --     ]
-        --     }
+                ]
+                , paperweightStart model
+                , selectedItem model
+                , resetLayer "yf_popup" model
+            ]
+            }
             
         
 
