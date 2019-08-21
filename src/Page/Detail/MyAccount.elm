@@ -613,9 +613,9 @@ accountContents model =
                 [ text "계정기록"  
                 --, a [ class "button is-large is-fullwidth settingmenu" ]
                 --     [ text "기록초기화" ], text "계정연결" 
-                ,  a [ class "button is-large is-fullwidth settingmenu", Route.href Route.Logout ]
+                ,  a [ class "button m_settingmenu", Route.href Route.Logout ]
                     [ text "로그아웃" ], text "계정관리" 
-                , div [ class "button is-large is-fullwidth settingmenu", onClick DeleteConfirm ]
+                , div [ class "button is-danger m_settingmenu", onClick DeleteConfirm ]
                     [ text "회원탈퇴" ]
                 , mremovelayer model.show AccountDelete
                 ]
@@ -678,13 +678,13 @@ contents model =
                         [ text "개인정보 보호 및 약관확인" ]
                     ]
                 , div [ class "settingbox" ]
-                    [ div [ class "button is-large is-fullwidth m_settingmenu", onClick (ChangePage "nick") ]
+                    [ div [ class "button  m_settingmenu", onClick (ChangePage "nick") ]
                         [ text "닉네임 변경" ]
-                    , div [ class "button is-large is-fullwidth m_settingmenu", onClick (ChangePage "pwd") ]
+                    , div [ class "button  m_settingmenu", onClick (ChangePage "pwd") ]
                         [ text "패스워드 변경" ]
-                    , div [ class "button is-large is-fullwidth m_settingmenu", onClick (ChangePage "body") ]
+                    , div [ class "button  m_settingmenu", onClick (ChangePage "body") ]
                         [ text "신체기록 관리" ]
-                    , div [ class "button is-large is-fullwidth m_settingmenu", onClick (ChangePage "account") ]
+                    , div [ class "button  m_settingmenu", onClick (ChangePage "account") ]
                         [ text "계정관리" ]
                     ]
                 , p [ class "m_yf_version" ]
