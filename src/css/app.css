@@ -364,7 +364,7 @@ ul.commonHeaderBack li {
   /* display: flex; */
   margin: 10px;
   padding: 5px;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
 }
 .loginwrap {
   height: 80vh;
@@ -2500,11 +2500,25 @@ padding: .3rem;
 .m_yf_box_scrap
 {
   float: left;
+  
 }
 
 .m_scrap_date
 {
 font-size: .9rem;
+float: left;
+margin-top: 2.5rem;
+color: #9A9EA7;
+}
+
+.m_scrap_box_name
+
+{
+  overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
+width: 150px;
+text-align: left;
 }
 
 .jwplayer {

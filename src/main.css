@@ -2227,12 +2227,12 @@ margin: 30px 0px 0px 0px;
 }
 
  .myScrap_yf_box_title
- {font-size: 1.3rem;
+ {font-size: 1rem;
 margin-bottom: 1.2rem;
 overflow: hidden;
 text-overflow: ellipsis;
 white-space: nowrap;
-width: 320px;
+width: 150px;
 
 }
 
@@ -2452,6 +2452,14 @@ padding-left: .5rem;
   text-align: center;
 }
 
+
+.td.m_infor_tableCell
+{
+  text-overflow:ellipsis; 
+  overflow:hidden; 
+  white-space:nowrap;
+
+}
 
 
 
@@ -4444,14 +4452,21 @@ width: 100px;
 {
   border: none;
 }
-
-
+.columns.home_yf_columns
+{
+  padding: 0 1rem 0 1rem;
+}
 }
 
 
+@media screen and (min-width: 630px) and (max-width: 770px)
+{
+.bannerList_items img{
+  height: 250px;
+}
 
 
-
+}
 
 .main_middle_1
 {
@@ -7480,13 +7495,7 @@ display: block;
    margin: 1rem 0px 1rem 0px;
  }
  
- .yf_make_b
- {
-   width: 50%;
-   margin-top: 2rem;
-   font-size: 1.2rem;
- }
- 
+
  
  
  
@@ -8020,12 +8029,7 @@ display: block;
    margin: 1rem 0px 1rem 0px;
  }
  
- .yf_make_b
- {
-   width: 50%;
-   margin-top: 2rem;
-   font-size: 1.2rem;
- }
+
  
 
  
