@@ -1033,6 +1033,15 @@ priceList price =
         |> required "name" string
         |> required "price" int
 
-orderData data = 
+orderData data item = 
     Decode.succeed data
-        |> required "data" string
+        |> required "data" (order item)
+
+order item = 
+    Decode.succeed item 
+        |> required "amount" int
+        |> required "buyer_email" string
+        |> required "buyer_name" string
+        |> required "digital" bool
+        |> required "merchant_uid" string
+        |> required "name" string
