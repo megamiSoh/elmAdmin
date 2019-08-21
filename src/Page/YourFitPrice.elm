@@ -33,7 +33,15 @@ type alias Price =
     , price : Int }
 
 type alias OrderData = 
-    { data : String }
+    { data : Order }
+
+type alias Order = 
+    { amount : Int
+    , buyer_email : String
+    , buyer_name : String
+    , digital : Bool
+    , merchant_uid : String
+    , name : String }
 
 orderApi product_id session = 
     let
@@ -42,7 +50,7 @@ orderApi product_id session =
                 [("product_id", Encode.int product_id )]
                 |> Http.jsonBody
     in
-    Api.post Endpoint.orderGo (Session.cred session) OrderComplete body (Decoder.orderData OrderData)
+    Api.post Endpoint.orderGo (Session.cred session) OrderComplete body (Decoder.orderData OrderData Order)
 
 priceApi session = 
     Api.get GetList Endpoint.priceData (Session.cred session) (Decoder.priceData PriceData Price)
@@ -85,13 +93,23 @@ update msg model =
         PayStart id name ->
             case model.session of
                 LoggedIn _ val ->
-                    ({model | product_id = id, product_name = name}, orderApi id model.session)
+                    ({model | product_id = id, product_name = name}
+                    , orderApi id model.session
+                    )
                 Guest _ ->
                     ({model | product_id = id, product_name = name}, Route.pushUrl (Session.navKey model.session) Route.Login)
         OrderComplete (Ok ok) ->
             let _ = Debug.log "ok" ok.data
+                orderData = 
+                    Encode.object 
+                        [ ("amount", Encode.int ok.data.amount)
+                        , ("buyer_email", Encode.string ok.data.buyer_email)
+                        , ("buyer_name", Encode.string ok.data.buyer_name)
+                        , ("digital", Encode.bool ok.data.digital)
+                        , ("merchant_uid", Encode.string ok.data.merchant_uid)
+                        , ("name", Encode.string ok.data.name)]
             in
-            (model, Api.payment (Encode.string (ok.data ++ "+++" ++ model.product_name)))
+            (model, Api.payment orderData)
         OrderComplete (Err err) ->
             let _ = Debug.log "a" err
                 serverErrors = Api.decodeErrors err

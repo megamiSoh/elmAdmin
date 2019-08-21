@@ -382,4 +382,4 @@ bannerList =
 priceData = 
     url ["front", "products", "period"][]
 orderGo = 
-    url ["front", "products", "orderno"][]
+    url ["front", "products", "request"][]

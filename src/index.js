@@ -64,18 +64,11 @@ app.ports.sendData.subscribe(function () {
 });
 
 app.ports.dateValidate.subscribe(function (date){
-  let char = date.split(',')
-  let dateFormat = char
-  let dateCheck = new Date (date)
-  let oldDate = new Date(1900, 1, 1) < dateCheck
+  let dateFormat = date.split(',')
+  let dateCheck = new Date (date.replace(/,/g,'/'))
+  let oldDate = new Date(1900/1/1) < dateCheck
   let validate =  dateFormat[0] == dateCheck.getFullYear() && (dateFormat[1] - 1)  == dateCheck.getMonth() && dateFormat[2] == dateCheck.getDate() && new Date () > dateCheck && oldDate
-  console.log(validate)
   app.ports.dateValidResult.send(validate)
-  // if (validate) {
-  //   app.ports.dateValidResult.send(validate)
-  // } else {
-  //   return;
-  // }
 })
 
 app.ports.hideFooter.subscribe(function () {
@@ -475,17 +468,19 @@ if (checkDisplay.className == "logoutShow")  {
 
 
 app.ports.payment.subscribe(function (info) {
-  const payInfo = info.split("+++") 
-  const merchant_uid = payInfo[0]
-  // const amount = payInfo[1]
-  const product_name = payInfo[1]
+  console.log(info)
   alert ("가상결제이므로, 실제 결제는 이루어지지 않습니다.")
+
     IMP.init('imp85569385')
   IMP.request_pay({
     pay_method : 'card',
-    merchant_uid : merchant_uid,
-    name : product_name,
-    amount : 100,
+    merchant_uid : info.merchant_uid,
+    name : info.name,
+    amount : info.amount,
+    buyer_email : info.buyer_email,
+    buyer_name : info.buyer_name,
+    digital : info.digital,
+    m_redirect_url :window.location.origin + '#/paperweightList'
 }, function(rsp) {
     if ( rsp.success ) {
         var msg = '결제가 완료되었습니다.';
@@ -497,7 +492,7 @@ app.ports.payment.subscribe(function (info) {
         var msg = '결제에 실패하였습니다';
         msg += ' : ' + rsp.error_msg;
     }
-    alert(msg);
+    // alert(msg);
 });
 })
 
