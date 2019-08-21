@@ -252,12 +252,13 @@ webOrApp model =
             home,
              div [class "home_main_top "]
             [ div [ class "app_bannerimg_container", id model.checkId]
-                [ i [ class "fas fa-chevron-left appsliderBtn" , onClick (SlideMove "left")]
-                []
-                , div [class ("bannerList_items " ++  model.transition), id "slide", style "left" (model.bannerPosition ++ "%")] (  List.map banner model.bannerList 
+                [ 
+                --     i [ class "fas fa-chevron-left appsliderBtn" , onClick (SlideMove "left")]
+                -- [], 
+                div [class ("bannerList_items " ++  model.transition), id "slide", style "left" (model.bannerPosition ++ "%")] (  List.map banner model.bannerList 
                 ++ [banner bannerFirst]
                 )  
-                , i [ class "fas fa-chevron-right appsliderBtn" , onClick (SlideMove "right")] []
+                -- , i [ class "fas fa-chevron-right appsliderBtn" , onClick (SlideMove "right")] []
                 , 
                 div [class "bullet_container"] (List.indexedMap (\idx x -> bulletitems idx x model) model.bannerList)
                 ]
