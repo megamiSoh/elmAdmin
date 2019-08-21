@@ -169,6 +169,20 @@ a {
 .yf_table {
   display: table;
 }
+
+.tableRow
+{
+ width: 100vh;
+}
+
+.m_tableRow
+{
+
+float: left;
+
+
+}
+
 .tableRow {display: table-row;}
 .contentsH {
   overflow: hidden;
@@ -1472,7 +1486,7 @@ margin:  0 0 2.8rem 0;
   height: 100%;
   position: relative;
   overflow: hidden;
-  margin-top: 30px;
+  /* margin-top: 30px; */
  }
 
  .together_mediabox,.together_mediabox2
@@ -2437,6 +2451,18 @@ padding-left: .5rem;
 {
   text-align: center;
 }
+
+
+.td.m_infor_tableCell
+{
+  text-overflow:ellipsis; 
+  overflow:hidden; 
+  white-space:nowrap;
+
+}
+
+
+
 
 /* infoDetail */
 
@@ -3790,14 +3816,7 @@ float: left;
    position: sticky;
  }
  
- .yf_workout
- {
-   background-color: white;
-   border-radius: 0px;
-   /* padding: 1rem; */
-   overflow: hidden;
- 
- }
+
  
  .pagename
  {
@@ -3933,11 +3952,15 @@ float: left;
   left: 0;
   bottom: 0;
   width: 100%;
-  padding: 2rem 1.5rem 2rem;
+  padding: 1rem 1.5rem 1rem;
   color:  #3d3d3d;
   letter-spacing: -1px;
   /* border-top: 1px solid #e8eaeb; */
   background-color: white;
+}
+
+.shiftThing img{
+  width: 80%;
 }
 
 
@@ -4374,6 +4397,12 @@ width: 100px;
 }
 
 @media screen and (max-width: 630px){
+.bannerList_items img{
+  width: 100%;
+  height: 120px;
+}
+
+
   .home_main_middle
 {padding: 0;
  
@@ -4715,7 +4744,7 @@ width: 100%;
 
 {
   background-color: white;
-padding: 0;}
+}
 
 
 .lazyimage
@@ -7042,14 +7071,7 @@ display: block;
    background-color:white;
  }
  
- .yf_workout
- {
-   background-color: white;
-   border-radius: 0px;
-   padding: 1rem;
-   overflow: hidden;
- }
- 
+
  .pagename
  {
    font-size: 2rem;
@@ -7589,7 +7611,7 @@ display: block;
  {
    background-color: white;
    border-radius: 0px;
-   padding: 1rem;
+  
    overflow: hidden;
  }
  
@@ -7799,9 +7821,9 @@ display: block;
  @import url(https://fonts.googleapis.com/css?family=Lato:400,700);
  
  body {
-   background: #F2F2F2;
+   background: white;
    padding: 0;
-   maring: 0;
+   margin: 0;
  }
  
  #price {
@@ -8161,3 +8183,9 @@ display: block;
  .selected_bullet {
    background-color: #bfbfbf;
  }
+
+ .cart_warning_h1
+ {
+   font-size: 1.1rem;
+  font-weight: 800;
+  }

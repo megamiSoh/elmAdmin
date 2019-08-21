@@ -81,7 +81,7 @@ view model =
         if model.check then
             div []
                 [ appHeaderRDetailClick "유어핏 가격" "myPageHeader whiteColor" BackPage "fas fa-angle-left"
-                , weblayout model
+                , applayout model
                 ]
         else
             div [] [weblayout model ]
@@ -116,14 +116,30 @@ priceLayout item =
         , div [ class "entry-content" ]
             [ text item.description]
         , div [ class "btnprice" ]
-            [ a [ class "button is-dark" ]
+            [ a [ class "button is-primary" ]
                 [ text (if item.is_pay then "결제 하기" else "체험 하기") ]
             ]
         ]
     ]
 
 weblayout model = 
-    div [ class "searchbox_wrap" ]
+    div [ class "yf_pricewrap" ]
+    [ div [ class "container" ]
+        [ div [ class "columns" ]
+            [ div [ class "column is-full pagename" ]
+                [ div [ class "yficon" ]
+                      [ i [ class "fas fa-won-sign" ]
+                        []
+                    ]
+                , div [ class "yftext" ]
+                    [ strong []
+                        [ text "유어핏 가격표" ]
+                    ]
+                ]
+            ]
+        ]
+
+   , div [ class "searchbox_wrap" ]
         [ div [ class "pirce_searchbox" ]
             [ div [ class "mediabox" ]
                 (List.map priceLayout model.getList)
@@ -133,4 +149,23 @@ weblayout model =
                 -- , highPrice
                 -- ]
             ]
+        ]
+
+    ]
+
+
+applayout model = 
+    div [ class "yf_pricewrap" ]
+        [div [ class "searchbox_wrap" ]
+        [ div [ class "pirce_searchbox" ]
+            [ div [ class "mediabox" ]
+                (List.map priceLayout model.getList)
+                -- [ 
+                --     basicPrice
+                -- , mediumPrice
+                -- , highPrice
+                -- ]
+            ]
+        ]
+
         ]

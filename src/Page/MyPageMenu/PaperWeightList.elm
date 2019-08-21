@@ -62,9 +62,19 @@ subscriptions model =
 
 view : Model -> { title : String , content : Html Msg}
 view model =
+
+    if model.check then
+    { title = "YourFitExer"
+    , content = div [] [apprecentBuylist model ]
+    }
+
+    else
     { title = "YourFitExer"
     , content = div [] [recentBuylist model ]
     }
+
+
+
 
 recentBuylist model = 
     div []
@@ -89,7 +99,7 @@ recentBuylist model =
                 commonJustHeader "/image/icon_cart.png" "최근구매내역"
                 , div [ class "searchbox_wrap" ]
                     [ div [ class "cart_warning" ]
-                        [ h1 []
+                        [ h1 [class"cart_warning_h1"]
                             [ text "구매한 상품 중 기간이 종료된 추천 운동 영상이 있습니다." ]
                         ]
                     , div [ class "control" ]
@@ -147,4 +157,80 @@ recentBuylist model =
                     ]
                 ]
             ]
+        
+
+
+apprecentBuylist model = 
+    div []
+         [ div [ class "topbox" ]
+        [ div [ class "backbtn" ]
+            [ i [ class "fas fa-angle-left" ]
+                []
+            ]
+        , div [ class "topboxtitle" ]
+            [ text "최근구매내역 " ]
+        , div [ class "nextbtn" ]
+            []
+        ]
+                , div [ class "searchbox_wrap" ]
+                    [ div [ class "cart_warning" ]
+                        [ h1 [class"cart_warning_h1"]
+                            [ text "구매한 상품 중 기간이 종료된 추천 운동 영상이 있습니다." ]
+                        ]
+                    , div [ class "control" ]
+                        [ label [ class "radio" ]
+                            [ input [ type_ "radio", name "answer" ]
+                                [], text "유료" 
+                            ]
+                        , label [ class "radio" ]
+                            [ input [ type_ "radio", name "answer" ]
+                                [], text "무료" 
+                            ]
+                        ]
+                    , div [ class "searchbox" ]
+                        [ div [ class "cart_mediabox" ]
+                            [ table [ class "cart_table" ]
+                                [ tbody [ class "cart_tbody" ]
+                                    [ tr [ class "cart_tr" ]
+                                        [ th []
+                                            [ text "운동제목" ]
+                                        , th []
+                                            [ text "결제일" ]
+                                        , th []
+                                            [ text "유효기간" ]
+                                        , th []
+                                            [ text "결제금액" ]
+                                        , th []
+                                            [ text "결제상태" ]
+                                        , th []
+                                            [ text "자세히보기" ]
+                                        ]
+                                    , tr []
+                                        [ td []
+                                            [ text "유어핏 초보자 운동" ]
+                                        , td []
+                                            [ text "19/01/01"  , br []
+                                                [], text "00:00:00" 
+                                            ]
+                                        , td []
+                                            [ text "~19/01/31" , br []
+                                                [], text "00:00:00" 
+                                            ]
+                                        , td []
+                                            [ text "₩1,000원" ]
+                                        , td []
+                                            [ text "결제완료" ]
+                                        , td []
+                                            [ a [ class "button is-primary" ]
+                                                [ text "자세히보기" ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            
+        
         

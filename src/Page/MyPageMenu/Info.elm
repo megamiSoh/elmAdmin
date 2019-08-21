@@ -381,9 +381,9 @@ app model =
     ]
 
 appContentsBody item =
-    div [class "tableRow",  onClick (DetailGo item.id)] [
+    div [class "m_tableRow",  onClick (DetailGo item.id)] [
         td[class "m_infor_tableCell"][text item.title],
-        td[class"notice_date m_infor_notice_date_tableCell"][text (String.dropRight 10 (item.inserted_at))]
+        td[class" m_infor_notice_date_tableCell"][text (String.dropRight 10 (item.inserted_at))]
     ]
 
 contentsBody model =

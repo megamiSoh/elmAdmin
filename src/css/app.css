@@ -1848,23 +1848,46 @@ padding-left: .5rem;
 
 /* info */
 
+.m_tableRow td
+{
+  float: left;
+  border:  none;
+}
+
+.m_tableRow
+{
+  border-bottom: solid #E4E4E4 .1px;
+  width: 100%;
+}
+
 
 .m_infor_tableCell
 {
   /* font-size: 3rem; */
   padding: 0;
-  width: 50%;
+
 }
 .m_infor_tableCell {
   padding: 1.4rem 1rem !important;
+  width: 70%;
+
+  border-bottom: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
   
 }
 .m_infor_notice_date_tableCell
 {
+  /* width: 100px; */
+  font-size: .8rem;
+  padding: 1.4rem 1rem !important;
+  float: right;
+ 
   width: 20%;
-  /* font-size: 2rem; */
-  padding: 1rem 0!important;
-  text-align: right;
+  border: none;
+ 
+
  
 }
 .notice_date.m_infor_notice_date_tableCell {
@@ -2699,6 +2722,9 @@ display: flex;
 .mealHeader li:last-child {
   font-size: .9rem;
 }
+
+
+
 .topSearch_container {
   /* transform: scale(1); */
   transition: transform .5s ease-in-out;

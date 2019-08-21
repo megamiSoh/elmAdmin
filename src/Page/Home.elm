@@ -475,7 +475,7 @@ banner item =
 home =
      div [class "headerSpace"] [
     div [ class " m_home_topbox" ]
-            [ img [ src "image/logo.png", alt "logo" ]
+            [ img [ src "https://yourfitbucket.s3.ap-northeast-2.amazonaws.com/images/logo.png", alt "logo" ]
                 []
             ]
      ]
