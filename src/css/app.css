@@ -1852,12 +1852,18 @@ padding-left: .5rem;
 {
   float: left;
   border:  none;
+  border-bottom: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+
 }
 
 .m_tableRow
 {
   border-bottom: solid #E4E4E4 .1px;
   width: 100%;
+
 }
 
 
@@ -1869,12 +1875,11 @@ padding-left: .5rem;
 }
 .m_infor_tableCell {
   padding: 1.4rem 1rem !important;
-  width: 70%;
+  width: 280px;
 
-  border-bottom: none;
+  overflow: hidden; 
   text-overflow: ellipsis;
-  white-space: nowrap;
-
+  white-space: nowrap; 
   
 }
 .m_infor_notice_date_tableCell
