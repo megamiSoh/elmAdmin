@@ -486,14 +486,8 @@ update msg model =
         DateValidate dateValue ->
             case Decode.decodeValue Decode.bool dateValue of
                 Ok ok ->
-                    let _ = Debug.log "ok" ok
-                    in
-
                     ({model | dateValidate = ok}, Cmd.none)
                 Err err ->
-                    let _ = Debug.log "ok" err
-                    in
-
                     (model, Cmd.none)
 
         BirthInput category date ->
