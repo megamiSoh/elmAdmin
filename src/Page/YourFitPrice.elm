@@ -15,11 +15,14 @@ type alias Model =
     { session : Session
     , check : Bool
     , getList : List Price
+    , product_id : Int
+    , product_name : String
     }
 
 
 type alias PriceData = 
     { data : List Price }
+
 
 type alias Price = 
     { day_num : Int
@@ -29,6 +32,18 @@ type alias Price =
     , name : String
     , price : Int }
 
+type alias OrderData = 
+    { data : String }
+
+orderApi product_id session = 
+    let
+        body = 
+            Encode.object 
+                [("product_id", Encode.int product_id )]
+                |> Http.jsonBody
+    in
+    Api.post Endpoint.orderGo (Session.cred session) OrderComplete body (Decoder.orderData OrderData)
+
 priceApi session = 
     Api.get GetList Endpoint.priceData (Session.cred session) (Decoder.priceData PriceData Price)
 -- Decode.priceData
@@ -37,7 +52,10 @@ init session mobile =
     (
     { session = session 
     , check = mobile 
-    , getList = []}
+    , getList = []
+    , product_id = 0
+    , product_name = ""
+    }
     , priceApi session
     )
 
@@ -45,6 +63,9 @@ type Msg
     = NoOp
     | GetList (Result Http.Error PriceData)
     | BackPage
+    | OrderComplete (Result Http.Error OrderData)
+    | PayStart Int String
+    | GotSession Session
 
 toSession : Model -> Session
 toSession model =
@@ -58,6 +79,27 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GotSession session ->
+            ({model | session = session},
+            Cmd.none)
+        PayStart id name ->
+            case model.session of
+                LoggedIn _ val ->
+                    ({model | product_id = id, product_name = name}, orderApi id model.session)
+                Guest _ ->
+                    ({model | product_id = id, product_name = name}, Route.pushUrl (Session.navKey model.session) Route.Login)
+        OrderComplete (Ok ok) ->
+            let _ = Debug.log "ok" ok.data
+            in
+            (model, Api.payment (Encode.string (ok.data ++ "+++" ++ model.product_name)))
+        OrderComplete (Err err) ->
+            let _ = Debug.log "a" err
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            (model,  (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
+            (model, Cmd.none)
         BackPage ->
             (model, Route.backUrl (Session.navKey model.session) 1)
         NoOp ->
@@ -71,7 +113,7 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model = 
-    Sub.none
+    Session.changes GotSession (Session.navKey model.session)
 
 
 view : Model -> { title : String , content : Html Msg}
@@ -115,8 +157,8 @@ priceLayout item =
                 ]
         , div [ class "entry-content" ]
             [ text item.description]
-        , div [ class "btnprice" ]
-            [ a [ class "button is-primary" ]
+        , div [ class "btnprice", onClick (PayStart item.id item.name) ]
+            [ div [ class "button is-primary" ]
                 [ text (if item.is_pay then "결제 하기" else "체험 하기") ]
             ]
         ]

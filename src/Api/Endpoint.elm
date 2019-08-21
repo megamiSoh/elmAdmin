@@ -81,6 +81,7 @@ module Api.Endpoint exposing
     , shareCode
     , bannerList
     , priceData
+    , orderGo
     )
 
 import Http
@@ -380,3 +381,5 @@ bannerList =
 
 priceData = 
     url ["front", "products", "period"][]
+orderGo = 
+    url ["front", "products", "orderno"][]

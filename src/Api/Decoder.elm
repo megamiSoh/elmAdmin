@@ -1032,3 +1032,7 @@ priceList price =
         |> required "is_pay" bool
         |> required "name" string
         |> required "price" int
+
+orderData data = 
+    Decode.succeed data
+        |> required "data" string

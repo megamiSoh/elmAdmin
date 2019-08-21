@@ -7,6 +7,7 @@ import Html exposing (..)
 import Page.Common exposing(..)
 import Api as Api
 import Json.Encode as Encode
+import Route as Route
 
 type alias Model =
     { session : Session
@@ -162,16 +163,8 @@ recentBuylist model =
 
 apprecentBuylist model = 
     div []
-         [ div [ class "topbox" ]
-        [ div [ class "backbtn" ]
-            [ i [ class "fas fa-angle-left" ]
-                []
-            ]
-        , div [ class "topboxtitle" ]
-            [ text "최근구매내역 " ]
-        , div [ class "nextbtn" ]
-            []
-        ]
+         [
+        appHeaderRDetail "최근구매내역" "myPageHeader whiteColor" Route.MyPage "fas fa-angle-left"
                 , div [ class "searchbox_wrap" ]
                     [ div [ class "cart_warning" ]
                         [ h1 [class"cart_warning_h1"]

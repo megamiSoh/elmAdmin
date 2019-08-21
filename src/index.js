@@ -473,6 +473,37 @@ if (checkDisplay.className == "logoutShow")  {
   
 
 
+
+app.ports.payment.subscribe(function (info) {
+  const payInfo = info.split("+++") 
+  const merchant_uid = payInfo[0]
+  // const amount = payInfo[1]
+  const product_name = payInfo[1]
+  alert ("가상결제이므로, 실제 결제는 이루어지지 않습니다.")
+    IMP.init('imp85569385')
+  IMP.request_pay({
+    pay_method : 'card',
+    merchant_uid : merchant_uid,
+    name : product_name,
+    amount : 100,
+}, function(rsp) {
+    if ( rsp.success ) {
+        var msg = '결제가 완료되었습니다.';
+        msg += '고유ID : ' + rsp.imp_uid;
+        msg += '상점 거래ID : ' + rsp.merchant_uid;
+        msg += '결제 금액 : ' + rsp.paid_amount;
+        msg += '카드 승인번호 : ' + rsp.apply_num;
+    } else {
+        var msg = '결제에 실패하였습니다';
+        msg += ' : ' + rsp.error_msg;
+    }
+    alert(msg);
+});
+})
+
+
+
+
 var slideIndex;
 app.ports.slide.subscribe(function (index) {
   slideIndex = index
@@ -550,7 +581,7 @@ app.ports.valueReset.subscribe(function (id) {
   // document.getElementById(id +"after").value = ""
 })
 
-  app.ports.youtubeVideo.subscribe(function (videoId) {
+app.ports.youtubeVideo.subscribe(function (videoId) {
   app.ports.hideThum.send(videoId)
   var iframes = document.querySelectorAll('iframe');
     for (var i = 0; i < iframes.length; i++) {
@@ -573,7 +604,6 @@ app.ports.valueReset.subscribe(function (id) {
   }
 
 
-  
 
 
   document.addEventListener('touchmove', function(e)

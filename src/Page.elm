@@ -112,21 +112,21 @@ webContents content page maybeViewer=
         case maybeViewer of
         Just _ ->
             if page == MyPage then
-            div [ class "" ][ 
-                content, webtoastPop
-                ,logoutlayer ]
+                div [ class "" ][ 
+                    content, webtoastPop
+                        ,logoutlayer ]
             else
-            div [ class "" ][ 
-                content, webtoastPop
-                ,logoutlayer ]
+                div [ class "" ][ 
+                    content, webtoastPop
+                        ,logoutlayer ]
         Nothing ->
-            if page == MakeExer then
-            need2login
-            else if page == MyPage then
-            need2login
-            
-            else 
-            div [] [content, webtoastPop]
+            case page of
+                MakeExer ->
+                    need2login
+                MyPage ->
+                    need2login
+                _ ->
+                    div [] [content, webtoastPop]
   
 
 appContents content page maybeViewer=
@@ -135,29 +135,30 @@ appContents content page maybeViewer=
             
             div [ class "appWrap" ][ content, apptoastPop,mlogoutlayer ]
         Nothing ->
-            if page == MakeExer  then
-            div [][ 
-                appHeaderSearch "맞춤운동" "makeExerHeader"
-                , need2loginApp
-            ]
-            else if page == MyPage then
-            div [][ 
-                justappHeader "마이페이지" "myPageHeader"
-                , div [ class "loginHeight"] [
-                    div [class "loginbottom"] [text "로그인 후 이용가능한 서비스 입니다."] 
-                , a [class "button", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
-                ]
-                , div [](List.map menuBottom (menu))
+            case page of
+                MakeExer ->
+                    div [][ 
+                        appHeaderSearch "맞춤운동" "makeExerHeader"
+                        , need2loginApp
+                    ]
+                MyPage ->
+                    div [][ 
+                        justappHeader "마이페이지" "myPageHeader"
+                        , div [ class "loginHeight"] [
+                            div [class "loginbottom"] [text "로그인 후 이용가능한 서비스 입니다."] 
+                        , a [class "button", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
+                        ]
+                        , div [](List.map menuBottom (menu))
 
-            ]
-            else if page == C then
-            div [][ 
-                justappHeader "1:1문의" "myPageHeader"
-                , need2loginApp
+                    ]
+                C ->
+                    div [][ 
+                        justappHeader "1:1문의" "myPageHeader"
+                        , need2loginApp
 
-            ]
-            else
-            div [] [content, apptoastPop]
+                    ]
+                _ ->
+                    div [] [content, apptoastPop]
   
 
 menuBottom item = 
