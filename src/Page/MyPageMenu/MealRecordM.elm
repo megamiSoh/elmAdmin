@@ -585,7 +585,7 @@ view model =
     }
 
 stepDetailItem meal model= 
-    div [class "background"] [
+    div [] [
         div [class ("topSearch_container " ++ (if model.detailShow then "fadeContainer" else "") ++ (
             if model.showList then " leftFade" else ""
         ))] [
