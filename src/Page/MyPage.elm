@@ -708,8 +708,14 @@ appTopMenu model =
          ,  div [class "mypageIdContainer"]
         [ strong [] [text "닉네임"] ,
         p [] [text (justData model.mydata.user.nickname)] ]
+
+
+          ,  div [class "mypageIdContainer2"]
+        [ strong [] [text "무료 체험 서비스"] ,
+         p [] [text "~ 2019-01-01 00:00"] ]
         
         ]
+        
 menuBottom item = 
         a [ class "m_mypage_mypagemenu" , Route.href item.route]
         [ img [ src item.icon ]

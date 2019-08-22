@@ -352,13 +352,14 @@ pcLayout model=
 
 mobileLayout model = 
     div [][
-    div [ class "topbox" ]
-        [ div [ class "backbtn" ]
-            []
-        , div [ class "nextbtn" ]
-            []
-        ]
-        ,div [ class "m_signup_yf_box" ]
+    -- div [ class "topbox" ]
+    --     [ div [ class "backbtn" ]
+    --         []
+    --     , div [ class "nextbtn" ]
+    --         []
+    --     ]
+    --     ,
+        div [ class "m_signup_yf_box" ]
             
         
             [ h1 [ class "m_signup_yf_h1" ]
