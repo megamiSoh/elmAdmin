@@ -970,7 +970,7 @@ appStartBox =
             [ text "나에게 꼭 필요한 운동으로 개성있는 내 운동을 만들어보세요." ]
         -- , a [ class "button is-link yf_make_b" ]
         --     [ text "요금제 선택" ]
-        , a [ class "button yf_make_b" ]
+        , a [ class "button is-primary yf_make_b" ]
             [ text "시작하기" ]
         ]
     ]
@@ -990,9 +990,9 @@ paperWeightStartApp model =
             [ text "문진 결과데이터에 따라 자신만의 유어핏 운동이 제작됩니다." ]
         , p []
             [ text "체계적인 문진문항으로 나만의 운동을 만들어보세요." ]
-        , a [ class "button is-link yf_make_b" , Route.href Route.YP]
+        , a [ class "button is-info yf_make_b" , Route.href Route.YP]
             [ text "요금제 선택" ]
-        , div [ class "button yf_make_b" 
+        , div [ class "button is-primary yf_make_b" 
             , onClick (
                     if List.isEmpty model.askExerList then
                     IsActive "paperweightStart"
@@ -1141,7 +1141,7 @@ bodyContentTitle =
             [ text "나에게 꼭 필요한 운동으로 개성있는 내 운동을 만들어보세요." ]
         -- , a [ class "button is-link yf_make_b" ]
         --     [ text "요금제 선택" ]
-        , a [ class "button yf_make_b" ]
+        , a [ class "button is-primary yf_make_b" ]
             [ text "시작하기" ]
         ]
     ]
@@ -1192,9 +1192,9 @@ paperWeight model =
             [ text "문진 결과데이터에 따라 자신만의 유어핏 운동이 제작됩니다." ]
         , p []
             [ text "체계적인 문진문항으로 나만의 운동을 만들어보세요." ]
-        , a [ class "button is-link yf_make_b" , Route.href Route.YP ]
+        , a [ class "button is-info yf_make_b" , Route.href Route.YP ]
             [ text "요금제 선택" ]
-        , div [ class "button yf_make_b" 
+        , div [ class "button is-primary yf_make_b" 
                 , onClick (
                     if List.isEmpty model.askExerList then
                     IsActive "paperweightStart"

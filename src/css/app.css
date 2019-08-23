@@ -145,7 +145,6 @@ a {
 
 .m_sign_input
 {
- /* font-size: 3rem; */
  height: 5rem;
 }
 
@@ -364,7 +363,7 @@ ul.commonHeaderBack li {
   /* display: flex; */
   margin: 10px;
   padding: 5px;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
 }
 .loginwrap {
   height: 80vh;
@@ -689,13 +688,13 @@ position: relative;
 
 .m_yf_work_textbox
 {
- 
-  padding: 0.5rem;
+  padding: 1rem 0.5rem 0.5rem 0.5rem;
   width: 100%;
   display: flex;
   float: left;
   border-bottom:solid #9A9A9A .1px;
   text-align: center;
+  
 }
 
 .m_yf_work_time{
@@ -711,6 +710,7 @@ position: relative;
 .m_yf_work_text{
 /*  font-size:3rem; */
   width: 50%;
+  
 }
 .m_yf_scrapt
 {width: 10%;
@@ -719,7 +719,6 @@ margin-left: 2rem;}
 
 .m_work_script
 {
-  margin: 1rem 0 0 0;
   text-align: left;
   padding: .4rem;
   margin: .4rem 0 0 0;
@@ -1326,7 +1325,7 @@ margin-top: 2rem;
 
 .m_to_yf_like,.m_to_yf_scrap
 {
-  width: 50%;
+  width: 100%;
   display: inline-block;
   border-top: solid #E4E4E4 .1px;
   
@@ -2500,11 +2499,25 @@ padding: .3rem;
 .m_yf_box_scrap
 {
   float: left;
+  
 }
 
 .m_scrap_date
 {
 font-size: .9rem;
+float: left;
+margin-top: 2.5rem;
+color: #9A9EA7;
+}
+
+.m_scrap_box_name
+
+{
+  overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
+width: 150px;
+text-align: left;
 }
 
 .jwplayer {
@@ -2958,7 +2971,19 @@ display: table;
     align-items: center;
     padding: .4rem;
     background-color: #eeeeee;
+
 }
+
+.mypageIdContainer2 {
+  display: flex;
+    justify-content: space-evenly;
+    flex-direction: row;
+
+    align-items: center;
+    padding: .4rem;
+    background-color: #eeeeee;
+}
+
 .eventDefault {
   width: 100%;
   height: 100%;

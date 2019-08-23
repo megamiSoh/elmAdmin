@@ -37,6 +37,10 @@ myInfo item changeNick changeBtn wantChangeNickname changeGo pwdInput changePwd 
                 [ text "계정정보" ]
             , li [class"mypage_count"]
                 [ text item.username ]
+                , li [class"mypage_font"]
+                  [ text "무료체험 서비스" ]
+           , li [class"mypage_date"]
+                  [ text "~ 2019-01-01 00:00" ]
             , li []
                 [ 
                 div [class"mypage_font"] [text "닉네임"] ,
@@ -56,6 +60,7 @@ myInfo item changeNick changeBtn wantChangeNickname changeGo pwdInput changePwd 
                             ]
                 else
                     div [ class "button is-link mypage_nickname_btn", onClick (changeBtn "nick")] [text "닉네임 설정"]
+               
                 , a [ class "button", Route.href Route.SetPwd] [text "비밀번호 변경"]
                 ]
             , li []
