@@ -159,6 +159,7 @@ port dateValidate : Value -> Cmd msg
 port youtubeVideo : Value -> Cmd msg
 port slide : Value -> Cmd msg
 port payment : Value -> Cmd msg
+port mobilePaymentCheck : () -> Cmd msg
 
 
 type alias Flags = 

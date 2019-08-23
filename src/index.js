@@ -465,10 +465,9 @@ if (checkDisplay.className == "logoutShow")  {
 })
   
 
-
+var paymentCheck = false
 
 app.ports.payment.subscribe(function (info) {
-  console.log(info)
   alert ("가상결제이므로, 실제 결제는 이루어지지 않습니다.")
 
     IMP.init('imp85569385')
@@ -480,23 +479,50 @@ app.ports.payment.subscribe(function (info) {
     buyer_email : info.buyer_email,
     buyer_name : info.buyer_name,
     digital : info.digital,
-    m_redirect_url :window.location.origin + '#/paperweightList'
+    m_redirect_url :window.location.origin + '#/gateProgress'
 }, function(rsp) {
     if ( rsp.success ) {
         var msg = '결제가 완료되었습니다.';
         msg += '고유ID : ' + rsp.imp_uid;
         msg += '상점 거래ID : ' + rsp.merchant_uid;
-        msg += '결제 금액 : ' + rsp.paid_amount;
-        msg += '카드 승인번호 : ' + rsp.apply_num;
+        window.location.href=`${window.location.origin}?imp_uid=${rsp.imp_uid}&merchant_uid=${rsp.merchant_uid}&imp_success=true#/gateProgress`
+        paymentCheck = true
     } else {
         var msg = '결제에 실패하였습니다';
         msg += ' : ' + rsp.error_msg;
+        alert(msg)
     }
-    // alert(msg);
 });
 })
 
+app.ports.mobilePaymentCheck.subscribe(function () {
+  var origin = window.location.href.split("?")[1].split('&')
+  var imp_uid = origin[0].split("=")[1]
+  var merchant_id = origin[1].split("=")[1]
+  var token = localStorage.getItem("token")
+  var form = 
+    {'imp_uid' : imp_uid  
+    , 'merchant_uid': merchant_id}
 
+  var headerInfo = new Headers ({
+    "Content-Type": "application/json",
+    "authorization": `bearer ${JSON.parse(token).token}`
+  })
+  var orderInfo = 
+    { method: 'POST',
+    headers: headerInfo,
+    body: JSON.stringify(form)};
+ fetch(url + 'front/orders/new', orderInfo)
+  .then(res => {
+    alert(res.status)
+    if (res.status == 200) {
+      window.location.href= `${window.location.origin}#/paperweightList`
+    }
+  })
+  .then(data => {
+
+  })
+})
 
 
 var slideIndex;
