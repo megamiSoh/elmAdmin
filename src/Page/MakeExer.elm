@@ -57,6 +57,7 @@ type alias Model =
     , month : String
     , day : String
     , dateValidate : Bool
+    , zindex : String
     }
 type alias Format = 
     { ask_id : Int
@@ -77,7 +78,9 @@ type alias AskDetail =
     , exercise_part_name : String
     , thumbnail : String
     , title : String
-    , is_buy: Bool }
+    , is_ing: Bool 
+    , pairing : List Pairing
+    }
 
 
 type alias AskDetailItem = 
@@ -86,6 +89,11 @@ type alias AskDetailItem =
     , sort : Int
     , title : String
     , value : Int }
+
+type alias Pairing = 
+    { file : String
+    , image : String
+    , title : String }
 
 type alias AskExerData = 
     { data : List AskExer }
@@ -99,7 +107,7 @@ type alias AskExer =
     , thembnail :  String
     , title :  String 
     , ask_no : Int
-    , is_buy : Bool}
+    , is_ing : Bool}
 
 type alias ScreenInfo = 
     { scrollHeight : Int
@@ -347,7 +355,8 @@ init session mobile =
                 , exercise_part_name = ""
                 , thumbnail = ""
                 , title = ""
-                , is_buy = False }
+                , is_ing = False 
+                , pairing = []}
         , errType = ""
         , productId = 0
         , trialId = ""
@@ -361,6 +370,7 @@ init session mobile =
         , day = ""
         , birthDay = ""
         , dateValidate = False
+        , zindex = ""
         }, 
         Cmd.batch 
         [ bodyEncode 1 10 "" session
@@ -398,11 +408,12 @@ type Msg
     | AskRecommendComplete (Result Http.Error Decoder.Success)
     | CalcurationComplete Encode.Value
     | AskDetailMsg (Result Http.Error AskDetailData)
-    | GoProduct Int
+    | GoVideo (List Pairing)
     | CompleteProductWeekRegist (Result Http.Error Decoder.Success)
     | AskBirthComplete (Result Http.Error AskBirthData)
     | BirthInput String String
     | DateValidate Encode.Value
+
 
 toSession : Model -> Session
 toSession model =
@@ -466,15 +477,15 @@ indexItem idx item =
             , id = 0 }
 
 
-goProductBody : Int -> Session -> Cmd Msg
-goProductBody id session =
-    let
-        body = 
-            Encode.object
-                [ ("exercise_id", Encode.int id) ]
-                    |> Http.jsonBody
-    in
-    Api.post Endpoint.productWeek (Session.cred session) CompleteProductWeekRegist body Decoder.resultD
+-- GoVideoBody : Int -> Session -> Cmd Msg
+-- GoVideoBody id session =
+--     let
+--         body = 
+--             Encode.object
+--                 [ ("exercise_id", Encode.int id) ]
+--                     |> Http.jsonBody
+--     in
+--     Api.post Endpoint.productWeek (Session.cred session) CompleteProductWeekRegist body Decoder.resultD
 
 
 
@@ -530,12 +541,24 @@ update msg model =
             in  
             ({model | errType = "CompleteProductWeekRegist"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
             ])
-        GoProduct id ->
-            ({model | productId = id}, goProductBody id model.session)
+        GoVideo pairing ->
+            let
+                videoList = 
+                    Encode.object 
+                        [("pairing", (Encode.list videoEncode) pairing) ]
+
+                videoEncode p=
+                    Encode.object
+                        [ ("file", Encode.string p.file)
+                        , ("image", Encode.string p.image)
+                        , ("title", Encode.string p.title)
+                        ]
+            in
+             ({model | zindex = "zindex"}, Api.videoData videoList)
         AskDetailMsg (Ok ok) ->
             ({model | askDetail = ok.data}, Cmd.none)
         AskDetailMsg (Err err) ->
-            let
+            let _ = Debug.log "err" err
                 serverErrors =
                     Api.decodeErrors err
             in  
@@ -580,13 +603,17 @@ update msg model =
             ({model | errType = "AskAnswerComplete"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
             ])
         CloseTrial no id ->  
-            let
+            let _ = Debug.log "id" id
                 format num = String.fromInt num
             in
             if no == 0 then
-            ({model | trialShow = not model.trialShow}, Cmd.none)
+            ({model | trialShow = not model.trialShow, zindex = ""},
+            -- Cmd.none
+            -- Api.removeJw ()
+             Api.videoData (Encode.string "")
+            )
             else
-            ({model | trialShow = not model.trialShow, trialId = format id, trialNo = format no}, Api.get AskDetailMsg (Endpoint.askdetail (format no) (format id)) (Session.cred model.session) (Decoder.askDetailData AskDetailData AskDetail AskDetailItem))
+            ({model | trialShow = not model.trialShow, trialId = format id, trialNo = format no}, Api.get AskDetailMsg (Endpoint.askdetail (format no) (format id)) (Session.cred model.session) (Decoder.askDetailData AskDetailData AskDetail AskDetailItem Pairing))
         ProgressComplete complete ->
             ( {model | categoryPaperWeight = "paperweightResult"}, 
              Api.get AskResultComplete Endpoint.askResult (Session.cred model.session ) (Decoder.askResultData AskResultData AskResult AskResultResult AskResultDetail) )
@@ -755,11 +782,8 @@ update msg model =
             ({model | session = session}
             , 
             case model.errType of
-                "CompleteProductWeekRegist" ->
-                    goProductBody model.productId session
-            
                 "AskDetailMsg" ->
-                    Api.get AskDetailMsg (Endpoint.askdetail model.trialNo model.trialId) (Session.cred session) (Decoder.askDetailData AskDetailData AskDetail AskDetailItem)
+                    Api.get AskDetailMsg (Endpoint.askdetail model.trialNo model.trialId) (Session.cred session) (Decoder.askDetailData AskDetailData AskDetail AskDetailItem Pairing)
                 "AskRecommendComplete" ->
                     Api.post Endpoint.askRecommend (Session.cred session) AskRecommendComplete Http.emptyBody Decoder.resultD
                 "GetListComplete" ->
@@ -968,8 +992,6 @@ appStartBox =
             [ text "사용자가 필터를 통해 직접 나만의 유어핏 운동을 제작합니다." ]
         , p []
             [ text "나에게 꼭 필요한 운동으로 개성있는 내 운동을 만들어보세요." ]
-        -- , a [ class "button is-link yf_make_b" ]
-        --     [ text "요금제 선택" ]
         , a [ class "button is-primary yf_make_b" ]
             [ text "시작하기" ]
         ]
@@ -1507,16 +1529,7 @@ etcAsk model textStyle moveBtn boxStyle=
                 [ text "다음" ]
             ]
         ]
--- etcExample : Int -> Model -> 
--- etcExample idx model item =
---                 label [ classList 
---                 [(("answer_btn"++(String.fromInt (idx + 1))), True)
---                 , ("sexSelected" , model.askSelected == item.is_yes)
---                 ] 
---                 , onClick (SelectedAnswer "sex" (if item.is_yes == True then "true" else "false"))
---                  ]
---                 [  text item.text
---                 ]
+
 paperweightSex : Model -> String -> String -> String -> Html Msg
 paperweightSex model textStyle moveBtn boxStyle=
     div [ class boxStyle ]
@@ -1609,7 +1622,7 @@ caseItem item charaterType =
 
 
 videoItem item = 
-    div [ class "yf_workoutvideoboxwrap makeExerMjboxWrap" , onClick (if item.is_buy then NoOp else (CloseTrial item.ask_no item.exercise_id))]
+    div [ class "yf_workoutvideoboxwrap makeExerMjboxWrap" , onClick (CloseTrial item.ask_no item.exercise_id)]
         [ div [class "list_overlay_mj"]
         [i [ class "fas fa-play overlayplay_list" ][]],
 
@@ -1630,13 +1643,10 @@ videoItem item =
                     []
                     , text " "
                     , text item.duration ]
-            , div [class "is_buy", style "display" (if item.is_buy then "flex" else "none")][
-                text (if item.is_buy then "구입완료" else "")
-            ]
         ]
 
 videoItemApp item = 
-    div [ class "mjList_container mj_wrap", onClick (if item.is_buy then NoOp else (CloseTrial item.ask_no item.exercise_id))]
+    div [ class "mjList_container mj_wrap", onClick (CloseTrial item.ask_no item.exercise_id)]
         [div [class "mj_wrap"][
                  div [ class "yf_workoutvideo_image" ]
                 [ 
@@ -1658,9 +1668,6 @@ videoItemApp item =
                     , text " "
                     , text item.duration
                     ]
-            , div [class "is_buy_m", style "display" (if item.is_buy then "flex" else "none")][
-            text (if item.is_buy then "구입완료" else "")
-            ]
             ]
         ]
     
@@ -1674,12 +1681,14 @@ selectedItemApp model =
         div [class "paperweightSelectedItem_containerApp"]
         [
             div[class "paperweightSelectedItem_first_App"][
-            img [src model.askDetail.thumbnail ][]
+            p [ class "m_yf_container" ]
+            [ 
+            div [class ("appimagethumb " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ model.askDetail.thumbnail ++") ") , onClick (GoVideo model.askDetail.pairing)][]
+            , div [id "myElement"][]
+            ]
             , div [class "askDetailFirstContainer_app"]
             [ div [class "askDetailFirstContainer_App_Text"]
                 [ 
-                --     div [class "mj_title"][text model.askDetail.title]
-                -- , 
                 div [class "mj_title_part_app"][text (model.askDetail.exercise_part_name ++ " - " ++ model.askDetail.difficulty_name)
                 ]
                 , span [class "mj_title_duration"]
@@ -1695,7 +1704,9 @@ selectedItemApp model =
                 text model.askDetail.description
             ]
         ]
-        , div [class "button is-link freeTrial", onClick (GoProduct model.askDetail.exercise_id)][text "1분 미리보기"]
+        , div [class "button is-link freeTrial"
+        , onClick (GoVideo model.askDetail.pairing)
+        ][text (if model.askDetail.is_ing then "재생" else "1분 미리보기")]
             
         
             
@@ -1714,9 +1725,10 @@ selectedItem model =
         [
         div [class "paperweightStartItem paperweightSelectedItem_container"]
         [
-            div[class "paperweightSelectedItem_first"][
-            img [src model.askDetail.thumbnail ][]
-            , div []
+            div[class "paperweightSelectedItem_first "]
+             [ div [class ("detailExercise_web " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ model.askDetail.thumbnail ++") ") , onClick (GoVideo model.askDetail.pairing)][]
+            , div [id "myElement"][]
+            , div [class "detail_info_container"]
             [ div [class "mj_title"][text model.askDetail.title
             , span [class "mj_title_part"][text (model.askDetail.exercise_part_name ++ " - " ++ model.askDetail.difficulty_name)]
             ]
@@ -1736,8 +1748,13 @@ selectedItem model =
             ]
         ]
         , div [class "paperweightSelectedItem_third"]
-        [ div [class "button is-link", onClick (GoProduct model.askDetail.exercise_id)][text "1분 미리보기"]
-        , div [class "button is-info", onClick (CloseTrial 0 0)][text "유료 결제"]
+        [ div [class "button is-link"
+        , onClick (GoVideo model.askDetail.pairing)
+        ][text (if model.askDetail.is_ing then "재생" else "1분 미리보기" )]
+        , if model.askDetail.is_ing then
+            div [][]
+        else 
+            a [class "button is-info", Route.href Route.YP][text "유료 결제"]
         , div [class "button is-danger", onClick (CloseTrial 0 0)][text "닫기"]
         ]
         ]

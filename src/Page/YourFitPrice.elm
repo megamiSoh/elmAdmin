@@ -7,6 +7,7 @@ import Html exposing (..)
 import Page.Common exposing(..)
 import Api as Api
 import Json.Encode as Encode
+import Json.Decode as Decode
 import Api.Decoder as Decoder
 import Api.Endpoint as Endpoint
 import Http as Http
@@ -17,6 +18,8 @@ type alias Model =
     , getList : List Price
     , product_id : Int
     , product_name : String
+    , ableToWatch : Bool
+    , price : List String
     }
 
 
@@ -43,6 +46,9 @@ type alias Order =
     , merchant_uid : String
     , name : String }
 
+type alias WatchCheckData = 
+    { data : Bool }
+
 orderApi product_id session = 
     let
         body = 
@@ -63,6 +69,8 @@ init session mobile =
     , getList = []
     , product_id = 0
     , product_name = ""
+    , ableToWatch = False
+    , price = []
     }
     , priceApi session
     )
@@ -74,6 +82,8 @@ type Msg
     | OrderComplete (Result Http.Error OrderData)
     | PayStart Int String
     | GotSession Session
+    | PossibleToWatch (Result Http.Error WatchCheckData)
+    | PriceFormat Encode.Value
 
 toSession : Model -> Session
 toSession model =
@@ -87,6 +97,20 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        PriceFormat format ->  
+            let
+               formtDecode =    
+                    Decode.decodeValue (Decode.list Decode.string) format
+            in
+                case formtDecode of
+                    Ok ok ->
+                        ({model | price = ok}, Cmd.none)
+                    Err err ->
+                        (model, Cmd.none)
+        PossibleToWatch (Ok ok) ->
+            ({model | ableToWatch = ok.data}, Cmd.none)
+        PossibleToWatch (Err err) ->
+            (model, Cmd.none)
         GotSession session ->
             ({model | session = session},
             Cmd.none)
@@ -123,7 +147,16 @@ update msg model =
         NoOp ->
             ( model, Cmd.none )
         GetList (Ok ok) ->
-            ({model | getList = ok.data}, Cmd.none)
+            let
+                price = 
+                    List.map(\x -> x.price) ok.data
+                priceEncode = 
+                    Encode.object
+                        [ ("price", (Encode.list (Encode.int)) price) ]
+            in
+            ({model | getList = ok.data}, 
+            Cmd.batch [Api.get PossibleToWatch (Endpoint.possibleToCheck) (Session.cred model.session) (Decoder.possibleToWatch WatchCheckData)
+            , Api.comma priceEncode])
         GetList (Err err) ->
             let _ = Debug.log "err" err
             in
@@ -131,7 +164,9 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model = 
-    Session.changes GotSession (Session.navKey model.session)
+    Sub.batch[
+        Session.changes GotSession (Session.navKey model.session)
+        , Api.commaF PriceFormat]
 
 
 view : Model -> { title : String , content : Html Msg}
@@ -147,9 +182,10 @@ view model =
             div [] [weblayout model ]
     }
 
+commaFormat item = 
+    span [][text item]
 
-
-priceLayout item = 
+priceLayout item model price = 
     div [ class ("plan " ++ if item.is_pay then (
         if item.day_num >= 30 then "ultimite" else "standard"
     ) else "basic")]
@@ -160,7 +196,8 @@ priceLayout item =
             [ h3 []
                 [ text item.name ]
             , h1 [ class "yf_price" ]
-                [ text ("₩ "++ String.fromInt item.price++" 원") ]
+                [ text (price ++ "원")
+                ]
             , h1 [ class "yf_price_date" ]
                 [ text ("서비스기간 "++ String.fromInt item.day_num ++"일") ]
             ]
@@ -175,10 +212,13 @@ priceLayout item =
                 ]
         , div [ class "entry-content" ]
             [ text item.description]
-        , div [ class "btnprice", onClick (PayStart item.id item.name) ]
-            [ div [ class "button is-primary" ]
-                [ text (if item.is_pay then "결제 하기" else "체험 하기") ]
-            ]
+        , if model.ableToWatch then
+            div [class "impossible_pay"][text "※ 이미 상품 구독 중 입니다."]
+        else
+            div [ class "btnprice", onClick (PayStart item.id item.name) ]
+                [ div [ class "button is-primary" ]
+                    [ text (if item.is_pay then "결제 하기" else "체험 하기") ]
+                ]
         ]
     ]
 
@@ -202,12 +242,7 @@ weblayout model =
    , div [ class "searchbox_wrap" ]
         [ div [ class "pirce_searchbox" ]
             [ div [ class "mediabox" ]
-                (List.map priceLayout model.getList)
-                -- [ 
-                --     basicPrice
-                -- , mediumPrice
-                -- , highPrice
-                -- ]
+                (List.map2 (\x y -> priceLayout x model y ) model.getList model.price)
             ]
         ]
 
@@ -219,12 +254,7 @@ applayout model =
         [div [ class "searchbox_wrap" ]
         [ div [ class "pirce_searchbox" ]
             [ div [ class "mediabox" ]
-                (List.map priceLayout model.getList)
-                -- [ 
-                --     basicPrice
-                -- , mediumPrice
-                -- , highPrice
-                -- ]
+                 (List.map2 (\x y -> priceLayout x model y) model.getList model.price)
             ]
         ]
 

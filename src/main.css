@@ -4601,6 +4601,7 @@ width: 100%;
   background-repeat: no-repeat no-repeat;
   background-size: 3rem, 100%;
   background-position: center center;
+  background-color: #eaeaea;
 }
 
 .imagethumb {
@@ -4609,6 +4610,7 @@ width: 100%;
   background-repeat: no-repeat no-repeat;
   background-size: 6rem, 100%;
   background-position: center center;
+  background-color: #eaeaea;
 }
 
 .completeAuthEmail
@@ -6583,7 +6585,7 @@ font-size: .8rem;
   justify-content: space-around;
 }
 
-.paperweightSelectedItem_third div
+.paperweightSelectedItem_third a
 {
   height: 3rem;
 }
@@ -8201,4 +8203,43 @@ display: block;
     align-items: center;
     width: 400px;
     margin: 0 auto;
+  }
+  .btn_buyList {
+    display: flex;
+    flex-direction: row;
+  }
+  .btn_buyList li {
+    border: 1px solid #d8cdcd;
+    border-left: 0;
+    padding: .5rem 2rem;
+    border-radius: 5px 5px 0 0;
+    cursor: pointer;
+  }
+  .btn_buyList li:first-child {
+    /* border-left: 0; */
+    border-left: 1px solid #d8cdcd;
+  }
+  .btn_buyList li.selected_item {
+    font-weight: bold;
+    background-color: #e6e6e6;
+  }
+  .impossible_pay {
+    padding: 2rem 0 1rem 0;
+    color: red;
+    font-weight: bold;
+
+  }
+  .detail_info_container {
+    margin-left: 1rem;
+    width: 60%;
+  }
+  .detailExercise_web {
+    width: 100%;
+    overflow: hidden;
+    background-repeat: no-repeat no-repeat;
+    background-size: 4rem, 125%;
+    background-position: center center;
+    height: 100%;
+    background-color: #e0e0e0;
+    min-width: 40%;
   }

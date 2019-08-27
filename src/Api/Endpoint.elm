@@ -82,6 +82,8 @@ module Api.Endpoint exposing
     , bannerList
     , priceData
     , orderGo
+    , possibleToCheck
+    , orders
     )
 
 import Http
@@ -383,3 +385,8 @@ priceData =
     url ["front", "products", "period"][]
 orderGo = 
     url ["front", "products", "request"][]
+
+possibleToCheck = 
+    url ["front", "orders", "any_is_ing"][]
+orders= 
+    url ["front", "orders"][]

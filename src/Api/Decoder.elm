@@ -846,7 +846,7 @@ askExerList list =
         |> required "thembnail" string
         |> required "title" string
         |> required "ask_no" int
-        |> required "is_buy" bool
+        |> required "is_ing" bool
 
 sessionCheck data = 
     Decode.succeed data
@@ -856,11 +856,11 @@ sessionCheck data =
 
 
 
-askDetailData data detail item= 
+askDetailData data detail item pair= 
     Decode.succeed data
-        |> required "data" (askDetail detail item)
+        |> required "data" (askDetail detail item pair)
 
-askDetail detail item= 
+askDetail detail item pair= 
     Decode.succeed detail 
         |> required "description" string
         |> required "difficulty_name" string
@@ -870,7 +870,8 @@ askDetail detail item=
         |> required "exercise_part_name" string
         |> required "thumbnail" string
         |> required "title" string
-        |> required "is_buy" bool
+        |> required "is_ing" bool
+        |> required "pairing" (Decode.list (detailmypaperPairing pair))
 
 askDetailItem item =
     Decode.succeed item
@@ -1045,3 +1046,31 @@ order item =
         |> required "digital" bool
         |> required "merchant_uid" string
         |> required "name" string
+
+possibleToWatch data = 
+    Decode.succeed data 
+        |> required "data" bool
+
+ordersData data list page = 
+    Decode.succeed data
+        |> required "data" (Decode.list (ordersList list))
+        |> required "paginate" (orderPaginate page)
+
+ordersList list = 
+    Decode.succeed list 
+        |> required "bought_at" string
+        |> required "end_at" string
+        |> required "id" int
+        |> required "is_ing" bool
+        |> required "name" string
+        |> required "price" int
+        |> required "start_at" string
+        |> required "state" string
+
+orderPaginate page = 
+    Decode.succeed page 
+        |> optional "is_pay" (Decode.map Just bool) Nothing
+        |> required "page" int
+        |> required "per_page" int
+        |> required "total_count" int
+        |> required "user_id" int

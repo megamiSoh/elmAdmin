@@ -97,6 +97,19 @@ app.ports.scrollRight.subscribe(function() {
 });
 })
 
+app.ports.comma.subscribe(function (x) {
+  var list = x.price
+  var result = []
+  for(let i = 0; i < list.length; i++ ){
+    // alert(list[i])
+    result.push(list[i].toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","))
+  }
+  // alert()
+    // var commaFormat = x.toString()
+    app.ports.commaF.send(result)
+    // alert(JSON.stringify(x.price))
+})
+
 app.ports.scrollLeft.subscribe(function() {
   var target = document.getElementById("scrollCtr")
   target.scrollBy({
@@ -346,7 +359,7 @@ app.ports.togetherDataList.subscribe(function(data) {
 })
 app.ports.removeJw.subscribe( function () {
   // jwplayer().remove()
-  jwplayer().lenght == undefined ? "" : jwplayer().remove()
+  jwplayer().length == undefined ? "" : jwplayer().remove()
   // alert (document.getElementById('myElement'))
 })
 app.ports.showToast.subscribe(function (text) {
