@@ -223,7 +223,7 @@ recentBuylist model =
                                         , th []
                                             [ text "결제금액" ]
                                         , th []
-                                            [ text "시청상태" ]
+                                            [ text "유효상태" ]
                                         ]
                                     ]
                                      , if List.isEmpty model.data then 
