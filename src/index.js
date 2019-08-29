@@ -511,6 +511,39 @@ app.ports.payment.subscribe(function (info) {
 });
 })
 
+
+// app.ports.mobilePaymentCheck.subscribe(function () {
+  
+//   // var origin = window.location.href.split("?")[1].split('&')
+//   // var imp_uid = origin[0].split("=")[1]
+//   // var merchant_id = origin[1].split("=")[1]
+//   // var token = localStorage.getItem("token")
+//   var form = 
+//     {'page' : 10  
+//     , 'per_page': 1}
+
+//   var headerInfo = new Headers ({
+//     "Content-Type": "application/json",
+//     // "authorization": `bearer ${JSON.parse(token).token}`
+//   })
+//   var orderInfo = 
+//     { method: 'POST',
+//     headers: headerInfo,
+//     body: JSON.stringify(form)};
+//     alert(2222)
+//  fetch(url + 'front/notices', orderInfo)
+//   .then(res => {
+//     if (res.status == 200) {
+//       alert(res.status)
+//       // window.location.href= `${window.location.origin}#/paperweightList`
+//     }
+//     alert(res.status)
+//   })
+//   .catch(function(error) {
+//     alert(error)
+//   });
+// })
+
 app.ports.mobilePaymentCheck.subscribe(function () {
   var origin = window.location.href.split("?")[1].split('&')
   var imp_uid = origin[0].split("=")[1]

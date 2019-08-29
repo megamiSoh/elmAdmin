@@ -260,6 +260,16 @@ post url maybeCred tagger body decoder =
         , tracker = Nothing
         }
 
+noSessionpost url tagger body decoder =
+    Endpoint.request
+        { method = "POST"
+        , url = url
+        , expect = Http.expectJson tagger decoder
+        , headers = []
+        , body = body
+        , timeout = Nothing
+        , tracker = Nothing
+        }
 
 
     

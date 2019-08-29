@@ -102,8 +102,8 @@ infoEncoder page per_page session =
                 , ("per_page", Encode.int per_page) ]
                 |> Http.jsonBody    
     in
-    (Decoder.infoData Data DataList Paginate)
-    |>Api.post Endpoint.infolist (Session.cred session) GetList body 
+    Api.noSessionpost Endpoint.infolist GetList body (Decoder.infoData Data DataList Paginate)
+    -- |>Api.post Endpoint.infolist (Session.cred session) GetList body 
 
 init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile

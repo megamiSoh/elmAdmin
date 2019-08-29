@@ -524,12 +524,6 @@ update msg model =
                 _ ->
                     (model, Cmd.none)
         LikeComplete (Ok ok) ->
-            -- let
-            --     filter = 
-            --         List.filter(\x -> x.id ==)
-            -- in
-
-            -- if model.check then
                 if ok.data.count < model.cnt then
                     let
                         listF = 

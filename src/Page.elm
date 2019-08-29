@@ -251,7 +251,7 @@ viewHeader page maybeViewer =
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
 
                             _ ->
-                                a [ class "navbar-item yf_item" ]
+                                a [ class "navbar-item yf_item" ,  Route.href Route.MyPageBottomMenu]
                                 [ text "마이페이지"]
                         ]
                     ]
