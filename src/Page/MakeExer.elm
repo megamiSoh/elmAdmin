@@ -1696,17 +1696,20 @@ selectedItemApp model =
                 , text model.askDetail.duration
                 ]
             ]
-            , ul [class "m_description"]
-             (List.map appaskDetailItems model.askDetail.exercise_items)
+            , ul [class "mj_description"]
+             (List.map askDetailItems model.askDetail.exercise_items)
              , div [class "paperweightSelectedItem_second_app"][
             h3 [][text "운동설명"]
             , div [class "description"][
                 text model.askDetail.description
             ]
         ]
-        , div [class "button is-info freeTrial"
-        , onClick (GoVideo model.askDetail.pairing)
-        ][text (if model.askDetail.is_ing then "재생" else "결제하기")]
+        , if model.askDetail.is_ing then
+        div [class "button is-link freeTrial"
+        ][text "재생"]
+        else
+        a [class "button is-link freeTrial", Route.href Route.YP
+        ][text  "결제하기"]
             
         
             
@@ -1725,13 +1728,13 @@ selectedItem model =
         [
         div [class "paperweightStartItem paperweightSelectedItem_container"]
         [
-            div[class "paperweightSelectedItem_first"]
+            div[class "paperweightSelectedItem_first "]
              [ div [class ("detailExercise_web " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ model.askDetail.thumbnail ++") ") , onClick (GoVideo model.askDetail.pairing)][]
-             
-            
-             
             , div [id "myElement"][]
-             , div [class "samplevideo_text"] [text "위 영상은 문진운동 미리보기 영상입니다. 아래의 버튼을 눌러 운동영상을 시청해주세요"]
+            , if model.askDetail.is_ing then
+                div [][]
+            else
+                div [class "samplevideo_text"] [text "위 영상은 문진운동 미리보기 영상입니다. 아래의 버튼을 눌러 운동영상을 시청해주세요"]
             , div [class "detail_info_container"]
             [ div [class "mj_title"][text model.askDetail.title
             , span [class "mj_title_part"][text (model.askDetail.exercise_part_name ++ " - " ++ model.askDetail.difficulty_name)]
@@ -1752,27 +1755,17 @@ selectedItem model =
             ]
         ]
         , div [class "paperweightSelectedItem_third"]
-        [ div [class "button is-info"
-        , onClick (GoVideo model.askDetail.pairing)
-        ][text (if model.askDetail.is_ing then "재생" else "결제하기" )]
-        , if model.askDetail.is_ing then
-            div [][]
+        [ if model.askDetail.is_ing then
+            div [class "button is-link" , onClick (GoVideo model.askDetail.pairing)][text "재생하기"]
         else 
-        --     a [class "button is-info", Route.href Route.YP][text "유료 결제"]
-        -- ,
-         div [class "button is-danger", onClick (CloseTrial 0 0)][text "닫기"]
+            a [class "button is-info", Route.href Route.YP][text "결제하기"]
+        , div [class "button is-danger", onClick (CloseTrial 0 0)][text "닫기"]
         ]
         ]
     ]
 
 askDetailItems item = 
-    li [style "font-size" ".9rem"][
-        text ((String.fromInt item.sort) ++ ". " ++ item.title ++ " x " ++ String.fromInt item.value ++ (if item.is_rest then " 분 " else " 세트 "))
-    ]
-
-
-appaskDetailItems item = 
-    li [style "font-size" "1rem"][
+    li [style "font-size" ".7rem"][
         text ((String.fromInt item.sort) ++ ". " ++ item.title ++ " x " ++ String.fromInt item.value ++ (if item.is_rest then " 분 " else " 세트 "))
     ]
 

@@ -24,6 +24,8 @@ type alias Model =
     , is_pay : Maybe Bool
     , data : List DataList
     , price : List String
+    , pageNum : Int
+    , paginate : Pagenate
     }
 
 type alias WatchCheckData = 
@@ -86,6 +88,13 @@ init session mobile =
     , is_pay = Nothing 
     , data = []
     , price = []
+    , pageNum = 1
+    , paginate = 
+        { is_pay = Nothing
+        , page = 1
+        , per_page = 10
+        , total_count = 0
+        , user_id = 0 }
     }
     , Api.get PossibleToWatch (Endpoint.possibleToCheck) (Session.cred session) (Decoder.possibleToWatch WatchCheckData)
     )
@@ -101,6 +110,7 @@ type Msg
     | GetListData (Result Http.Error Data)
     | PriceFormat Encode.Value
     | GotSession Session
+    | PageBtn (Int, String)
 
 toSession : Model -> Session
 toSession model =
@@ -114,6 +124,20 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        PageBtn (idx, str) ->
+            let
+                idxEncode = Encode.int idx
+            in
+            
+            case str of
+                "prev" ->
+                    ({model | page = idx, pageNum = model.pageNum - 1}, Cmd.batch[dataListApi model.page model.per_page model.selected_item model.session])
+                "next" ->
+                    ({model | page = idx, pageNum = model.pageNum + 1}, Cmd.batch[dataListApi model.page model.per_page model.selected_item model.session])
+                "go" -> 
+                    ({model | page = idx}, Cmd.batch[dataListApi model.page model.per_page model.selected_item model.session])
+                _ ->
+                    (model, Cmd.none)
         GotSession session ->
             ({model | session = session},
             Cmd.none)
@@ -185,7 +209,12 @@ view model =
             , div[][myPageCommonHeader ClickRight ClickLeft GoAnotherPage model.showMenu]
             , div [ class "container" ]
             [ commonJustHeader "/image/icon_cart.png" "최근구매내역"
-            , recentBuylist model ]
+            , recentBuylist model 
+            , pagination 
+                PageBtn
+                model.paginate
+                model.pageNum
+                ]
         ]
     }
 
@@ -194,14 +223,22 @@ view model =
 
 recentBuylist model = 
     div [ class "searchbox_wrap" ]
-                    [ div [ class "cart_warning" ]
-                        [ if model.ableToWatch then
-                            h1 [class"cart_warning_h1"]
+                    [  if model.ableToWatch then
+                            div [class "success_cart"][
+                                h1 [class"cart_warning_h1"]
                                 [ text "맞춤운동이 시청 가능한 상태입니다." ]
+                            ]
                         else
-                            h1 [class"cart_warning_h1"]
-                                [ text "" ]
-                        ]
+                            if List.isEmpty model.data then
+                                div [ class "cart_warning" ]
+                                [ h1 [class"cart_warning_h1"]
+                                [ text "구매내역이 없습니다." ]
+                                ]
+                            else
+                              div [ class "cart_warning" ]
+                                [ h1 [class"cart_warning_h1"]
+                                [ text "구매하신 유어핏 서비스 기간이 종료되었습니다."]
+                                ]
                     , div [ class "control" ]
                         [ ul [class "btn_buyList"]
                             [ li [class (if model.selected_item == "all" then "selected_item" else ""), onClick (SelectedItem "all")][text "전체"]

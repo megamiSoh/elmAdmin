@@ -84,6 +84,7 @@ module Api.Endpoint exposing
     , orderGo
     , possibleToCheck
     , orders
+    , promote
     )
 
 import Http
@@ -390,3 +391,5 @@ possibleToCheck =
     url ["front", "orders", "any_is_ing"][]
 orders= 
     url ["front", "orders"][]
+promote = 
+    url ["front","orders", "promote"][]

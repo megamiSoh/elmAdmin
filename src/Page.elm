@@ -228,8 +228,8 @@ viewHeader page maybeViewer =
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             MyC ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
-                            Info ->
-                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            -- Info ->
+                            --     a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             ScrapD ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             PostD ->
@@ -238,8 +238,8 @@ viewHeader page maybeViewer =
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             FaqD ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
-                            InfoD ->
-                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            -- InfoD ->
+                            --     a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             MealR ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             MyPost ->

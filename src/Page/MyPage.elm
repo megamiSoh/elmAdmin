@@ -51,6 +51,7 @@ type alias Model =
     , profileFileName : Maybe String
     , canNotUpdateField : String
     , protain : Protain
+    , ableToWatch : Bool
     }
 
 type alias FileData = 
@@ -95,6 +96,9 @@ type alias BodyInfoData =
 type alias Protain = 
     { need : Maybe Int
     , recommend : Maybe Int}
+
+type alias WatchCheckData = 
+    { data : Bool }
 
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile = 
@@ -142,12 +146,15 @@ init session mobile =
                 , nickname = Nothing
                 , username = ""
                 , profile = Nothing}
-             }}
+             }
+        , ableToWatch = False     
+        }
         , Cmd.batch
         [  Decoder.dataWRap DataWrap MyData UserData
             |> Api.get MyInfoData Endpoint.myInfo (Session.cred session) 
         , Cmd.map DatePickerMsg datePickerCmd
         , scrollToTop NoOp
+        , Api.get PossibleToWatch (Endpoint.possibleToCheck) (Session.cred session) (Decoder.possibleToWatch WatchCheckData)
         ]
     )
 
@@ -204,6 +211,7 @@ type Msg
     | DatePickerMsg DatePicker.Msg
     | DatePickerShow
     | NoOp
+    | PossibleToWatch (Result Http.Error WatchCheckData)
 
 subscriptions :Model -> Sub Msg
 subscriptions model=
@@ -265,6 +273,10 @@ bodyInfoEncode model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        PossibleToWatch (Ok ok) ->
+            ({model | ableToWatch = ok.data}, Cmd.none)
+        PossibleToWatch (Err err) ->
+            (model, Cmd.none)
         NoOp->
             (model, Cmd.none)
         DatePickerShow ->
@@ -623,6 +635,7 @@ view model =
                                     "")
                             model.cannotChange GoProfileImage
                             ResetProfileImg
+                            model.ableToWatch
                                         ]
                         ]
                         ]
@@ -711,9 +724,12 @@ appTopMenu model =
 
 
           ,  div [class "mypageIdContainer2"]
-        [ strong [] [text "무료 체험 서비스"] ,
-         p [] [text "~ 2019-01-01 00:00"] ]
-        
+        [ strong [] [text "유료 서비스"] ,
+         if model.ableToWatch then
+            p[][text "유료서비스 이용중입니다"]
+         else
+            p[][text "유료서비스 이용중이 아닙니다"]
+        ]
         ]
         
 menuBottom item = 
@@ -742,30 +758,6 @@ web model=
                 ]
             ]
         ]
--- ,
---             div [ class "myPage_mediabox" ]
---             [
---                     case model.selecTab of
---                         "myInfo" ->
---                             myInfo model.mydata.user ChangeNick WantChangeNickname model.wantChangeNickname ChangeGo  PwdInput ChangePwd model.notMatchPwd RePwdInput OldPwd model.nickname ChangeProfileImage 
---                             (case model.profileFileName  of
---                                 Just a ->
---                                     a
-                            
---                                 Nothing ->
---                                     "")
---                             model.cannotChange GoProfileImage
---                             ResetProfileImg
-                    
---                         "bodyInfo" ->
---                             bodyInfo model BodyRecordsInput BodySave IsMale 
-
---                         "accountInfo" ->
---                             accountInfo AccountDelete AccountDeleteConfirm model.show
-
---                         _ ->
---                             div [] [text "컨텐츠를 불러올 수 없습니다."]
---             ]
 tabPanner model= 
         div [ class "yf_yfworkout_search_wrap" ]
         [ div [ class "tapbox" ]

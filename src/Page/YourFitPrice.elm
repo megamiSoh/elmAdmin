@@ -49,6 +49,8 @@ type alias Order =
 type alias WatchCheckData = 
     { data : Bool }
 
+
+
 orderApi product_id session = 
     let
         body = 
@@ -60,7 +62,16 @@ orderApi product_id session =
 
 priceApi session = 
     Api.get GetList Endpoint.priceData (Session.cred session) (Decoder.priceData PriceData Price)
--- Decode.priceData
+
+promoteApi product_id session = 
+    let
+        body = 
+            Encode.object
+                [("product_id", Encode.int product_id)]
+                |> Http.jsonBody
+    in
+    Api.post Endpoint.promote (Session.cred session) PromoteComplete body Decoder.resultD
+
 init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile = 
     (
@@ -80,10 +91,11 @@ type Msg
     | GetList (Result Http.Error PriceData)
     | BackPage
     | OrderComplete (Result Http.Error OrderData)
-    | PayStart Int String
+    | PayStart Int Bool
     | GotSession Session
     | PossibleToWatch (Result Http.Error WatchCheckData)
     | PriceFormat Encode.Value
+    | PromoteComplete ( Result Http.Error Decoder.Success)
 
 toSession : Model -> Session
 toSession model =
@@ -97,6 +109,11 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        PromoteComplete (Ok ok) ->
+            (model, Cmd.batch[Route.pushUrl(Session.navKey model.session) Route.MJList
+            , Api.showToast (Encode.string "구매되었습니다.")])
+        PromoteComplete (Err err) ->
+            (model, Api.showToast (Encode.string "이미 상품 구독 중 입니다."))
         PriceFormat format ->  
             let
                formtDecode =    
@@ -114,14 +131,19 @@ update msg model =
         GotSession session ->
             ({model | session = session},
             Cmd.none)
-        PayStart id name ->
+        PayStart id is_pay ->
             case model.session of
                 LoggedIn _ val ->
-                    ({model | product_id = id, product_name = name}
-                    , orderApi id model.session
-                    )
+                    if is_pay then
+                        ({model | product_id = id}
+                        , orderApi id model.session
+                        )
+                    else
+                        ({model | product_id = id}
+                        ,promoteApi id model.session
+                        )
                 Guest _ ->
-                    ({model | product_id = id, product_name = name}, Route.pushUrl (Session.navKey model.session) Route.Login)
+                    ({model | product_id = id}, Route.pushUrl (Session.navKey model.session) Route.Login)
         OrderComplete (Ok ok) ->
             let _ = Debug.log "ok" ok.data
                 orderData = 
@@ -141,7 +163,7 @@ update msg model =
             if serverErrors == "401" then
             (model,  (Session.changeInterCeptor(Just serverErrors)model.session))
             else
-            (model, Cmd.none)
+            (model, Api.showToast (Encode.string "이미 상품 구독 중 입니다."))
         BackPage ->
             (model, Route.backUrl (Session.navKey model.session) 1)
         NoOp ->
@@ -215,7 +237,7 @@ priceLayout item model price =
         , if model.ableToWatch then
             div [class "impossible_pay"][text "※ 이미 상품 구독 중 입니다."]
         else
-            div [ class "btnprice", onClick (PayStart item.id item.name) ]
+            div [ class "btnprice", onClick (PayStart item.id  item.is_pay) ]
                 [ div [ class "button is-primary" ]
                     [ text (if item.is_pay then "결제 하기" else "체험 하기") ]
                 ]
