@@ -547,7 +547,7 @@ update msg model =
             in
              ({model | zindex = "zindex"}, Api.videoData videoList)
         AskDetailMsg (Ok ok) ->
-            ({model | askDetail = ok.data, is_ing = if ok.data.is_ing then "" else "위 영상은 문진운동 미리보기 영상입니다. 아래의 버튼을 눌러 운동영상을 시청해주세요"}, Cmd.none)
+            ({model | askDetail = ok.data, is_ing = if ok.data.is_ing then "" else "위 영상은 문진운동 미리보기 영상입니다. 결제 후 운동영상을 시청해주세요"}, Cmd.none)
         AskDetailMsg (Err err) ->
             let
                 serverErrors =
@@ -1208,7 +1208,7 @@ paperWeight model =
             [ text "문진 결과데이터에 따라 자신만의 유어핏 운동이 제작됩니다." ]
         , p []
             [ text "체계적인 문진문항으로 나만의 운동을 만들어보세요." ]
-        , a [ class "button is-info yf_make_b" , Route.href Route.YP ]
+        , div [ class "button is-info yf_make_b" , onClick OpenPop]
             [ text "요금제 선택" ]
         , div [ class "button is-primary yf_make_b" 
                 , onClick (

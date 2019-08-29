@@ -306,19 +306,19 @@ bulletitems idx item model =
 
 apphomeDirecMenu =
     div [ class "columns home_yf_columns" ]
-        [ a [ class "home_yf_columns_column1 main_middle_1" , Route.href Route.Info ]
+        [ a [ class "home_yf_columns_column1 main_middle_1 main_middle_size" , Route.href Route.Info ]
             [  i [ class "fas fa-align-justify" ]
                     []
                 , text "공지사항"
             ]
             
-          , a [ class "home_yf_columns_column1 main_middle_1", Route.href Route.YP]
+          , a [ class "home_yf_columns_column1 main_middle_1 main_middle_size", Route.href Route.YP]
                     [ i [ class "fas fa-won-sign" ]
                             []
                         , text "유어핏 가격"
                     ]
 
-          , a [ class "home_yf_columns_column1 main_middle_1" , Route.href Route.Faq ]
+          , a [ class "home_yf_columns_column1 main_middle_1 main_middle_size" , Route.href Route.Faq ]
                     [  i [ class "fas fa-question" ]
                             []
                         , text "자주하는 질문"

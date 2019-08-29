@@ -6280,9 +6280,10 @@ color: white;
   /* flex-direction: column;
   justify-content: space-between; */
   overflow-y: scroll;
-  height: 65%;
+  /* height: 65%; */
  
 }
+
 
 
  .answer_btn1:hover {
@@ -8327,4 +8328,9 @@ display: block;
     height: 470px;
     background-color: #e0e0e0;
     /* min-width: 40%; */
+  }
+
+  .main_middle_size {
+    font-size : .8rem;
+
   }
