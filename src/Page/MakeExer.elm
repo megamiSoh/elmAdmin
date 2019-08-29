@@ -558,7 +558,7 @@ update msg model =
             in
              ({model | zindex = "zindex"}, Api.videoData videoList)
         AskDetailMsg (Ok ok) ->
-            ({model | askDetail = ok.data, is_ing = if ok.data.is_ing then "" else "위 영상은 문진운동 미리보기 영상입니다. 아래의 버튼을 눌러 운동영상을 시청해주세요"}, Cmd.none)
+            ({model | askDetail = ok.data, is_ing = if ok.data.is_ing then "" else "위 영상은 문진운동 미리보기 영상입니다. 결제 후 운동영상을 시청해주세요"}, Cmd.none)
         AskDetailMsg (Err err) ->
             let
                 serverErrors =
