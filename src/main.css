@@ -7225,18 +7225,13 @@ display: block;
  .purchasehistory_table {
    width: 100%;
  }
- .purchasehistory_table td, .purchasehistory_table th {
-   color: #2b686e;
-   padding: 10px;
-   text-align: center;
-  
- }
+
  .purchasehistory_table td {
    text-align: center;
    vertical-align: middle;
  }
  .purchasehistory_table td:last-child {
-   font-size: 0.95em;
+   font-size: 1.1rem;
    line-height: 1.4;
  }
  .purchasehistory_table th {
@@ -7250,6 +7245,45 @@ display: block;
    background-color: #edf7f8;
  }
  
+ @media screen and (max-width: 480px) {
+
+.history_tbody
+{
+  font-size: .8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+  td.history_td {
+ font-size: 1rem;
+ height: 100px;
+ white-space: normal;
+ overflow: auto;
+ text-overflow: ellipsis;
+ 
+   }
+  }
+
+  @media screen and (max-width: 480px) {
+    .history_tbody
+    {display: none;
+         
+    }
+    .history_tr
+    {display:  grid;
+    }
+
+    .purchasehistory_table .history_tbody .history_tr {
+      margin: 0;
+  }
+     
+    .history_tr td.history_td
+    {
+      height: 60px;
+      font-size: 1.1rem;
+    }
+  }
  
 
  @media screen and (max-width: 500px) {
@@ -7263,6 +7297,13 @@ display: block;
   
    }
  
+
+   td.history_td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+   }
+
    .purchasehistory_table td img {
      border: 3px solid;
      border-color: #daeff1;
@@ -7711,15 +7752,16 @@ display: block;
  }
  .purchasehistory_table td, .purchasehistory_table th {
    color: #2b686e;
-   padding: 10px;
+   padding: 5px;
    text-align: center;
+   word-break : nowrap;
  }
  .purchasehistory_table td {
    text-align: center;
    vertical-align: middle;
  }
  .purchasehistory_table td:last-child {
-   font-size: 0.95em;
+   font-size: 1.1em;
    line-height: 1.4;
  }
  .purchasehistory_table th {
@@ -7733,47 +7775,16 @@ display: block;
    background-color: #edf7f8;
  }
  
- 
- @media screen and (max-width: 700px) {
-   .purchasehistory_table, .history_tr, .history_td {
-     display: block;
-   }
- 
-   .history_tbody
- {
-   display: block;
+ @media screen and (max-width: 340px) {
+
+.pagination
+{
+  font-size: .8rem;
+}
+
  }
- 
- 
-   .purchasehistory_table td:first-child {
-     /* background-color: #c8e7ea; */
-     /* border-bottom: 1px solid #91ced4; */
-  
-     position: relative;
-     top: 0;
-     -webkit-transform: translateY(0);
-             transform: translateY(0);
-     width: 100%;
-   }
-   .purchasehistory_table td:not(:first-child) {
-     margin: 0;
-     padding: 5px 1em;
-     width: 100%;
-   }
-   .purchasehistory_table td:not(:first-child):before {
-     font-size: .8em;
-     padding-top: 0.3em;
-     position: relative;
-   }
- 
-   .purchasehistory_table  tr {
-     padding: 10px 0;
-     position: relative;
-   }
-   .purchasehistory_table tr:first-child {
-     display: none;
-   }
- }
+
+
  
  @media screen and (max-width: 500px) {
    .header {
@@ -7785,6 +7796,13 @@ display: block;
      text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
   
    }
+   .cart_mediabox
+   {
+    font-size: .9rem;
+  
+   }
+
+
  
    .purchasehistory_table td img {
      border: 3px solid;
