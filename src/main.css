@@ -122,6 +122,7 @@ a {
 }
 .makeExerHeader {
   background-color: #8ABB5A;
+  overflow-y:hidden;
 }
 .togetherHeader {
   background-color: #148ACD;
@@ -3409,6 +3410,8 @@ float: left;
 
 .headerSpace {
   height: 55px;
+  overflow: hidden;
+  -webkit-overflow-scrolling: auto;
 }
 
 
@@ -4685,6 +4688,7 @@ width: 100%;
   background-color: transparent;
   white-space: pre-line;
   text-align: left;
+  word-break: break-word;
 }
 .togetherWrap {
   overflow: scroll;
@@ -6830,13 +6834,13 @@ margin: 0 1rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  
-
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: auto !important;
 }
 
 
 .scrollStyle {
-  -webkit-overflow-scrolling: touch;
+  -webkit-overflow-scrolling: auto;
 }
 
 

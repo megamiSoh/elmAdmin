@@ -96,7 +96,7 @@ init session mobile =
         , total_count = 0
         , user_id = 0 }
     }
-    , Api.get PossibleToWatch (Endpoint.possibleToCheck) (Session.cred session) (Decoder.possibleToWatch WatchCheckData)
+    , dataListApi 1 10 "all" session
     )
 
 type Msg 
@@ -140,7 +140,7 @@ update msg model =
                     (model, Cmd.none)
         GotSession session ->
             ({model | session = session},
-            Cmd.none)
+            dataListApi model.page model.per_page model.selected_item session)
         PriceFormat format ->  
             let
                formtDecode =    
@@ -159,14 +159,20 @@ update msg model =
                     Encode.object
                         [ ("price", (Encode.list (Encode.int)) price) ]
             in
-            ({model | data = ok.data}, Api.comma priceEncode)
+            ({model | data = ok.data}, Cmd.batch
+            [ Api.comma priceEncode
+            , Api.get PossibleToWatch (Endpoint.possibleToCheck) (Session.cred model.session) (Decoder.possibleToWatch WatchCheckData)])
         GetListData (Err err) ->
-            (model, Cmd.none)
+            let
+                serverErrors =
+                    Api.decodeErrors err
+            in 
+            (model, Session.changeInterCeptor (Just serverErrors) model.session)
         PossibleToWatch (Ok ok) ->
             ({model | ableToWatch = ok.data},
-            dataListApi model.page model.per_page model.selected_item model.session
+            Cmd.none
             )
-        PossibleToWatch (Err err) ->
+        PossibleToWatch (Err err) -> 
             (model, Cmd.none)
         SelectedItem item ->
             ({model | selected_item = item}, 

@@ -527,7 +527,6 @@ app.ports.mobilePaymentCheck.subscribe(function () {
     body: JSON.stringify(form)};
  fetch(url + 'front/orders/new', orderInfo)
   .then(res => {
-    alert(res.status)
     if (res.status == 200) {
       window.location.href= `${window.location.origin}#/paperweightList`
     }

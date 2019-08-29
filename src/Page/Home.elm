@@ -119,8 +119,6 @@ update msg model =
         BulletGo idx ->
             ({model | transition = "", bannerPosition = "-" ++ String.fromInt (idx * 100), bannerIndex = idx, last_bullet = 150}, Cmd.none)
         SwipeDirection direction ->
-            let _ = Debug.log "direction" direction
-            in
             case Decode.decodeValue Decode.string direction of
                 Ok ok ->
                     case ok of
