@@ -415,6 +415,7 @@ type Msg
     | AskBirthComplete (Result Http.Error AskBirthData)
     | BirthInput String String
     | DateValidate Encode.Value
+    | OpenPop
 
 
 toSession : Model -> Session
@@ -479,23 +480,11 @@ indexItem idx item =
             , id = 0 }
 
 
--- GoVideoBody : Int -> Session -> Cmd Msg
--- GoVideoBody id session =
---     let
---         body = 
---             Encode.object
---                 [ ("exercise_id", Encode.int id) ]
---                     |> Http.jsonBody
---     in
---     Api.post Endpoint.productWeek (Session.cred session) CompleteProductWeekRegist body Decoder.resultD
-
-
-
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        OpenPop ->
+            (model, Api.openPop ())
         DateValidate dateValue ->
             case Decode.decodeValue Decode.bool dateValue of
                 Ok ok ->
@@ -1086,16 +1075,14 @@ appItemContent item =
                     ]
                     ]
                 ]
-            , div [ class "button is-dark m_makeExercise_share"
-            , onClick (CheckId item.id "share")
-            ]
+            , div [ class "button is-dark m_makeExercise_share" , onClick (CheckId item.id "share") ]
                 [ i [ class "fas fa-share-square" ]
                 [], text "공유하기" 
             ]
 
-                , div [ class "button m_makeExercise_dete",onClick (DeleteConfirm item.id) ]
-                [ i [ class "far fa-trash-alt" ]
-                [], text "삭제" 
+            , div [ class "button m_makeExercise_dete",onClick (DeleteConfirm item.id) ]
+            [ i [ class "far fa-trash-alt" ]
+            [], text "삭제" 
             ]
             ]
 
@@ -1109,9 +1096,9 @@ bodyItem item=
     in
     div [ class "make_box_card_wrap" ]
 
-    [div [ class "make_videoboxwrap cursor", onClick (CheckId item.id "")]
+    [div [ class "make_videoboxwrap cursor"]
 
-      [div [class"make_overlay"]
+      [div [class"make_overlay", onClick (CheckId item.id "")]
      [i [ class "fas fa-play overlay_makeplay" ][]],
 
          div [ class "video_image" , onClick (CheckId item.id "")]
@@ -1140,11 +1127,11 @@ bodyItem item=
                     [ div  [ class "button is-dark darkbtn make_share"
                     , onClick (CheckId item.id "share") ]
                         [ i [ class "fas fa-share-square" ]
-                            [] , text "공유" 
+                            [text "공유" ] 
                         ]
                     , div [ class "button" ,onClick (DeleteConfirm item.id)]
                         [ i [ class "far fa-trash-alt" ]
-                            [] , text "삭제" 
+                            [text "삭제"]   
                         ]
                     ]
                 ]
@@ -1763,8 +1750,8 @@ selectedItem model =
         [ if model.askDetail.is_ing then
             div [class "button is-link" , onClick (GoVideo model.askDetail.pairing)][text "재생하기"]
         else 
-            a [class "button is-info", Route.href Route.YP][text "결제하기"]
-        , div [class "button is-danger", onClick (CloseTrial 0 0)][text "닫기"]
+            div [class "button is-info", onClick OpenPop][text "결제하기"]
+            , div [class "button is-danger", onClick (CloseTrial 0 0)][text "닫기"]
         ]
         ]
     ]

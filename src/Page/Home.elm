@@ -2,7 +2,7 @@ port module Page.Home exposing (..)
 
 import Html exposing (..)
 import Html.Events exposing (..)
-import Html.Attributes as Atrr exposing(..) 
+import Html.Attributes as Atrr exposing(..)
 import Session exposing(Session)
 import Json.Encode as E
 import Json.Decode as Decode
@@ -88,6 +88,7 @@ type Msg
     | TransitionCheck E.Value
     | SwipeDirection E.Value
     | BulletGo Int
+    | OpenPop
     -- | GotSession Session
 
 toSession : Model -> Session
@@ -116,6 +117,8 @@ onLoad msg =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        OpenPop ->
+            (model, Api.openPop ())
         BulletGo idx ->
             ({model | transition = "", bannerPosition = "-" ++ String.fromInt (idx * 100), bannerIndex = idx, last_bullet = 150}, Cmd.none)
         SwipeDirection direction ->
@@ -303,31 +306,22 @@ bulletitems idx item model =
 
 apphomeDirecMenu =
     div [ class "columns home_yf_columns" ]
-        [ a [ class "home_yf_columns_column1" , Route.href Route.Info ]
-            [ p [ class "main_middle_1" ]
-          
-                      [ i [ class "fas fa-align-justify" ]
-                            []
-                        , text "공지사항"
-                        ]
+        [ a [ class "home_yf_columns_column1 main_middle_1" , Route.href Route.Info ]
+            [  i [ class "fas fa-align-justify" ]
+                    []
+                , text "공지사항"
             ]
             
-          , a [ class "home_yf_columns_column1", Route.href Route.YP]
-                    [ p [ class "main_middle_1" ]
-                        [ i [ class "fas fa-won-sign" ]
+          , a [ class "home_yf_columns_column1 main_middle_1", Route.href Route.YP]
+                    [ i [ class "fas fa-won-sign" ]
                             []
                         , text "유어핏 가격"
-                        ]
-         
                     ]
 
-          , a [ class "home_yf_columns_column1" , Route.href Route.Faq ]
-                    [ p [ class "main_middle_1" ]
-                        [ i [ class "fas fa-question" ]
+          , a [ class "home_yf_columns_column1 main_middle_1" , Route.href Route.Faq ]
+                    [  i [ class "fas fa-question" ]
                             []
                         , text "자주하는 질문"
-                        ]
-         
                     ]
         ]
 
@@ -343,7 +337,7 @@ homeDirectMenu =
                         ]
             ]
             
-          , a [ class "home_yf_columns_column1", Route.href Route.YP ]
+          , div [ class "home_yf_columns_column1", onClick OpenPop ]
                     [ p [ class "main_middle_1" ]
                         [ i [ class "fas fa-won-sign" ]
                             []

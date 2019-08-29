@@ -170,13 +170,8 @@ menuBottom item =
 
 menu = 
     [
-    -- {icon = "/image/icon_calendar.png", title ="캘린더", route = Route.MyC},
-    -- {icon = "/image/icon_diet.png", title ="식단기록", route = Route.MealRM},
-    -- {icon = "/image/icon_stats.png", title ="나의 통계", route = Route.MyS},
-    -- {icon = "/image/icon_list.png", title ="스크랩리스트", route = Route.MyScrap},
-    -- {icon = "/image/icon_management.png", title ="내 게시물 관리", route= MyPost},
+    {icon = "/image/icon_qna.png", title ="자주하는 질문", route = Route.Faq},
     {icon = "/image/icon_notice.png", title ="공지사항", route = Route.Info},
-    -- {icon = "/image/icon_qna.png", title ="1:1 문의", route = Route.Faq},
     {icon = "/image/icon_qna.png", title ="로그인", route = Route.Login}
     ]
 
@@ -224,8 +219,8 @@ viewHeader page maybeViewer =
                         case page of
                             MyPage ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
-                            Faq ->
-                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            -- Faq ->
+                            --     a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             MyC ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             -- Info ->
@@ -256,7 +251,7 @@ viewHeader page maybeViewer =
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
 
                             _ ->
-                                a [ class "navbar-item yf_item",Route.href Route.MyPage ]
+                                a [ class "navbar-item yf_item" ]
                                 [ text "마이페이지"]
                         ]
                     ]

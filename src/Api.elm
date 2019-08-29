@@ -162,7 +162,7 @@ port slide : Value -> Cmd msg
 port payment : Value -> Cmd msg
 port mobilePaymentCheck : () -> Cmd msg
 port comma : Value -> Cmd msg
-
+port openPop : () -> Cmd msg
 
 type alias Flags = 
     { token : String
