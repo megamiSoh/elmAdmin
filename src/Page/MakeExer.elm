@@ -966,9 +966,16 @@ app model =
     ][
         activeTab model
         , appStartBox
-        , listTitle
-            ,div [] [
-                div[](List.map appItemContent model.newList) ,
+        , div [ class "m_mj_box_title" ]
+        [ h1 [ class "m_make_yf_h2" ]
+            [ text "맞춤운동 리스트" ]
+        ]
+            ,div [class "yf_noResult_make"] [
+                if List.isEmpty model.newList then
+                div [][text "맞춤운동이 없습니다."]
+                else 
+                div[](List.map appItemContent model.newList)
+                ,
                 if model.infiniteLoading then
                     div [class "loadingPosition"] [
                     infiniteSpinner
@@ -992,7 +999,7 @@ appStartBox =
             [ text "사용자가 필터를 통해 직접 나만의 유어핏 운동을 제작합니다." ]
         , p []
             [ text "나에게 꼭 필요한 운동으로 개성있는 내 운동을 만들어보세요." ]
-        , a [ class "button is-primary yf_make_b" ]
+        , a [ class "button is-primary yf_make_b", Route.href Route.Filter ]
             [ text "시작하기" ]
         ]
     ]
@@ -1163,7 +1170,7 @@ bodyContentTitle =
             [ text "나에게 꼭 필요한 운동으로 개성있는 내 운동을 만들어보세요." ]
         -- , a [ class "button is-link yf_make_b" ]
         --     [ text "요금제 선택" ]
-        , a [ class "button is-primary yf_make_b" ]
+        , a [ class "button is-primary yf_make_b", Route.href Route.Filter ]
             [ text "시작하기" ]
         ]
     ]

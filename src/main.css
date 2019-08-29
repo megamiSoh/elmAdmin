@@ -3486,7 +3486,11 @@ float: left;
   border-radius: 50%;
   display: inline-block;
 }
-
+.yf_noResult_make {
+  padding: 3rem;
+  height: 300px;
+  font-weight: bold;
+}
 .yf_noResult {
     height: 50vh;
     display: flex;
