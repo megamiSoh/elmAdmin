@@ -98,7 +98,7 @@ app.ports.scrollRight.subscribe(function() {
 })
 
 app.ports.openPop.subscribe(function () {
-  window.open('/#/yourfitPrice', 'popup01', 'width= 800, height = 500 scrollbars= 0, toolbar=0, menubar=no');
+  window.open('/#/yourfitPrice', 'popup01', 'scrollbars= 0, toolbar=0, menubar=no');
 })
 app.ports.comma.subscribe(function (x) {
   var list = x.price
