@@ -58,6 +58,7 @@ type alias Model =
     , day : String
     , dateValidate : Bool
     , zindex : String
+    , is_ing : String
     }
 type alias Format = 
     { ask_id : Int
@@ -371,6 +372,7 @@ init session mobile =
         , birthDay = ""
         , dateValidate = False
         , zindex = ""
+        , is_ing = ""
         }, 
         Cmd.batch 
         [ bodyEncode 1 10 "" session
@@ -556,9 +558,9 @@ update msg model =
             in
              ({model | zindex = "zindex"}, Api.videoData videoList)
         AskDetailMsg (Ok ok) ->
-            ({model | askDetail = ok.data}, Cmd.none)
+            ({model | askDetail = ok.data, is_ing = if ok.data.is_ing then "" else "위 영상은 문진운동 미리보기 영상입니다. 아래의 버튼을 눌러 운동영상을 시청해주세요"}, Cmd.none)
         AskDetailMsg (Err err) ->
-            let _ = Debug.log "err" err
+            let
                 serverErrors =
                     Api.decodeErrors err
             in  
@@ -603,13 +605,11 @@ update msg model =
             ({model | errType = "AskAnswerComplete"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
             ])
         CloseTrial no id ->  
-            let _ = Debug.log "id" id
+            let
                 format num = String.fromInt num
             in
             if no == 0 then
             ({model | trialShow = not model.trialShow, zindex = ""},
-            -- Cmd.none
-            -- Api.removeJw ()
              Api.videoData (Encode.string "")
             )
             else
@@ -1673,7 +1673,8 @@ videoItemApp item =
     
 selectedItemApp model = 
     div [class ("container myaccountStyle " ++ (if model.trialShow then "account" else "") ++ " scrollStyle ")
-    , style "overflow-y" "scroll"
+    -- , style "overflow-y" "scroll"
+    -- , id (if model.trialShow then "noScrInput" else "")
         ]
         [
             appHeaderRDetailClick  model.askDetail.title "makeExerHeader paperweightmobileFontsize" ((CloseTrial 0 0)) "fas fa-times"
@@ -1705,7 +1706,7 @@ selectedItemApp model =
             ]
         ]
         , if model.askDetail.is_ing then
-        div [class "button is-link freeTrial"
+        div [class "button is-link freeTrial" , onClick (GoVideo model.askDetail.pairing)
         ][text "재생"]
         else
         a [class "button is-link freeTrial", Route.href Route.YP
@@ -1731,10 +1732,7 @@ selectedItem model =
             div[class "paperweightSelectedItem_first "]
              [ div [class ("detailExercise_web " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ model.askDetail.thumbnail ++") ") , onClick (GoVideo model.askDetail.pairing)][]
             , div [id "myElement"][]
-            , if model.askDetail.is_ing then
-                div [][]
-            else
-                div [class "samplevideo_text"] [text "위 영상은 문진운동 미리보기 영상입니다. 아래의 버튼을 눌러 운동영상을 시청해주세요"]
+            , div [class "samplevideo_text"] [text model.is_ing]
             , div [class "detail_info_container"]
             [ div [class "mj_title"][text model.askDetail.title
             , span [class "mj_title_part"][text (model.askDetail.exercise_part_name ++ " - " ++ model.askDetail.difficulty_name)]

@@ -20,6 +20,7 @@ type alias Model =
     , product_name : String
     , ableToWatch : Bool
     , price : List String
+    , errType : String
     }
 
 
@@ -82,6 +83,7 @@ init session mobile =
     , product_name = ""
     , ableToWatch = False
     , price = []
+    , errType = ""
     }
     , priceApi session
     )
@@ -113,7 +115,13 @@ update msg model =
             (model, Cmd.batch[Route.pushUrl(Session.navKey model.session) Route.MJList
             , Api.showToast (Encode.string "구매되었습니다.")])
         PromoteComplete (Err err) ->
-            (model, Api.showToast (Encode.string "이미 상품 구독 중 입니다."))
+            let
+                serverErrors = Api.decodeErrors err
+            in
+            if serverErrors == "401" then
+            ({model | errType = "free"},  (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
+            ({model | errType = "free"}, Api.showToast (Encode.string "이미 상품 구독 중 입니다."))
         PriceFormat format ->  
             let
                formtDecode =    
@@ -130,7 +138,16 @@ update msg model =
             (model, Cmd.none)
         GotSession session ->
             ({model | session = session},
-            Cmd.none)
+            case model.errType of
+            "free" ->
+                promoteApi model.product_id session
+            "pay" ->
+                orderApi model.product_id session
+            "list" ->
+                priceApi session
+            _ ->
+                Cmd.none
+            )
         PayStart id is_pay ->
             case model.session of
                 LoggedIn _ val ->
@@ -140,12 +157,12 @@ update msg model =
                         )
                     else
                         ({model | product_id = id}
-                        ,promoteApi id model.session
+                        , promoteApi id model.session
                         )
                 Guest _ ->
                     ({model | product_id = id}, Route.pushUrl (Session.navKey model.session) Route.Login)
         OrderComplete (Ok ok) ->
-            let _ = Debug.log "ok" ok.data
+            let 
                 orderData = 
                     Encode.object 
                         [ ("amount", Encode.int ok.data.amount)
@@ -157,11 +174,11 @@ update msg model =
             in
             (model, Api.payment orderData)
         OrderComplete (Err err) ->
-            let _ = Debug.log "a" err
+            let
                 serverErrors = Api.decodeErrors err
             in
             if serverErrors == "401" then
-            (model,  (Session.changeInterCeptor(Just serverErrors)model.session))
+            ({model | errType = "pay"},  (Session.changeInterCeptor(Just serverErrors)model.session))
             else
             (model, Api.showToast (Encode.string "이미 상품 구독 중 입니다."))
         BackPage ->
@@ -180,8 +197,12 @@ update msg model =
             Cmd.batch [Api.get PossibleToWatch (Endpoint.possibleToCheck) (Session.cred model.session) (Decoder.possibleToWatch WatchCheckData)
             , Api.comma priceEncode])
         GetList (Err err) ->
-            let _ = Debug.log "err" err
+            let
+                serverErrors = Api.decodeErrors err
             in
+            if serverErrors == "401" then
+            ({model | errType = "list"},  (Session.changeInterCeptor(Just serverErrors)model.session))
+            else
             (model, Cmd.none)
 
 subscriptions : Model -> Sub Msg

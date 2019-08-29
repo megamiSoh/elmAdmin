@@ -356,14 +356,10 @@ update msg model =
                 Err err ->
                     (model, Cmd.none)
         YoutubeVideoCall videoId ->
-            let _ = Debug.log "videoId" model.video_id
-            in
             (model, Api.youtubeVideo (Encode.string videoId))
         ShareComplete (Ok ok) ->
             ({model | shareCode = ok.data}, Cmd.none)
         ShareComplete (Err err) ->
-            let _ = Debug.log "err" err
-            in 
             (model, Cmd.none)
         ReceiveScroll scr ->
             case Decode.decodeValue Decode.float scr of
@@ -547,7 +543,7 @@ update msg model =
                     ({model | likeList= model.likeList ++ [model.like]}
                     , likeApi model.session (String.fromInt model.like))
         LikeComplete (Err err) ->
-            let _ = Debug.log "err" err
+            let
                 serverErrors = Api.decodeErrors err
             in
                 if serverErrors == "401" then
@@ -565,8 +561,6 @@ update msg model =
         GetData (Ok ok) ->
             ({model | togetherData = ok, appData = ok.data, loading = False} , (scrollToTop NoOp) )
         GetData (Err err) ->
-            let _ = Debug.log "hello" err
-            in
             ({model | loading = False}, Cmd.none)
         IsActive title ->
             ({model | isActive = title, page = 1} , webDataEncoder model.page model.per_page model.session title)

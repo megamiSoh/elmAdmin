@@ -2868,7 +2868,7 @@ display: flex;
     justify-content: space-between;
 }
 .myaccountStyle {
-  position: absolute;
+  position: fixed;
   bottom: 0;
   width: 100%;
   height: 0;
@@ -2889,12 +2889,22 @@ display: flex;
   transform: translate(0,0);
   -webkit-transform: translate(0,0);
   overflow: hidden;
+  -webkit-overflow-scrolling: auto!important;
+}
+.account::after {
+  content: '';
+  /* background-color: red; */
+  height: 100px;
+  width: 100%;
+  display: block;
+  position: relative;
+  bottom: 0;
 }
 .yfdetailShow {
   min-height: 700px;
     top: 0;
     overflow: auto;
-    -webkit-overflow-scrolling: touch;
+    /* -webkit-overflow-scrolling: touch; */
 }
 .calendarImg {
   width: 100%;

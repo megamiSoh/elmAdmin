@@ -277,12 +277,6 @@ update msg model =
                         date = String.dropLeft 8 model.date
                         today = String.dropLeft 8 model.today
                     in
-                    -- if justToint date >= justToint today  then
-                    -- let _ = Debug.log "inhere" "here"
-                    -- in
-
-                    -- (model, Cmd.none)
-                    -- else
                     ({model | date = formatDateString 1, currentDay = formatDate 1}, 
                     Cmd.batch[diaryApi (formatDateString 1) model.session
                     , exerciseCompleteList model.exerPage model.exerPer_page (formatDateString 1) model.session
