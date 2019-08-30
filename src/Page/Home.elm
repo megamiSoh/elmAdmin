@@ -46,10 +46,18 @@ type alias BannerList =
     , src : String
     , target : Maybe String
     , title : String
-    , backcolor : Maybe String}
+    , backcolor : Maybe String
+    , is_vertical : Bool 
+    }
 
-bannerApi session = 
-    Api.get BannerComplete Endpoint.bannerList (Session.cred session)(Decoder.bannerListdata BannerListData BannerList)
+bannerApi session vertical = 
+    let
+        body = 
+            E.object 
+                [( "is_vertical", E.bool vertical)]
+                |> Http.jsonBody
+    in
+    Api.post Endpoint.bannerList (Session.cred session) BannerComplete body(Decoder.bannerListdata BannerListData BannerList)
 
 init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile=
@@ -73,7 +81,7 @@ init session mobile=
        else
         Api.get Check Endpoint.sessionCheck (Session.cred session) (Decoder.sessionCheck SessionCheck)
         , Api.progressCalcuration ()
-        , bannerApi session
+        , bannerApi session True
         ]
     )
 type Msg 
@@ -241,14 +249,15 @@ caseList item =
                     , src = ""
                     , target = Nothing
                     , title = ""
-                    , backcolor = Nothing}
+                    , backcolor = Nothing
+                    , is_vertical = False}
 
 webOrApp model =
     let
         bannerFirst = 
             caseList model.bannerList
     in
-    if model.check then
+    -- if model.check then
         div [class "appWrap"] [
             home,
              div [class "home_main_top "]
@@ -273,27 +282,27 @@ webOrApp model =
             -- , apprecommendWorkOutList
       ]
     ]
-    else 
-         div [class"yf_home_wrap"]
-        [ 
-            div [class "home_main_top "]
-            [ div [ class "bannerList_container", id model.checkId]
-                [ i [ class "fas fa-chevron-left sliderBtn" , onClick (SlideMove "left")]
-                []
-                , div [class ("bannerList_items " ++  model.transition), id "slide", style "left" (model.bannerPosition ++ "%")] (  List.map banner model.bannerList 
-                ++ [banner bannerFirst]
-                )  
-                , i [ class "fas fa-chevron-right sliderBtn" , onClick (SlideMove "right")] []
-                , 
-                    div [class "bullet_container"] (List.indexedMap (\idx x -> bulletitems idx x model) model.bannerList)
-                ]
-            ],
-         div [ class "container is-widescreen" ]
-            [ homeDirectMenu
-            -- , recommendWorkOutList
-            , P.viewFooter
-            ]
-        ]
+    -- else 
+    --      div [class"yf_home_wrap"]
+    --     [ 
+    --         div [class "home_main_top "]
+    --         [ div [ class "bannerList_container", id model.checkId]
+    --             [ i [ class "fas fa-chevron-left sliderBtn" , onClick (SlideMove "left")]
+    --             []
+    --             , div [class ("bannerList_items " ++  model.transition), id "slide", style "left" (model.bannerPosition ++ "%")] (  List.map banner model.bannerList 
+    --             ++ [banner bannerFirst]
+    --             )  
+    --             , i [ class "fas fa-chevron-right sliderBtn" , onClick (SlideMove "right")] []
+    --             , 
+    --                 div [class "bullet_container"] (List.indexedMap (\idx x -> bulletitems idx x model) model.bannerList)
+    --             ]
+    --         ],
+    --      div [ class "container is-widescreen" ]
+    --         [ homeDirectMenu
+    --         -- , recommendWorkOutList
+    --         , P.viewFooter
+    --         ]
+    --     ]
         
 bulletitems idx item model = 
     div [classList 

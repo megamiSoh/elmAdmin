@@ -35,7 +35,7 @@ cred session =
 
         Guest _ ->
             Nothing
--- checkB : Check -> Maybe
+            
 check c = 
     case c of
         Just ok ->
@@ -74,9 +74,6 @@ navKey session =
 
 changes toMsg key =
     Api.viewerChanges (\maybeViewer -> toMsg (fromViewer key maybeViewer)) Api.credDecoder
-
--- getCheck toMsg key =
---     Api.checkMobile (\maybecheck -> toMsg )
 
 fromViewer : Nav.Key -> Maybe Cred -> Session
 fromViewer key maybeViewer =

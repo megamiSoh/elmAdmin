@@ -1020,6 +1020,7 @@ bannerList banner =
         |> optional "target" ( Decode.map Just string ) Nothing
         |> required "title" string
         |> required "backcolor" ( Decode.nullable string )
+        |> required "is_vertical" bool
 
 priceData  data price = 
     Decode.succeed data
