@@ -102,6 +102,7 @@ init session mobile =
             , Api.removeJw ()
             , mydata session
             , scrollToTop NoOp
+            , Api.hamburgerShut ()
         ]
     )
 

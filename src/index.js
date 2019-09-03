@@ -17,10 +17,8 @@ if (agent.indexOf("msie") != -1) {
   
   }
 
-  window.addEventListener('resize', () => {
-    const windowWidth = window.outerWidth;
-    windowWidth > 450 ? filtercheck = false : filtercheck = true
-});
+
+
 
 const url ='http://13.209.49.169:4000/api/v1/'
 // const url = 'https://api.yfit.co.kr/api/v1/'
@@ -52,6 +50,9 @@ var app = Elm.Main.init({
   node: document.getElementById('root'),
   flags : flags
 });
+
+
+
 
 
 app.ports.sendData.subscribe(function () {
@@ -512,38 +513,6 @@ app.ports.payment.subscribe(function (info) {
 })
 
 
-// app.ports.mobilePaymentCheck.subscribe(function () {
-  
-//   // var origin = window.location.href.split("?")[1].split('&')
-//   // var imp_uid = origin[0].split("=")[1]
-//   // var merchant_id = origin[1].split("=")[1]
-//   // var token = localStorage.getItem("token")
-//   var form = 
-//     {'page' : 10  
-//     , 'per_page': 1}
-
-//   var headerInfo = new Headers ({
-//     "Content-Type": "application/json",
-//     // "authorization": `bearer ${JSON.parse(token).token}`
-//   })
-//   var orderInfo = 
-//     { method: 'POST',
-//     headers: headerInfo,
-//     body: JSON.stringify(form)};
-//     alert(2222)
-//  fetch(url + 'front/notices', orderInfo)
-//   .then(res => {
-//     if (res.status == 200) {
-//       alert(res.status)
-//       // window.location.href= `${window.location.origin}#/paperweightList`
-//     }
-//     alert(res.status)
-//   })
-//   .catch(function(error) {
-//     alert(error)
-//   });
-// })
-
 app.ports.mobilePaymentCheck.subscribe(function () {
   var origin = window.location.href.split("?")[1].split('&')
   var imp_uid = origin[0].split("=")[1]
@@ -637,7 +606,10 @@ if (document.getElementById('slide') !== null) {
 
       
       
-    
+app.ports.hamburgerShut.subscribe(function() {
+      document.getElementById("expandMenu").removeAttribute('class','hamburger_is_active')
+      document.getElementById("expandMenu").setAttribute('class','navbar-menu yf_menu')
+}) 
 
 
 
@@ -648,6 +620,7 @@ app.ports.valueReset.subscribe(function (id) {
   // alert(document.getElementById(id +"after"))
   // document.getElementById(id +"before").value = ""
   // document.getElementById(id +"after").value = ""
+  
 })
 
 app.ports.youtubeVideo.subscribe(function (videoId) {
@@ -708,7 +681,6 @@ app.ports.youtubeVideo.subscribe(function (videoId) {
   }, 
   { capture: false });
 
- 
 
 document.addEventListener('touchmove', function(e) {
   if (document.getElementById("noScrInput")){
@@ -722,18 +694,18 @@ document.addEventListener('touchmove', function(e) {
 }, { passive: false });
 
 document.addEventListener('DOMContentLoaded', () => {
-  const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
 
+  const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
   if ($navbarBurgers.length > 0) {
 
   $navbarBurgers.forEach( el => {
       el.addEventListener('click', () => {
-      if (document.getElementsByClassName("is-active")[0] == undefined){
-      document.getElementById("expandMenu").setAttribute('class','is-active')
-    
-    }
+      window.scrollTo(0, 0)
+      if (document.getElementsByClassName("hamburger_is_active")[0] == undefined){
+      document.getElementById("expandMenu").setAttribute('class','hamburger_is_active')
+      }
       else {
-        document.getElementById("expandMenu").removeAttribute('class','is-active')
+        document.getElementById("expandMenu").removeAttribute('class','hamburger_is_active')
         document.getElementById("expandMenu").setAttribute('class','navbar-menu yf_menu')
       }
     })
@@ -744,4 +716,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-});registerServiceWorker();
+});
+
+registerServiceWorker();

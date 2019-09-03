@@ -389,6 +389,7 @@ init session mobile =
         , Api.removeJw ()
         , scrollToTop NoOp
         , askExerData session 
+        , Api.hamburgerShut ()
         , Cmd.map Yf_price_Msg yf_price_msg
         ]
     )

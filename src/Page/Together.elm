@@ -229,6 +229,7 @@ init session mobile
             Api.removeJw ()
             , Api.scrollControl ()
             , shareApi session 
+            , Api.hamburgerShut ()
         ]]
     )
 webDataEncoder : Int -> Int -> Session -> String -> Cmd Msg

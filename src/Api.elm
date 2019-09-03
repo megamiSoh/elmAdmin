@@ -162,7 +162,7 @@ port payment : Value -> Cmd msg
 port mobilePaymentCheck : () -> Cmd msg
 port comma : Value -> Cmd msg
 port openPop : () -> Cmd msg
-
+port hamburgerShut : () -> Cmd msg
 type alias Flags = 
     { token : String
     }

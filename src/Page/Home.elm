@@ -93,8 +93,7 @@ init session mobile=
         , Api.progressCalcuration ()
         , bannerApi session True BannerComplete
         , bannerApi session False HorizonTalBannerComplete
-        
-        -- , YP.priceApi session
+        , Api.hamburgerShut ()
         ]
     )
 type Msg 

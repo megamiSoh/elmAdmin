@@ -155,6 +155,7 @@ init session mobile =
         , Cmd.map DatePickerMsg datePickerCmd
         , scrollToTop NoOp
         , Api.get PossibleToWatch (Endpoint.possibleToCheck) (Session.cred session) (Decoder.possibleToWatch WatchCheckData)
+        , Api.hamburgerShut ()
         ]
     )
 
@@ -624,7 +625,7 @@ view model =
                     , content =       
                         div [] [
                             web model
-                            , div [class "container"][
+                            , div [class "container", style "z-index" "0"][
                             div [ class "myPage_mediabox" ]
                             [ myInfo model.mydata.user ChangeNick WantChangeNickname model.wantChangeNickname ChangeGo  PwdInput ChangePwd model.notMatchPwd RePwdInput OldPwd model.nickname ChangeProfileImage 
                              (case model.profileFileName  of
