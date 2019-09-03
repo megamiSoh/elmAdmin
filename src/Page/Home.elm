@@ -14,7 +14,8 @@ import Page.Common exposing (..)
 import Api.Endpoint as Endpoint
 import Api.Decoder as Decoder
 import Http as Http
-
+import Random
+import Page.YourFitPrice  as YP exposing (Msg (..))
 
 type alias Model = 
     { session : Session
@@ -28,6 +29,10 @@ type alias Model =
     , transition : String
     , checkId : String
     , last_bullet : Int
+    , random: Int
+    , horizontal : List BannerList
+    , yourfitPriceOpen : Bool
+    , yf_price : YP.Model
     }
 
 
@@ -50,17 +55,21 @@ type alias BannerList =
     , is_vertical : Bool 
     }
 
-bannerApi session vertical = 
+bannerApi session vertical msg= 
     let
         body = 
             E.object 
                 [( "is_vertical", E.bool vertical)]
                 |> Http.jsonBody
     in
-    Api.post Endpoint.bannerList (Session.cred session) BannerComplete body(Decoder.bannerListdata BannerListData BannerList)
+    Api.post Endpoint.bannerList (Session.cred session) msg body(Decoder.bannerListdata BannerListData BannerList)
 
 init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile=
+    let
+        ( yf_price, yf_price_msg ) = 
+            YP.init session mobile
+    in
     (
         { session = session
         , title = "" 
@@ -73,21 +82,29 @@ init session mobile=
         , transition = "shiftThing"
         , checkId = ""
         , last_bullet = 5
+        , random = 0
+        , horizontal = []
+        , yourfitPriceOpen = False
+        , yf_price = yf_price
         }
        , Cmd.batch[scrollToTop NoOp
        ,
-       if Session.viewer session == Nothing then
-       Cmd.none
-       else
-        Api.get Check Endpoint.sessionCheck (Session.cred session) (Decoder.sessionCheck SessionCheck)
+    --    if Session.viewer session == Nothing then
+    --    Cmd.none
+    --    else
+         Cmd.map Yf_price_Msg yf_price_msg
+        -- , Api.get Check Endpoint.sessionCheck (Session.cred session) (Decoder.sessionCheck SessionCheck)
         , Api.progressCalcuration ()
-        , bannerApi session True
+        , bannerApi session True BannerComplete
+        , bannerApi session False HorizonTalBannerComplete
+        
+        -- , YP.priceApi session
         ]
     )
 type Msg 
     = NoOp 
     | LoadImg
-    | Check (Result Http.Error SessionCheck )
+    -- | Check (Result Http.Error SessionCheck )
     | Complete E.Value
     | BannerComplete (Result Http.Error BannerListData)
     | SlideMove String
@@ -97,6 +114,9 @@ type Msg
     | SwipeDirection E.Value
     | BulletGo Int
     | OpenPop
+    | HorizonTalBannerComplete (Result Http.Error BannerListData)
+    | Yf_price_Msg YP.Msg
+
     -- | GotSession Session
 
 toSession : Model -> Session
@@ -116,6 +136,7 @@ subscriptions model=
     , Api.autoSlide AutoSlide
     , Api.transitionCheck TransitionCheck
     , Api.swipe SwipeDirection
+    , Sub.map Yf_price_Msg (YP.subscriptions model.yf_price)
     ]
     -- Session.changes GotSession (Session.navKey model.session)
 
@@ -125,8 +146,23 @@ onLoad msg =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Yf_price_Msg ypMsg ->
+             let _ = Debug.log "yp" ypMsg
+                    in
+            YP.update ypMsg model.yf_price
+                |> (\( data, cmd ) ->
+                        ( {model | yf_price = data}
+                        , Cmd.map Yf_price_Msg cmd
+                        )
+                   )
+
+                |> (\( newModel, cmd ) ->
+                    let _ = Debug.log "yp" newModel
+                    in
+                        (newModel, cmd)
+                   )
         OpenPop ->
-            (model, Api.openPop ())
+            ({model | yourfitPriceOpen = not model.yourfitPriceOpen}, Cmd.none)
         BulletGo idx ->
             ({model | transition = "", bannerPosition = "-" ++ String.fromInt (idx * 100), bannerIndex = idx, last_bullet = 150}, Cmd.none)
         SwipeDirection direction ->
@@ -203,29 +239,29 @@ update msg model =
                     (model, Cmd.none)
         BannerComplete (Ok ok) ->
             ({model | bannerList = ok.data}
-            , Api.slide (E.string (String.fromInt (List.length ok.data))))
+            , Cmd.batch[Api.slide (E.string (String.fromInt (List.length ok.data)))])
         BannerComplete (Err err) ->
+            (model, Cmd.none)
+        HorizonTalBannerComplete (Ok ok) ->
+            ({model | horizontal = ok.data} , Cmd.none)
+        HorizonTalBannerComplete (Err err) ->
             (model, Cmd.none)
         Complete val ->
             ({model | splash = False}, Cmd.none)
-        Check (Ok ok) ->
-            (model, Cmd.none)
-        Check (Err err) ->
-            let 
-                serverErrors = Api.decodeErrors err
-            in
-            if serverErrors == "401" then
-            (model, Api.logout)     
-            else 
-            (model, Cmd.none)
+        -- Check (Ok ok) ->
+        --     (model, Cmd.none)
+        -- Check (Err err) ->
+        --     let 
+        --         serverErrors = Api.decodeErrors err
+        --     in
+        --     if serverErrors == "401" then
+        --     (model, Api.logout)     
+        --     else 
+        --     (model, Cmd.none)
         LoadImg ->
             ({model | image = "/image/bg_back.png"}, Cmd.none)
         NoOp ->
             (model, Cmd.none)
-        -- GotSession session ->
-        --     ({model | session = session}
-        --     , Cmd.none
-        --     )
     
 view : Model -> {title : String , content : Html Msg}
 view model =
@@ -256,19 +292,16 @@ webOrApp model =
     let
         bannerFirst = 
             caseList model.bannerList
+
     in
-    -- if model.check then
+    if model.check then
         div [class "appWrap"] [
             home,
              div [class "home_main_top "]
             [ div [ class "app_bannerimg_container", id model.checkId]
-                [ 
-                --     i [ class "fas fa-chevron-left appsliderBtn" , onClick (SlideMove "left")]
-                -- [], 
-                div [class ("bannerList_items " ++  model.transition), id "slide", style "left" (model.bannerPosition ++ "%")] (  List.map banner model.bannerList 
-                ++ [banner bannerFirst]
+                [ div [class ("bannerList_items " ++  model.transition), id "slide", style "left" (model.bannerPosition ++ "%")] (List.map(\x ->  banner x "bannerimg_container") model.bannerList 
+                ++ [banner bannerFirst "bannerimg_container"]
                 )  
-                -- , i [ class "fas fa-chevron-right appsliderBtn" , onClick (SlideMove "right")] []
                 , 
                 div [class "bullet_container"] (List.indexedMap (\idx x -> bulletitems idx x model) model.bannerList)
                 ]
@@ -279,31 +312,42 @@ webOrApp model =
             [ 
                 apphomeDirecMenu        
             ]   
-            -- , apprecommendWorkOutList
+            , div [class "bottom_bannerImg"](List.map(\x ->  banner x "") model.horizontal ) 
       ]
     ]
-    -- else 
-    --      div [class"yf_home_wrap"]
-    --     [ 
-    --         div [class "home_main_top "]
-    --         [ div [ class "bannerList_container", id model.checkId]
-    --             [ i [ class "fas fa-chevron-left sliderBtn" , onClick (SlideMove "left")]
-    --             []
-    --             , div [class ("bannerList_items " ++  model.transition), id "slide", style "left" (model.bannerPosition ++ "%")] (  List.map banner model.bannerList 
-    --             ++ [banner bannerFirst]
-    --             )  
-    --             , i [ class "fas fa-chevron-right sliderBtn" , onClick (SlideMove "right")] []
-    --             , 
-    --                 div [class "bullet_container"] (List.indexedMap (\idx x -> bulletitems idx x model) model.bannerList)
-    --             ]
-    --         ],
-    --      div [ class "container is-widescreen" ]
-    --         [ homeDirectMenu
-    --         -- , recommendWorkOutList
-    --         , P.viewFooter
-    --         ]
-    --     ]
+    else 
+         div [class"yf_home_wrap"]
+        [ 
+            div [class "home_main_top "]
+            [ div [ class "bannerList_container", id model.checkId]
+                [ i [ class "fas fa-chevron-left sliderBtn" , onClick (SlideMove "left")]
+                []
+                , div [class ("bannerList_items " ++  model.transition), id "slide", style "left" (model.bannerPosition ++ "%")] (  List.map (\x ->  banner x "web_bannerimg_container") model.bannerList 
+                ++ [banner bannerFirst "web_bannerimg_container" ]
+                )  
+                , i [ class "fas fa-chevron-right sliderBtn" , onClick (SlideMove "right")] []
+                , 
+                    div [class "bullet_container"] (List.indexedMap (\idx x -> bulletitems idx x model) model.bannerList)
+                ]
+            ],
+         div [ class "container is-widescreen" ]
+            [ homeDirectMenu
+            , div [class "bottom_bannerImg"](List.map (\x ->  banner x "web_bannerimg_container") model.horizontal)
+            , P.viewFooter
+            ]
+        , div [class "yp_price_container", style "display" (if model.yourfitPriceOpen then "flex" else "none")][
+            yp_price_list model.yf_price Yf_price_Msg 
+        ]
+        ]
         
+
+yp_price_list model msg = 
+    div [class "yp_price_layer"][
+    div [class "button yf_price_top_btn is-danger", onClick OpenPop][text "닫기"]
+    , YP.weblayout model
+        |> Html.map msg
+    ]
+
 bulletitems idx item model = 
     div [classList 
         [("bullet_items", True)
@@ -381,87 +425,6 @@ lazyview image=
             img [src "image/bg_back.png", onLoad LoadImg, class "shut"] []
         ]
     
-
-apprecommendWorkOutList = 
-    div [ class "home_videobox" ]
-    [ h1 [ class "home_videobox_title1" ]
-        [ text "추천합니다" ]
-    , h1 [ class "home_videobox_title2" ]
-        [ text "오늘의 유어핏 운동" ]
-    , div [ class "main_videowrap" ]
-        [ div [ class "main_videobox1" ]
-            [ div [ class "main_videobox1_thumbnail" ]
-                []
-            , h1 [ class "main_videobox_text" ]
-                [ text "식스팩운동" ]
-            ]
-        , div [ class "main_videobox1" ]
-             [ div [ class "main_videobox1_thumbnail" ]
-                []
-            , h1 [ class "main_videobox_text" ]
-                 [ text "식스팩운동" ]
-            ]
-        ,div [ class "main_videobox1" ]
-             [ div [ class "main_videobox1_thumbnail" ]
-                []
-            , h1 [ class "main_videobox_text" ]
-                 [ text "식스팩운동" ]
-            ]
-        , div [ class "main_videobox1" ]
-             [ div [ class "main_videobox1_thumbnail" ]
-                []
-            , h1 [ class "main_videobox_text" ]
-                 [ text "식스팩운동" ]
-            ]
-        , div [ class "main_videobox1" ]
-             [ div [ class "main_videobox1_thumbnail" ]
-                []
-            , h1 [ class "main_videobox_text" ]
-                 [ text "식스팩운동" ]
-            ]
-        ]
-       ]
-
-recommendWorkOutList = 
-    div [ class "home_videobox" ]
-        [ h1 [ class "home_videobox_title1" ]
-            [ text "추천합니다" ]
-        , h1 [ class "home_videobox_title2" ]
-            [ text "오늘의 유어핏 운동" ]
-        , div [ class "main_videowrap" ]
-            [ div [ class "main_videobox1" ]
-                [ div [ class "main_videobox1_thumbnail" ]
-                    []
-                , h1 [ class "main_videobox_text" ]
-                    [ text "식스팩운동" ]
-                ]
-            , div [ class "main_videobox1" ]
-                [ div [ class "main_videobox1_thumbnail" ]
-                    []
-                , h1 [ class "main_videobox_text" ]
-                    [ text "식스팩운동" ]
-                ]
-            ,div [ class "main_videobox1" ]
-                [ div [ class "main_videobox1_thumbnail" ]
-                    []
-                , h1 [ class "main_videobox_text" ]
-                    [ text "식스팩운동" ]
-                ]
-            , div [ class "main_videobox1" ]
-                [ div [ class "main_videobox1_thumbnail" ]
-                    []
-                , h1 [ class "main_videobox_text" ]
-                    [ text "식스팩운동" ]
-                ]
-            , div [ class "main_videobox1" ]
-                [ div [ class "main_videobox1_thumbnail" ]
-                    []
-                , h1 [ class "main_videobox_text" ]
-                    [ text "식스팩운동" ]
-                ]
-            ]
-        ]
-
 caseString item= 
     case item of
         Just ok ->
@@ -469,9 +432,8 @@ caseString item=
         Nothing ->
             ""
         
-banner item =
-        a [class "bannerimg_container", style "background-color" (caseString item.backcolor), Atrr.href (caseString item.link), target (caseString item.target)][img [src item.src, onLoad LoadImg, class "slideItems"] []]
-
+banner item styles=
+        a [class styles, style "background-color" (caseString item.backcolor), Atrr.href (caseString item.link), target (caseString item.target)][img [src item.src, onLoad LoadImg, class "slideItems"] []]
 
 
 home =

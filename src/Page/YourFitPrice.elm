@@ -194,8 +194,15 @@ update msg model =
                         [ ("price", (Encode.list (Encode.int)) price) ]
             in
             ({model | getList = ok.data}, 
-            Cmd.batch [Api.get PossibleToWatch (Endpoint.possibleToCheck) (Session.cred model.session) (Decoder.possibleToWatch WatchCheckData)
-            , Api.comma priceEncode])
+            case model.session of
+                LoggedIn _ val ->
+                    Cmd.batch [
+                    Api.get PossibleToWatch (Endpoint.possibleToCheck) (Session.cred model.session) (Decoder.possibleToWatch WatchCheckData)
+                    , Api.comma priceEncode]
+                Guest _ ->
+                    Cmd.batch [Api.comma priceEncode]
+                )
+            
         GetList (Err err) ->
             let
                 serverErrors = Api.decodeErrors err

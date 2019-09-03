@@ -993,7 +993,7 @@ myaskBirthData data birth =
 myaskBirth birth =
     Decode.succeed birth
         |> required "content" string
-        |> required "default" string
+        |> required "default" (Decode.nullable string)
         |> required "name" string
 
 shareData data share= 

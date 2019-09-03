@@ -13,6 +13,8 @@ import Http as Http exposing(..)
 import Api as Api
 import Api.Endpoint as Endpoint
 import Api.Decoder as Decoder
+import Page.YourFitPrice  as YP exposing (Msg (..))
+
 type alias Model = 
     { session : Session
     , checkDevice : String
@@ -59,6 +61,9 @@ type alias Model =
     , dateValidate : Bool
     , zindex : String
     , is_ing : String
+    , yf_price : YP.Model
+    , yourfitPriceOpen : Bool
+    , slideWidth : String
     }
 type alias Format = 
     { ask_id : Int
@@ -208,7 +213,7 @@ type alias AskBirthData =
 
 type alias AskBirth =   
     { content : String
-    , default : String
+    , default : Maybe String
     , name : String }
 
 bodyEncode : Int -> Int -> String -> Session -> Cmd Msg
@@ -269,6 +274,8 @@ init session mobile =
             { page = 1
             , per_page = 10
             , title = ""}
+        ( yf_price, yf_price_msg ) = 
+            YP.init session mobile
     in
     (
         { session = session
@@ -364,7 +371,7 @@ init session mobile =
         , trialNo = ""
         , birthData = 
             { content = ""
-            , default = ""
+            , default = Nothing
             , name = ""}
         , year = ""
         , month = ""
@@ -373,12 +380,16 @@ init session mobile =
         , dateValidate = False
         , zindex = ""
         , is_ing = ""
+        , yf_price = yf_price
+        , yourfitPriceOpen = False
+        , slideWidth = "0"
         }, 
         Cmd.batch 
         [ bodyEncode 1 10 "" session
         , Api.removeJw ()
         , scrollToTop NoOp
         , askExerData session 
+        , Cmd.map Yf_price_Msg yf_price_msg
         ]
     )
 
@@ -416,6 +427,8 @@ type Msg
     | BirthInput String String
     | DateValidate Encode.Value
     | OpenPop
+    | Yf_price_Msg YP.Msg
+    | OpenSlide String
 
 
 toSession : Model -> Session
@@ -446,6 +459,7 @@ subscriptions model=
         , Api.progressComplete ProgressComplete
         , Api.calcurationComplete CalcurationComplete
         , Api.dateValidResult DateValidate
+        , Sub.map Yf_price_Msg (YP.subscriptions model.yf_price)
     ]
 
 onLoad : msg -> Attribute msg
@@ -483,8 +497,29 @@ indexItem idx item =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        OpenSlide direction ->
+            case direction of
+                "first" ->
+                    ({model | slideWidth = "-100%"}, Cmd.none)
+                "second" ->
+                    ({model | slideWidth = "0"}, Cmd.none)
+                _ ->
+                    (model, Cmd.none)
+        Yf_price_Msg ypMsg ->
+            YP.update ypMsg model.yf_price
+                |> (\( data, cmd ) ->
+                        ( {model | yf_price = data}
+                        , Cmd.map Yf_price_Msg cmd
+                        )
+                   )
+
+                |> (\( newModel, cmd ) ->
+                    let _ = Debug.log "yp" newModel
+                    in
+                        (newModel, cmd)
+                   )
         OpenPop ->
-            (model, Api.openPop ())
+             ({model | yourfitPriceOpen = not model.yourfitPriceOpen}, Cmd.none)
         DateValidate dateValue ->
             case Decode.decodeValue Decode.bool dateValue of
                 Ok ok ->
@@ -518,8 +553,14 @@ update msg model =
                         _ ->
                             (model, Cmd.none)
         AskBirthComplete (Ok ok) ->
-            ({model | birthData = ok.data, year = String.dropRight 6 ok.data.default, day = String.dropLeft 8 ok.data.default, month = String.dropLeft 5 (String.dropRight 3 ok.data.default), birthDay = ok.data.default}, 
-            Api.dateValidate(Encode.string (String.dropRight 6 ok.data.default ++ "," ++ String.dropLeft 5 (String.dropRight 3 ok.data.default) ++ "," ++ String.dropLeft 8 ok.data.default)))
+            let _ = Debug.log "ok" ok.data.default
+            in
+            case ok.data.default of
+                Just d ->
+                    ({model | birthData = ok.data, year = String.dropRight 6 d, day = String.dropLeft 8 d, month = String.dropLeft 5 (String.dropRight 3 d), birthDay = d}, 
+                    Api.dateValidate(Encode.string (String.dropRight 6 d ++ "," ++ String.dropLeft 5 (String.dropRight 3 d) ++ "," ++ String.dropLeft 8 d)))
+                Nothing ->
+                    ({model | birthData = ok.data}, Cmd.none)
         AskBirthComplete (Err err) ->  
             (model, Cmd.none)
         CompleteProductWeekRegist (Ok ok) ->
@@ -916,6 +957,9 @@ view model =
                 , paperweightStart model
                 , selectedItem model
                 , resetLayer "yf_popup" model
+                , div [class "yp_price_container", style "display" (if model.yourfitPriceOpen then "flex" else "none")][
+                    yp_price_list model.yf_price Yf_price_Msg "닫기"
+                ]
             ]
             }
             
@@ -1024,7 +1068,9 @@ paperWeightStartApp model =
         , listTitle
             , if List.isEmpty model.askExerList then
                 div [class "nopaperWeightResult"] [
-                    text "문진운동이 없습니다." ]
+                    div [][text "문진운동이 없습니다. "]
+                    , div [][text "문진을 먼저 진행해 주세요."] 
+                ]
             else
                     div [class "loadingMjList", style "display" (if model.isActive == "calcuration" then "block" else "none")][
                     div [class "calculationSpinner"][]
@@ -1253,7 +1299,7 @@ paperWeightBody model =
                         ]
                     , if List.isEmpty model.askExerList then
                         div [class "nopaperWeightResult"] [
-                            text "문진운동이 없습니다."
+                            text "문진운동이 없습니다. 문진을 먼저 진행 해 주세요."
                         ]
                     else
                         if model.isActive == "calcuration" then
@@ -1279,7 +1325,7 @@ paperweightStart model =
     [ 
     case model.categoryPaperWeight of
         "sex" ->
-            div [class "paperweightStartItem" ]
+            div [class "paperweightStartItem_layer_pop" ]
             [ div [ class "mj_box_title" ]
             [ h1 [ class "mj_yf_title" ]
                 [ text ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " /3 )") ]   
@@ -1289,7 +1335,7 @@ paperweightStart model =
             ]
     
         "exerpoint" ->
-            div [class "paperweightStartItem" ]
+            div [class "paperweightStartItem_layer_pop" ]
             [ div [ class "mj_box_title" ]
             [ h1 [ class "mj_yf_title" ]
                 [ text ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 3 )") ]
@@ -1298,7 +1344,7 @@ paperweightStart model =
              , stopPaperWeight
             ]
         "birth" ->
-            div [class "paperweightStartItem" ]
+            div [class "paperweightStartItem_layer_pop" ]
             [ div [ class "mj_box_title" ]
             [ h1 [ class "mj_yf_title" ]
                 [ text ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 3 )") ]
@@ -1307,7 +1353,7 @@ paperweightStart model =
              , stopPaperWeight
             ]
         "etcStart" ->
-            div [class "paperweightStartItem" ]
+            div [class "paperweightStartItem_layer_pop" ]
             [ div [ class "mj_box_title" ]
             [ h1 [ class "mj_yf_title" ]
                 [ text ("문진 맞춤 운동 ( "++ String.fromInt (model.idxSearch) ++  " / " ++ String.fromInt (List.length model.askSearchData )++ " )") ]
@@ -1316,7 +1362,7 @@ paperweightStart model =
             , stopPaperWeight
             ]
         "completePaperWeight" ->
-            div [class "paperweightStartItem" ]
+            div [class "paperweightStartItem_layer_pop" ]
             [ div [ class "mj_box_title" ]
             [ h1 [ class "mj_yf_title" ]
                 [ text "문진 결과" ]
@@ -1338,7 +1384,7 @@ paperweightStart model =
                 [ text "60%" ]
             ]
         "paperweightResult" ->
-            div [class "paperweightStartItem" ]
+            div [class "paperweightStartItem_layer_pop" ]
             [ div [ class "mj_box_title" ]
             [ h1 [ class "mj_yf_title" ]
                 [ text "문진 맞춤 운동결과" ]
@@ -1720,8 +1766,9 @@ selectedItem model =
     div [class "paperweightLayer", style "display" 
         (if model.trialShow then "flex" else "none")
         ]
-        [
-        div [class "paperweightStartItem paperweightSelectedItem_container"]
+        [ div [class "makeExercise_paperWeight_slideContainer"][
+            div [class "selectedItem_container_selectedItem", style "left" model.slideWidth]
+        [div [class " paperweightSelectedItem_container"]
         [
             div[class "paperweightSelectedItem_first "]
              [ div [class ("detailExercise_web " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ model.askDetail.thumbnail ++") ") , onClick (GoVideo model.askDetail.pairing)][]
@@ -1739,20 +1786,23 @@ selectedItem model =
              (List.map askDetailItems model.askDetail.exercise_items)
             
             ]
-        ]
-        , div [class "paperweightSelectedItem_second"][
+            , div [class "paperweightSelectedItem_second"][
             h3 [][text "운동설명"]
             , div [class "description"][
                 text model.askDetail.description
             ]
         ]
+        ]
         , div [class "paperweightSelectedItem_third"]
         [ if model.askDetail.is_ing then
             div [class "button is-link" , onClick (GoVideo model.askDetail.pairing)][text "재생하기"]
         else 
-            div [class "button is-info", onClick OpenPop][text "결제하기"]
+            div [class "button is-info", onClick (OpenSlide "first")][text "결제하기"]
             , div [class "button is-danger", onClick (CloseTrial 0 0)][text "닫기"]
         ]
+        
+        ]
+        , yp_price_slide model.yf_price Yf_price_Msg "닫기"]
         ]
     ]
 
@@ -1788,3 +1838,16 @@ resetLayer layerStyle model =
     ]
     ]
 
+yp_price_list model msg btnText = 
+    div [class "yp_price_layer"][
+    div [class "button yf_price_top_btn is-danger", onClick OpenPop][text btnText]
+    , YP.weblayout model
+        |> Html.map msg
+    ]
+yp_price_slide model msg btnText = 
+    div [class "yp_price_slide_layer"][
+     div [class "button yf_price_top_btn is-danger", onClick (OpenSlide "second")][text btnText]
+    , YP.weblayout model
+        |> Html.map msg
+    
+    ]

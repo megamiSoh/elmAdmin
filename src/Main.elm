@@ -904,6 +904,8 @@ view model =
             viewPage Page.YP YPMsg (YP.view item)
         GPModel item ->
             viewPage Page.GP GPMsg (GP.view item)
+        -- _ ->
+        --      viewPage Page.Other (\_ -> Ignored) Blank.view
 
 main : Program Value Model Msg
 main =
