@@ -3968,7 +3968,7 @@ float: left;
 
 .yf_footer
 {
-  position: fixed;
+  /* position: fixed; */
   left: 0;
   bottom: 0;
   width: 100%;
@@ -7247,13 +7247,7 @@ display: block;
   }
 
   @media screen and (max-width: 480px) {
-    .history_tbody
-    {display: none;
-         
-    }
-    .history_tr
-    {display:  grid;
-    }
+   
 
     .purchasehistory_table .history_tbody .history_tr {
       margin: 0;
@@ -7266,6 +7260,8 @@ display: block;
     }
   }
  
+
+
 
  @media screen and (max-width: 500px) {
    .header {
@@ -7302,19 +7298,23 @@ display: block;
      -webkit-transform: translateY(0);
              transform: translateY(0);
      width: 100%;
+     font-size: .7rem;
    }
    .purchasehistory_table td:not(:first-child) {
      margin: 0;
-     padding: 5px 1em;
+     /* padding: 5px 1em; */
      width: 100%;
+     font-size: .7rem;
    }
    .purchasehistory_table td:not(:first-child):before {
-     font-size: .8em;
+     font-size: .7em;
      padding-top: 0.3em;
      position: relative;
+     
    }
    .purchasehistory_table td:last-child {
      padding-bottom: 1rem !important;
+     font-size: .7rem !important;
    }
  
    .purchasehistory_table tr {
@@ -7733,7 +7733,7 @@ display: block;
  }
  .purchasehistory_table td, .purchasehistory_table th {
    color: #2b686e;
-   padding: 5px;
+   padding: 2px;
    text-align: center;
    word-break : nowrap;
  }
@@ -7805,11 +7805,11 @@ display: block;
    }
    .purchasehistory_table td:not(:first-child) {
      margin: 0;
-     padding: 5px 1em;
+     padding: 0.3em;
      width: 100%;
    }
    .purchasehistory_table td:not(:first-child):before {
-     font-size: .8em;
+     font-size: .7em;
      padding-top: 0.3em;
      position: relative;
    }
