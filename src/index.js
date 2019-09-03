@@ -579,18 +579,19 @@ if (document.getElementById('slide') !== null) {
       }
     }
   }, { capture: false })
-
+      if(document.getElementById("slideId ") !== null){
+        var el = document.getElementById("slideId ")
         var startPageX, endPageX
-        document.addEventListener('touchstart', function (e) {
+        el.addEventListener('touchstart', function (e) {
           var touchposition = e.changedTouches[0]
           startPageX = touchposition.pageX
           onlyOnce = false
       
         })
-        document.addEventListener('touchmove', function (e) {
+        el.addEventListener('touchmove', function (e) {
           e.preventDefault;
         })
-        document.addEventListener('touchend', function (e) {
+        el.addEventListener('touchend', function (e) {
           var touchposition = e.changedTouches[0]
           endPageX = touchposition.pageX
           if (startPageX - endPageX < 0) {
@@ -601,14 +602,19 @@ if (document.getElementById('slide') !== null) {
           setTimeout(() => {
             onlyOnce = true
           }, 30000);
-        })
+        })}
   }
 
       
       
 app.ports.hamburgerShut.subscribe(function() {
+  if (document.getElementsByClassName("hamburger_is_active")[0] == undefined){
+    // document.getElementById("expandMenu").setAttribute('class','hamburger_is_active')
+    }
+    else {
       document.getElementById("expandMenu").removeAttribute('class','hamburger_is_active')
       document.getElementById("expandMenu").setAttribute('class','navbar-menu yf_menu')
+    }
 }) 
 
 

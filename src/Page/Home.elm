@@ -289,11 +289,11 @@ webOrApp model =
             caseList model.bannerList
 
     in
-    if model.check then
+    -- if model.check then
         div [class "appWrap"] [
             home,
-             div [class "home_main_top "]
-            [ div [ class "app_bannerimg_container", id model.checkId]
+             div [class "home_main_top"]
+            [ div [ class "app_bannerimg_container", id  ("slideId " ++ model.checkId) ]
                 [ div [class ("bannerList_items " ++  model.transition), id "slide", style "left" (model.bannerPosition ++ "%")] (List.map(\x ->  banner x "bannerimg_container") model.bannerList 
                 ++ [banner bannerFirst "bannerimg_container"]
                 )  
@@ -310,32 +310,32 @@ webOrApp model =
             , div [class "bottom_bannerImg"](List.map(\x ->  banner x "") model.horizontal ) 
       ]
     ]
-    else 
-         div [class"yf_home_wrap"]
-        [ 
-            div [class "home_main_top "]
-            [ div [ class "bannerList_container", id model.checkId]
-                [ i [ class "fas fa-chevron-left sliderBtn" , onClick (SlideMove "left")]
-                []
-                , div [class ("bannerList_items " ++  model.transition), id "slide", style "left" (model.bannerPosition ++ "%")] (  List.map (\x ->  banner x "web_bannerimg_container") model.bannerList 
-                ++ [banner bannerFirst "web_bannerimg_container" ]
-                )  
-                , i [ class "fas fa-chevron-right sliderBtn" , onClick (SlideMove "right")] []
-                , 
-                    div [class "bullet_container"] (List.indexedMap (\idx x -> bulletitems idx x model) model.bannerList)
-                ]
-            ],
-         div [ class "container is-widescreen" ]
-            [ homeDirectMenu
-            , div [class "bottom_bannerImg"](List.map (\x ->  banner x "web_bannerimg_container") model.horizontal)
-            , P.viewFooter
-            ]
-        , div [class "paperweightLayer", style "display" (if model.yourfitPriceOpen then "flex" else "none")][
-            div [class "makeExercise_paperWeight_slideContainer"][
-            yp_price_list model.yf_price Yf_price_Msg 
-        ]
-        ]
-        ]
+    -- else 
+    --      div [class"yf_home_wrap"]
+    --     [ 
+    --         div [class "home_main_top "]
+    --         [ div [ class "bannerList_container", id model.checkId]
+    --             [ i [ class "fas fa-chevron-left sliderBtn" , onClick (SlideMove "left")]
+    --             []
+    --             , div [class ("bannerList_items " ++  model.transition), id "slide", style "left" (model.bannerPosition ++ "%")] (  List.map (\x ->  banner x "web_bannerimg_container") model.bannerList 
+    --             ++ [banner bannerFirst "web_bannerimg_container" ]
+    --             )  
+    --             , i [ class "fas fa-chevron-right sliderBtn" , onClick (SlideMove "right")] []
+    --             , 
+    --                 div [class "bullet_container"] (List.indexedMap (\idx x -> bulletitems idx x model) model.bannerList)
+    --             ]
+    --         ],
+    --      div [ class "container is-widescreen" ]
+    --         [ homeDirectMenu
+    --         , div [class "bottom_bannerImg"](List.map (\x ->  banner x "web_bannerimg_container") model.horizontal)
+    --         , P.viewFooter
+    --         ]
+    --     , div [class "paperweightLayer", style "display" (if model.yourfitPriceOpen then "flex" else "none")][
+    --         div [class "makeExercise_paperWeight_slideContainer"][
+    --         yp_price_list model.yf_price Yf_price_Msg 
+    --     ]
+    --     ]
+    --     ]
         
 
 yp_price_list model msg = 

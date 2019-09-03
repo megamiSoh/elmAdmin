@@ -38,7 +38,7 @@ a {
   overflow: hidden;
   height: 110px;
   position: relative;
-  transition: height .3s;
+  /* transition: height .3s; */
 }
 .haderIconWrap {
   background-color: #EEFCFB;
@@ -79,7 +79,7 @@ a {
   background-color: #80808036;
   padding: 0 .4rem 0 0;
   color: #ababab;
-  display: none;
+  display: none!important;
   height: 110px;
   z-index: 10;
 }
@@ -104,7 +104,7 @@ a {
   background-color: #80808036;
   padding: 0 0 0 .4rem;
   color: #ababab;
-  display: none;
+  display: none!important;
   z-index: 10;
 }
 
@@ -244,7 +244,7 @@ float: left;
 }
 @media screen and (max-width: 788px) { 
   .fas.fa-caret-right.scrStyle, .fas.fa-caret-left.scrStyle {
-    display: flex;
+    display: flex!important;
   }
 }
 

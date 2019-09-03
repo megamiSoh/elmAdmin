@@ -71,9 +71,9 @@ commonJustHeader icon title =
 myPageCommonHeader scrRight scrLeft another show= 
     div [ class "submenu", id "mypageMenu", style "height"  (if show then "110px" else "0") ]
         [  
-            i [ class "fas fa-caret-left scrStyle", onClick scrLeft ]
+            i [ class "fas fa-caret-left scrStyle", onClick scrLeft , style "display"  (if show then "" else "none")  ]
             [] ,
-            div [ class "haderIconWrap", id "scrollCtr", style "height"  (if show then "110px" else "0"), style "zindex" "999999999" ]
+            div [ class "haderIconWrap", id "scrollCtr", style "height"  (if show then "110px" else "0") ]
             [ 
                 
                 a [ class "headerIcons", Route.href Route.MyPage]
@@ -137,7 +137,7 @@ myPageCommonHeader scrRight scrLeft another show=
             --         [ text "자주하는 질문" ]
             --     ]
             ]
-            , i [ class "fas fa-caret-right scrStyle", onClick scrRight ]
+            , i [ class "fas fa-caret-right scrStyle", onClick scrRight , style "display"  (if show then "flex" else "none") ]
             [] 
         ]
 
