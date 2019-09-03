@@ -142,8 +142,6 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Yf_price_Msg ypMsg ->
-             let _ = Debug.log "yp" ypMsg
-                    in
             YP.update ypMsg model.yf_price
                 |> (\( data, cmd ) ->
                         ( {model | yf_price = data}
@@ -152,8 +150,6 @@ update msg model =
                    )
 
                 |> (\( newModel, cmd ) ->
-                    let _ = Debug.log "yp" newModel
-                    in
                         (newModel, cmd)
                    )
         OpenPop ->

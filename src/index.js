@@ -486,7 +486,7 @@ var paymentCheck = false
 
 app.ports.payment.subscribe(function (info) {
   alert ("가상결제이므로, 실제 결제는 이루어지지 않습니다.")
-
+  var locationUrl = window.location.origin.split("//")
     IMP.init('imp85569385')
   IMP.request_pay({
     pay_method : 'card',
@@ -496,7 +496,7 @@ app.ports.payment.subscribe(function (info) {
     buyer_email : info.buyer_email,
     buyer_name : info.buyer_name,
     digital : info.digital,
-    m_redirect_url :window.location.origin + '#/gateProgress'
+    m_redirect_url : `${locationUrl[1]}/#/gateProgress`
 }, function(rsp) {
     if ( rsp.success ) {
         var msg = '결제가 완료되었습니다.';
@@ -533,7 +533,7 @@ app.ports.mobilePaymentCheck.subscribe(function () {
  fetch(url + 'front/orders/new', orderInfo)
   .then(res => {
     if (res.status == 200) {
-      window.location.href= `${window.location.origin}#/paperweightList`
+      window.location.replace(`${window.location.origin}#/paperweightList`)
     }
   })
   .then(data => {

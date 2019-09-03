@@ -515,8 +515,6 @@ update msg model =
                    )
 
                 |> (\( newModel, cmd ) ->
-                    let _ = Debug.log "yp" newModel
-                    in
                         (newModel, cmd)
                    )
         OpenPop ->
@@ -554,8 +552,6 @@ update msg model =
                         _ ->
                             (model, Cmd.none)
         AskBirthComplete (Ok ok) ->
-            let _ = Debug.log "ok" ok.data.default
-            in
             case ok.data.default of
                 Just d ->
                     ({model | birthData = ok.data, year = String.dropRight 6 d, day = String.dropLeft 8 d, month = String.dropLeft 5 (String.dropRight 3 d), birthDay = d}, 
@@ -1738,6 +1734,7 @@ selectedItemApp model =
                 , text model.askDetail.duration
                 ]
             ]
+            , div [class "samplevideo_text", style "z-index" "0"] [text model.is_ing]
             , ul [class "mj_description"]
              (List.map askDetailItems model.askDetail.exercise_items)
              , div [class "paperweightSelectedItem_second_app"][
