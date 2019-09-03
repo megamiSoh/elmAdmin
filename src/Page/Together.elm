@@ -51,6 +51,7 @@ type alias Model =
     , all : ShareType
     , share_code : String
     , video_id : String
+    , youtube_id : Int
     }
 
 type alias WebToghtherDataWrap =
@@ -216,6 +217,7 @@ init session mobile
             , name = "전체" }
         , share_code = ""
         , video_id = "nothing"
+        , youtube_id = 0
         }
         ,  Cmd.batch 
         [ (
@@ -322,8 +324,8 @@ type Msg
     | VideoRecordComplete (Result Http.Error Decoder.Success)
     | ReceiveScroll Encode.Value
     | ShareComplete (Result Http.Error ShareTypeData)
-    | YoutubeVideoCall String
-    | HideThumb Encode.Value
+    | YoutubeVideoCall (String, Int)
+    -- | HideThumb Encode.Value
 
 mydata session = 
     Decoder.sessionCheckMydata
@@ -344,20 +346,27 @@ subscriptions model=
     , Session.changes GotSession (Session.navKey model.session)
     , Api.videoWatchComplete VideoEnd
     , Api.touch ReceiveScroll
-    , Api.hideThum HideThumb]
+    -- , Api.hideThum HideThumb
+    ]
     -- Api.videoSuccess Loading
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        HideThumb hide ->
-            case Decode.decodeValue Decode.string hide of
-                Ok ok ->
-                    ({model |video_id = ok}, Cmd.none)
-                Err err ->
-                    (model, Cmd.none)
-        YoutubeVideoCall videoId ->
-            (model, Api.youtubeVideo (Encode.string videoId))
+        -- HideThumb hide ->
+        --     case Decode.decodeValue Decode.string hide of
+        --         Ok ok ->
+        --             ({model |video_id = ok}, Cmd.none)
+        --         Err err ->
+        --             (model, Cmd.none)
+        YoutubeVideoCall (videoId, id) ->
+            let
+                youtubeEncode = 
+                    Encode.object
+                        [ ("videoId", Encode.string videoId)
+                        , ("youtube_id", Encode.string (String.fromInt id))]
+            in
+            ({model | youtube_id = id}, Api.youtubeVideo youtubeEncode)
         ShareComplete (Ok ok) ->
             ({model | shareCode = ok.data}, Cmd.none)
         ShareComplete (Err err) ->
@@ -757,7 +766,6 @@ appContentsItem idx item model=
                 ) 
 
     in
-    -- <i class="fas fa-dumbbell"></i>
     div [ class "m_to_mediabox2" ]
         [   
             div [ class "m_to_yf_boxtop" ]
@@ -784,12 +792,8 @@ appContentsItem idx item model=
                 div [class"m_to_video"][
                     div ([class "thumbTest_m"
                     , style "position" 
-                        ( if model.video_id == (case youtube of 
-                            Just a ->
-                                a
-                            Nothing ->
-                                "" 
-                            ) then "absolute" else ""
+                        ( if model.youtube_id == item.id
+                            then "absolute" else ""
                         )
                     ]
                     )[
@@ -805,11 +809,12 @@ appContentsItem idx item model=
                                     ), idx)
                         else
                             YoutubeVideoCall (
-                                case youtube of 
+                                (case youtube of 
                                     Just a ->
                                         a
                                     Nothing ->
                                         ""
+                                ), item.id
                             )
                         )
                         ] [
@@ -817,22 +822,11 @@ appContentsItem idx item model=
                 ],
                 div [id ("myElement" ++ String.fromInt(idx)) ]  [] ] 
                 , div [id 
-                    ("playerHere" ++ 
-                        (
-                            case youtube of 
-                                Just a ->
-                                    a
-                                Nothing ->
-                                    ""
-                        )
+                    ("playerHere" ++ (String.fromInt item.id )
                     )
                 , style "height" 
-                        ( if model.video_id == (case youtube of 
-                            Just a ->
-                                a
-                            Nothing ->
-                                "" 
-                            ) then "270px" else "0"
+                        ( if  model.youtube_id == item.id
+                             then "270px" else "0"
                         )
                 ][]
                 ]
@@ -982,12 +976,7 @@ detailItem item model =
                         div ([class "thumbTest"])[  
                             div [class "clickThis"
                             , style "display" 
-                            ( if model.video_id == (case youtube of 
-                                Just a ->
-                                    a
-                                Nothing ->
-                                    "" 
-                                ) then "none" else ""
+                            ( if item.id == model.youtube_id then "none" else ""
                             )
                             , onClick 
                                 (if item.link_code == "10" then
@@ -1000,11 +989,12 @@ detailItem item model =
                                             ), item.id)
                                 else
                                     YoutubeVideoCall (
-                                        case youtube of 
+                                        (case youtube of 
                                             Just a ->
                                                 a
                                             Nothing ->
                                                 ""
+                                        ), item.id
                                     )
                                 )
                             ] [
@@ -1022,12 +1012,12 @@ detailItem item model =
                             div [id ("myElement" ++ String.fromInt(item.id)) ]  [] 
                             , div [id 
                                 ("playerHere" ++ 
-                                    (
-                                        case youtube of 
-                                            Just a ->
-                                                a
-                                            Nothing ->
-                                                ""
+                                    ( String.fromInt item.id
+                                        -- case youtube of 
+                                        --     Just a ->
+                                        --         a
+                                        --     Nothing ->
+                                        --         ""
                                     )
                                 )
                             , class "ytplayerStyle"

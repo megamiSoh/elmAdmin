@@ -630,19 +630,20 @@ app.ports.valueReset.subscribe(function (id) {
 })
 
 app.ports.youtubeVideo.subscribe(function (videoId) {
-  app.ports.hideThum.send(videoId)
+  var decodeValue = JSON.stringify(videoId)
+  // app.ports.hideThum.send(videoId)
   var iframes = document.querySelectorAll('iframe');
     for (var i = 0; i < iframes.length; i++) {
         iframes[i].parentNode.removeChild(iframes[i]);
     }
   var innerDiv = document.createElement('div');
   innerDiv.id = 'player';
-  document.getElementById("playerHere" + videoId).appendChild(innerDiv)
+  document.getElementById("playerHere" + videoId.youtube_id).appendChild(innerDiv)
   var player;
     player = new YT.Player('player', {
       height: '100%',
       width: '100%',
-      videoId: videoId,
+      videoId: videoId.videoId,
       events: {
         'onReady': onPlayerReady,
       }
@@ -656,7 +657,7 @@ app.ports.youtubeVideo.subscribe(function (videoId) {
 
   document.addEventListener('touchmove', function(e)
 {
-  var dv = document.getElementById("playerHere" + videoId)
+  var dv = document.getElementById("playerHere" + videoId.youtube_id)
   var st = document.getElementById("searchHeight").scrollTop
   if ((dv.offsetTop + dv.offsetHeight) <= st ) {
     player.stopVideo();
