@@ -1769,8 +1769,14 @@ selectedItem model =
         [ div [class "makeExercise_paperWeight_slideContainer"][
             div [class "selectedItem_container_selectedItem", style "left" model.slideWidth]
         [div [class " paperweightSelectedItem_container"]
-        [
-            div[class "paperweightSelectedItem_first "]
+        [ div [class "paperweightSelectedItem_third"]
+        [ if model.askDetail.is_ing then
+            div [class "button is-link" , onClick (GoVideo model.askDetail.pairing)][text "재생하기"]
+        else 
+            div [class "button is-info", onClick (OpenSlide "first")][text "결제하기"]
+            , div [class "button is-danger", onClick (CloseTrial 0 0)][text "닫기"]
+        ]
+        , div[class "paperweightSelectedItem_first "]
              [ div [class ("detailExercise_web " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ model.askDetail.thumbnail ++") ") , onClick (GoVideo model.askDetail.pairing)][]
             , div [id "myElement"][]
             , div [class "samplevideo_text"] [text model.is_ing]
@@ -1793,16 +1799,8 @@ selectedItem model =
             ]
         ]
         ]
-        , div [class "paperweightSelectedItem_third"]
-        [ if model.askDetail.is_ing then
-            div [class "button is-link" , onClick (GoVideo model.askDetail.pairing)][text "재생하기"]
-        else 
-            div [class "button is-info", onClick (OpenSlide "first")][text "결제하기"]
-            , div [class "button is-danger", onClick (CloseTrial 0 0)][text "닫기"]
         ]
-        
-        ]
-        , yp_price_slide model.yf_price Yf_price_Msg "닫기"]
+        , yp_price_slide model.yf_price Yf_price_Msg "돌아가기"]
         ]
     ]
 

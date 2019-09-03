@@ -88,11 +88,7 @@ init session mobile=
         , yf_price = yf_price
         }
        , Cmd.batch[scrollToTop NoOp
-       ,
-    --    if Session.viewer session == Nothing then
-    --    Cmd.none
-    --    else
-         Cmd.map Yf_price_Msg yf_price_msg
+       , Cmd.map Yf_price_Msg yf_price_msg
         -- , Api.get Check Endpoint.sessionCheck (Session.cred session) (Decoder.sessionCheck SessionCheck)
         , Api.progressCalcuration ()
         , bannerApi session True BannerComplete
@@ -335,14 +331,16 @@ webOrApp model =
             , div [class "bottom_bannerImg"](List.map (\x ->  banner x "web_bannerimg_container") model.horizontal)
             , P.viewFooter
             ]
-        , div [class "yp_price_container", style "display" (if model.yourfitPriceOpen then "flex" else "none")][
+        , div [class "paperweightLayer", style "display" (if model.yourfitPriceOpen then "flex" else "none")][
+            div [class "makeExercise_paperWeight_slideContainer"][
             yp_price_list model.yf_price Yf_price_Msg 
+        ]
         ]
         ]
         
 
 yp_price_list model msg = 
-    div [class "yp_price_layer"][
+    div [class "yp_price_slide_layer"][
     div [class "button yf_price_top_btn is-danger", onClick OpenPop][text "닫기"]
     , YP.weblayout model
         |> Html.map msg
