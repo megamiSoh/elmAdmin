@@ -1220,8 +1220,8 @@ padding: 10px;
   display: flex;
 }
 
-.m_to_menubox div
-{width: 20%;
+.m_to_menubox li
+{width: 32%;
  /* font-size:2.5rem; */
  padding:.2rem;
 margin-top: 0rem;

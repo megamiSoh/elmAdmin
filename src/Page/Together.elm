@@ -567,7 +567,11 @@ update msg model =
         GetData (Err err) ->
             ({model | loading = False}, Cmd.none)
         IsActive title ->
-            ({model | isActive = title, page = 1} , webDataEncoder model.page model.per_page model.session title)
+            if model.check then
+                ({model | isActive = title, page = 1} ,dataEncoder 1 2 model.session title)
+            else
+                ({model | isActive = title, page = 1} , webDataEncoder model.page model.per_page model.session title)
+            
         CheckDevice str ->
            let 
                 result =
@@ -657,7 +661,7 @@ app model =
             need2loginAppDetailRoute Route.Together
             else
             div [  scrollEvent ScrollEvent, class "scrollHegiht", id "searchHeight"] [
-                -- appTab model,
+                appTab model,
                 appStartBtn,
                 div [class "togetherscrollContent" ] (List.indexedMap (
                         \idx x -> appContentsItem idx x model ) model.appData )
@@ -671,47 +675,42 @@ app model =
         ]
     ]
 
-appTab model = 
-        div [ class "m_to_menubox" ]
-                  [ div [ classList [
-                    ("m_together_yf_active" , model.isActive == "All")
-                ], onClick (IsActive "All") ] 
-                [ i [class "fab fa-amilia m_to_menubox_icon" ]
-                    [], text "전체" 
-                ]
-            , div [ classList [
-                    ("m_together_yf_active" , model.isActive == "people")
-                ], onClick (IsActive "people") ] 
-                [ i [class "fas fa-users m_to_menubox_icon" ]
-                    [], text "피플" 
-                ]
-            , div [ classList [
-                    ("m_together_yf_active" , model.isActive == "recipe")
-                ], onClick (IsActive "recipe") ] 
-                [ i [class "fas fa-utensils m_to_menubox_icon" ]
-                    [], text "레시피" 
-                ]
-            , div [ classList [
-                    ("m_together_yf_active" , model.isActive == "news")
-                ], onClick (IsActive "news") ] 
-                [ i [class "fas fa-file-alt m_to_menubox_icon" ]
-                    [], text "뉴스" 
-                ]
-            , div [ classList [
-                    ("m_together_yf_active" , model.isActive == "fitness")
-                ], onClick (IsActive "fitness") ] 
-                [ i [class "fas fa-dumbbell m_to_menubox_icon" ]
-                    [], text "피트니스" 
-                ]
-            ]
 
+apptabItem model item = 
+    li [ classList [
+                    ("m_together_yf_active" , model.isActive == item.code)
+                ], onClick (IsActive item.code ) ] 
+                [ i [class ("m_to_menubox_icon" ++ 
+                (
+                    case item.name of
+                        "전체" ->
+                            " fab fa-amilia"
+                        "피플" ->
+                            " fas fa-users"
+                        "레시피" ->
+                            " fas fa-utensils"
+                        "피트니스" ->
+                             " fas fa-dumbbell"
+                        _ ->
+                            ""
+                )
+                ) ]       
+                    [],  text item.name
+                ]
+
+appTab model = 
+    div [  ]
+        [  ul [ class "m_to_menubox", style "width" "100%" ] 
+              ( apptabItem model model.all :: List.map (\x -> apptabItem model x) model.shareCode )
+            
+        ]
             
 
 appStartBtn = 
     div [ class "m_to_mediabox" ]
         [ div [ class "media-content m_to_yf_content" ]
             [ 
-                text "내가 만든 운동을 공유하는 공간입니다."
+                -- text "내가 만든 운동을 공유하는 공간입니다."
                 -- text "운동, 다이어트, 식단, 일상에 대한 대화를 나눠요." 
             -- , p []
             --     [ a [ class "button is-dark m_to_edit_btn", Route.href Route.TogetherW ]
@@ -888,8 +887,8 @@ nocontentsBody model=
                 [ img [ src "image/takeimage.png", alt "takeimage" ]
                 []
                 ],
-                   h1 [ class "to_yf_h2" ]
-                   [ text "내가 만든 운동을 공유하는 공간입니다." ] ,
+                --    h1 [ class "to_yf_h2" ]
+                --    [ text "내가 만든 운동을 공유하는 공간입니다." ] ,
                 div [class "noResult"] [text "게시물이 없습니다."]
             ]
         
@@ -903,9 +902,9 @@ contentsBody model=
                 [ div [ class "media-content together_yf_content"]
                 [ img [ src "image/takeimage.png", alt "takeimage" ]
                 []
-                ],
-                   h1 [ class "to_yf_h2" ]
-                   [ text "내가 만든 운동을 공유하는 공간입니다." ]
+                ]
+                --   , h1 [ class "to_yf_h2" ]
+                --    [ text "내가 만든 운동을 공유하는 공간입니다." ]
                 ]
             , div [] [
                 if model.showDetail then
