@@ -20,8 +20,8 @@ if (agent.indexOf("msie") != -1) {
 
 
 
-// const url ='http://13.209.49.169:4000/api/v1/'
-const url = 'https://api.yfit.co.kr/api/v1/'
+const url ='http://13.209.49.169:4000/api/v1/'
+// const url = 'https://api.yfit.co.kr/api/v1/'
 var filter = "win16|win32|win64|mac|macintel"; 
 
 if (filter.indexOf( navigator.platform.toLowerCase() ) > 0) {
