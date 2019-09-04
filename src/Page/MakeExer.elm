@@ -13,6 +13,8 @@ import Http as Http exposing(..)
 import Api as Api
 import Api.Endpoint as Endpoint
 import Api.Decoder as Decoder
+import Page.YourFitPrice  as YP exposing (Msg (..))
+
 type alias Model = 
     { session : Session
     , checkDevice : String
@@ -57,6 +59,11 @@ type alias Model =
     , month : String
     , day : String
     , dateValidate : Bool
+    , zindex : String
+    , is_ing : String
+    , yf_price : YP.Model
+    , yourfitPriceOpen : Bool
+    , slideWidth : String
     }
 type alias Format = 
     { ask_id : Int
@@ -77,7 +84,9 @@ type alias AskDetail =
     , exercise_part_name : String
     , thumbnail : String
     , title : String
-    , is_buy: Bool }
+    , is_ing: Bool 
+    , pairing : List Pairing
+    }
 
 
 type alias AskDetailItem = 
@@ -86,6 +95,11 @@ type alias AskDetailItem =
     , sort : Int
     , title : String
     , value : Int }
+
+type alias Pairing = 
+    { file : String
+    , image : String
+    , title : String }
 
 type alias AskExerData = 
     { data : List AskExer }
@@ -99,7 +113,7 @@ type alias AskExer =
     , thembnail :  String
     , title :  String 
     , ask_no : Int
-    , is_buy : Bool}
+    , is_ing : Bool}
 
 type alias ScreenInfo = 
     { scrollHeight : Int
@@ -199,7 +213,7 @@ type alias AskBirthData =
 
 type alias AskBirth =   
     { content : String
-    , default : String
+    , default : Maybe String
     , name : String }
 
 bodyEncode : Int -> Int -> String -> Session -> Cmd Msg
@@ -260,6 +274,8 @@ init session mobile =
             { page = 1
             , per_page = 10
             , title = ""}
+        ( yf_price, yf_price_msg ) = 
+            YP.init session mobile
     in
     (
         { session = session
@@ -347,26 +363,34 @@ init session mobile =
                 , exercise_part_name = ""
                 , thumbnail = ""
                 , title = ""
-                , is_buy = False }
+                , is_ing = False 
+                , pairing = []}
         , errType = ""
         , productId = 0
         , trialId = ""
         , trialNo = ""
         , birthData = 
             { content = ""
-            , default = ""
+            , default = Nothing
             , name = ""}
         , year = ""
         , month = ""
         , day = ""
         , birthDay = ""
         , dateValidate = False
+        , zindex = ""
+        , is_ing = ""
+        , yf_price = yf_price
+        , yourfitPriceOpen = False
+        , slideWidth = "0"
         }, 
         Cmd.batch 
         [ bodyEncode 1 10 "" session
         , Api.removeJw ()
         , scrollToTop NoOp
         , askExerData session 
+        , Api.hamburgerShut ()
+        , Cmd.map Yf_price_Msg yf_price_msg
         ]
     )
 
@@ -398,11 +422,15 @@ type Msg
     | AskRecommendComplete (Result Http.Error Decoder.Success)
     | CalcurationComplete Encode.Value
     | AskDetailMsg (Result Http.Error AskDetailData)
-    | GoProduct Int
+    | GoVideo (List Pairing)
     | CompleteProductWeekRegist (Result Http.Error Decoder.Success)
     | AskBirthComplete (Result Http.Error AskBirthData)
     | BirthInput String String
     | DateValidate Encode.Value
+    | OpenPop
+    | Yf_price_Msg YP.Msg
+    | OpenSlide String
+
 
 toSession : Model -> Session
 toSession model =
@@ -432,6 +460,7 @@ subscriptions model=
         , Api.progressComplete ProgressComplete
         , Api.calcurationComplete CalcurationComplete
         , Api.dateValidResult DateValidate
+        , Sub.map Yf_price_Msg (YP.subscriptions model.yf_price)
     ]
 
 onLoad : msg -> Attribute msg
@@ -466,29 +495,33 @@ indexItem idx item =
             , id = 0 }
 
 
-goProductBody : Int -> Session -> Cmd Msg
-goProductBody id session =
-    let
-        body = 
-            Encode.object
-                [ ("exercise_id", Encode.int id) ]
-                    |> Http.jsonBody
-    in
-    Api.post Endpoint.productWeek (Session.cred session) CompleteProductWeekRegist body Decoder.resultD
-
-
-
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        OpenSlide direction ->
+            case direction of
+                "first" ->
+                    ({model | slideWidth = "-100%"}, Cmd.none)
+                "second" ->
+                    ({model | slideWidth = "0"}, Cmd.none)
+                _ ->
+                    (model, Cmd.none)
+        Yf_price_Msg ypMsg ->
+            YP.update ypMsg model.yf_price
+                |> (\( data, cmd ) ->
+                        ( {model | yf_price = data}
+                        , Cmd.map Yf_price_Msg cmd
+                        )
+                   )
+
+                |> (\( newModel, cmd ) ->
+                        (newModel, cmd)
+                   )
+        OpenPop ->
+             ({model | yourfitPriceOpen = not model.yourfitPriceOpen}, Cmd.none)
         DateValidate dateValue ->
             case Decode.decodeValue Decode.bool dateValue of
                 Ok ok ->
-                    let _ = Debug.log "ok" ok
-                    in
-
                     ({model | dateValidate = ok}, Cmd.none)
                 Err err ->
                     (model, Cmd.none)
@@ -519,8 +552,12 @@ update msg model =
                         _ ->
                             (model, Cmd.none)
         AskBirthComplete (Ok ok) ->
-            ({model | birthData = ok.data, year = String.dropRight 6 ok.data.default, day = String.dropLeft 8 ok.data.default, month = String.dropLeft 5 (String.dropRight 3 ok.data.default), birthDay = ok.data.default}, 
-            Api.dateValidate(Encode.string (String.dropRight 6 ok.data.default ++ "," ++ String.dropLeft 5 (String.dropRight 3 ok.data.default) ++ "," ++ String.dropLeft 8 ok.data.default)))
+            case ok.data.default of
+                Just d ->
+                    ({model | birthData = ok.data, year = String.dropRight 6 d, day = String.dropLeft 8 d, month = String.dropLeft 5 (String.dropRight 3 d), birthDay = d}, 
+                    Api.dateValidate(Encode.string (String.dropRight 6 d ++ "," ++ String.dropLeft 5 (String.dropRight 3 d) ++ "," ++ String.dropLeft 8 d)))
+                Nothing ->
+                    ({model | birthData = ok.data}, Cmd.none)
         AskBirthComplete (Err err) ->  
             (model, Cmd.none)
         CompleteProductWeekRegist (Ok ok) ->
@@ -533,10 +570,22 @@ update msg model =
             in  
             ({model | errType = "CompleteProductWeekRegist"}, Cmd.batch[(Session.changeInterCeptor (Just serverErrors) model.session)
             ])
-        GoProduct id ->
-            ({model | productId = id}, goProductBody id model.session)
+        GoVideo pairing ->
+            let
+                videoList = 
+                    Encode.object 
+                        [("pairing", (Encode.list videoEncode) pairing) ]
+
+                videoEncode p=
+                    Encode.object
+                        [ ("file", Encode.string p.file)
+                        , ("image", Encode.string p.image)
+                        , ("title", Encode.string p.title)
+                        ]
+            in
+             ({model | zindex = "zindex"}, Api.videoData videoList)
         AskDetailMsg (Ok ok) ->
-            ({model | askDetail = ok.data}, Cmd.none)
+            ({model | askDetail = ok.data, is_ing = if ok.data.is_ing then "" else "위 영상은 문진운동 미리보기 영상입니다. 결제 후 운동영상을 시청해주세요"}, Cmd.none)
         AskDetailMsg (Err err) ->
             let
                 serverErrors =
@@ -587,9 +636,11 @@ update msg model =
                 format num = String.fromInt num
             in
             if no == 0 then
-            ({model | trialShow = not model.trialShow}, Cmd.none)
+            ({model | trialShow = not model.trialShow, zindex = ""},
+             Api.videoData (Encode.string "")
+            )
             else
-            ({model | trialShow = not model.trialShow, trialId = format id, trialNo = format no}, Api.get AskDetailMsg (Endpoint.askdetail (format no) (format id)) (Session.cred model.session) (Decoder.askDetailData AskDetailData AskDetail AskDetailItem))
+            ({model | trialShow = not model.trialShow, trialId = format id, trialNo = format no}, Api.get AskDetailMsg (Endpoint.askdetail (format no) (format id)) (Session.cred model.session) (Decoder.askDetailData AskDetailData AskDetail AskDetailItem Pairing))
         ProgressComplete complete ->
             ( {model | categoryPaperWeight = "paperweightResult"}, 
              Api.get AskResultComplete Endpoint.askResult (Session.cred model.session ) (Decoder.askResultData AskResultData AskResult AskResultResult AskResultDetail) )
@@ -758,11 +809,8 @@ update msg model =
             ({model | session = session}
             , 
             case model.errType of
-                "CompleteProductWeekRegist" ->
-                    goProductBody model.productId session
-            
                 "AskDetailMsg" ->
-                    Api.get AskDetailMsg (Endpoint.askdetail model.trialNo model.trialId) (Session.cred session) (Decoder.askDetailData AskDetailData AskDetail AskDetailItem)
+                    Api.get AskDetailMsg (Endpoint.askdetail model.trialNo model.trialId) (Session.cred session) (Decoder.askDetailData AskDetailData AskDetail AskDetailItem Pairing)
                 "AskRecommendComplete" ->
                     Api.post Endpoint.askRecommend (Session.cred session) AskRecommendComplete Http.emptyBody Decoder.resultD
                 "GetListComplete" ->
@@ -906,6 +954,9 @@ view model =
                 , paperweightStart model
                 , selectedItem model
                 , resetLayer "yf_popup" model
+                , div [class "yp_price_container", style "display" (if model.yourfitPriceOpen then "flex" else "none")][
+                    yp_price_list model.yf_price Yf_price_Msg "닫기"
+                ]
             ]
             }
             
@@ -945,9 +996,16 @@ app model =
     ][
         activeTab model
         , appStartBox
-        , listTitle
-            ,div [] [
-                div[](List.map appItemContent model.newList) ,
+        , div [ class "m_mj_box_title" ]
+        [ h1 [ class "m_make_yf_h2" ]
+            [ text "맞춤운동 리스트" ]
+        ]
+            ,div [class "yf_noResult_make"] [
+                if List.isEmpty model.newList then
+                div [][text "맞춤운동이 없습니다."]
+                else 
+                div[](List.map appItemContent model.newList)
+                ,
                 if model.infiniteLoading then
                     div [class "loadingPosition"] [
                     infiniteSpinner
@@ -959,37 +1017,57 @@ app model =
 
 appStartBox : Html Msg
 appStartBox = 
-    div [ class "make_m_yf_box" ]
-        [ h1 [ class "m_make_yf_h1" ]
-            [ text "하나뿐인 나만의 운동을 만들어보세요!" ]
-        , a [ class "button is-dark m_make_yf_darkbut", Route.href Route.Filter ]
-            [ text "시작하기" ]
-        , br []
+   div [ class "columns make_mj_box" ]
+    [ div [ class "column mj_box_img" ]
+        [ img [ src "../image/makeimage.png" ]
             []
         ]
+    , div [ class "column " ]
+        [ p [ class "mj_yf_h1" ]
+            [ text "유어핏 만들기로 나만의 운동을 만들어보세요." ]
+        , p []
+            [ text "사용자가 필터를 통해 직접 나만의 유어핏 운동을 제작합니다." ]
+        , p []
+            [ text "나에게 꼭 필요한 운동으로 개성있는 내 운동을 만들어보세요." ]
+        , a [ class "button is-primary yf_make_b", Route.href Route.Filter ]
+            [ text "시작하기" ]
+        ]
+    ]
 
-paperWeightStartApp : Model -> Html Msg
 paperWeightStartApp model = 
      div [ class "container", class "scroll", scrollEvent ScrollEvent, style "height" "85vh" ][
          activeTab model ,
-         div [ class "make_m_yf_box" ]
-        [ h1 [ class "m_make_yf_h1" ]
-            [ text "유어핏 문진을 통해서 나만의 운동을 만들어보세요!" ]
-        , div [ class "button is-dark m_make_yf_darkbut", onClick (
-            if List.isEmpty model.askExerList then
-            IsActive "paperweightStart"
-            else
-
-            IsActive "paperWeightConfirm"
-        ) ]
-            [ text "시작하기" ]
-        , br []
+   div [ class "columns make_mj_box" ]
+    [ div [ class "column mj_box_img" ]
+        [ img [ src "../image/mj_image.png" ]
             []
         ]
+    , div [ class "column " ]
+        [ p [ class "mj_yf_h1" ]
+            [ text "유어핏 문진을 통해 건강의 가치를 높혀보세요." ]
+        , p []
+            [ text "문진 결과데이터에 따라 자신만의 유어핏 운동이 제작됩니다." ]
+        , p []
+            [ text "체계적인 문진문항으로 나만의 운동을 만들어보세요." ]
+        , a [ class "button is-info yf_make_b" , Route.href Route.YP]
+            [ text "요금제 선택" ]
+        , div [ class "button is-primary yf_make_b" 
+            , onClick (
+                    if List.isEmpty model.askExerList then
+                    IsActive "paperweightStart"
+                    else
+                    IsActive "paperWeightConfirm"
+                )]
+            [ text "문진하기" ]
+        ]
+    ]
+
         , listTitle
             , if List.isEmpty model.askExerList then
                 div [class "nopaperWeightResult"] [
-                    text "문진운동이 없습니다." ]
+                    div [][text "문진운동이 없습니다. "]
+                    , div [][text "문진을 먼저 진행해 주세요."] 
+                ]
             else
                     div [class "loadingMjList", style "display" (if model.isActive == "calcuration" then "block" else "none")][
                     div [class "calculationSpinner"][]
@@ -1001,9 +1079,9 @@ paperWeightStartApp model =
     
 listTitle : Html msg
 listTitle = 
-    div [ class "m_make_box_title" ]
+    div [ class "m_mj_box_title" ]
         [ h1 [ class "m_make_yf_h2" ]
-            [ text "맞춤운동 리스트" ]
+            [ text "문진운동 리스트" ]
         ]
 
 appItemContent : ListData -> Html Msg
@@ -1040,16 +1118,14 @@ appItemContent item =
                     ]
                     ]
                 ]
-            , div [ class "button is-dark m_makeExercise_share"
-            , onClick (CheckId item.id "share")
-            ]
+            , div [ class "button is-dark m_makeExercise_share" , onClick (CheckId item.id "share") ]
                 [ i [ class "fas fa-share-square" ]
                 [], text "공유하기" 
             ]
 
-                , div [ class "button m_makeExercise_dete",onClick (DeleteConfirm item.id) ]
-                [ i [ class "far fa-trash-alt" ]
-                [], text "삭제" 
+            , div [ class "button m_makeExercise_dete",onClick (DeleteConfirm item.id) ]
+            [ i [ class "far fa-trash-alt" ]
+            [], text "삭제" 
             ]
             ]
 
@@ -1063,9 +1139,9 @@ bodyItem item=
     in
     div [ class "make_box_card_wrap" ]
 
-    [div [ class "make_videoboxwrap cursor", onClick (CheckId item.id "")]
+    [div [ class "make_videoboxwrap cursor"]
 
-      [div [class"make_overlay"]
+      [div [class"make_overlay", onClick (CheckId item.id "")]
      [i [ class "fas fa-play overlay_makeplay" ][]],
 
          div [ class "video_image" , onClick (CheckId item.id "")]
@@ -1094,11 +1170,11 @@ bodyItem item=
                     [ div  [ class "button is-dark darkbtn make_share"
                     , onClick (CheckId item.id "share") ]
                         [ i [ class "fas fa-share-square" ]
-                            [] , text "공유" 
+                            [text "공유" ] 
                         ]
                     , div [ class "button" ,onClick (DeleteConfirm item.id)]
                         [ i [ class "far fa-trash-alt" ]
-                            [] , text "삭제" 
+                            [text "삭제"]   
                         ]
                     ]
                 ]
@@ -1110,19 +1186,24 @@ bodyItem item=
 
 bodyContentTitle : Html msg
 bodyContentTitle =
-          div [ class "make_yf_box" ] 
-        
-                [ 
-            img [ src "image/makeimage.png", alt "makeimage" ]
-                []
-           ,
-                    h1 [ class "make_yf_h1" ]
-                [ text "하나뿐인 나만의 운동을 만들어보세요!" ]
-             , a [ class "button is-dark make_yf_darkbut", Route.href Route.Filter ]
-                [ text "시작하기" ]
-            , br []
-                []
-            ]
+   div [ class "columns make_mj_box" ]
+    [ div [ class "column mj_box_img" ]
+        [ img [ src "../image/makeimage.png" ]
+            []
+        ]
+    , div [ class "column " ]
+        [ p [ class "mj_yf_h1" ]
+            [ text "유어핏 만들기로 나만의 운동을 만들어보세요." ]
+        , p []
+            [ text "사용자가 필터를 통해 직접 나만의 유어핏 운동을 제작합니다." ]
+        , p []
+            [ text "나에게 꼭 필요한 운동으로 개성있는 내 운동을 만들어보세요." ]
+        -- , a [ class "button is-link yf_make_b" ]
+        --     [ text "요금제 선택" ]
+        , a [ class "button is-primary yf_make_b", Route.href Route.Filter ]
+            [ text "시작하기" ]
+        ]
+    ]
 
 appdeltelayer: Model -> Html Msg
 appdeltelayer model =
@@ -1158,24 +1239,31 @@ deltelayer model =
 
 paperWeight : Model -> Html Msg
 paperWeight model = 
-    div [ class "make_yf_box" ] 
-        
-                [ 
-            img [ src "image/mj_image.png", alt "makeimage" ]
-                []
-           ,
-                    h1 [ class "make_yf_h1" ]
-                [ text "유어핏 문진을 통해서 나만의 운동을 만들어보세요!" ]
-             , div [ class "button is-dark make_yf_darkbut",  onClick (
+   div [ class "columns make_mj_box" ]
+    [ div [ class "column mj_box_img" ]
+        [ img [ src "../image/mj_image.png" ]
+            []
+        ]
+    , div [ class "column " ]
+        [ p [ class "mj_yf_h1" ]
+            [ text "유어핏 문진을 통해 건강의 가치를 높혀보세요." ]
+        , p []
+            [ text "문진 결과데이터에 따라 자신만의 유어핏 운동이 제작됩니다." ]
+        , p []
+            [ text "체계적인 문진문항으로 나만의 운동을 만들어보세요." ]
+        , div [ class "button is-info yf_make_b" , onClick OpenPop]
+            [ text "요금제 선택" ]
+        , div [ class "button is-primary yf_make_b" 
+                , onClick (
                     if List.isEmpty model.askExerList then
                     IsActive "paperweightStart"
                     else
                     IsActive "paperWeightConfirm"
                 )]
-                [ text "시작하기" ]
-            , br []
-                []
-            ]
+            [ text "문진하기" ]
+        ]
+    ]
+
 
 activeTab : Model -> Html Msg
 activeTab model =
@@ -1208,7 +1296,7 @@ paperWeightBody model =
                         ]
                     , if List.isEmpty model.askExerList then
                         div [class "nopaperWeightResult"] [
-                            text "문진운동이 없습니다."
+                            text "문진운동이 없습니다. 문진을 먼저 진행 해 주세요."
                         ]
                     else
                         if model.isActive == "calcuration" then
@@ -1234,7 +1322,7 @@ paperweightStart model =
     [ 
     case model.categoryPaperWeight of
         "sex" ->
-            div [class "paperweightStartItem" ]
+            div [class "paperweightStartItem_layer_pop" ]
             [ div [ class "mj_box_title" ]
             [ h1 [ class "mj_yf_title" ]
                 [ text ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " /3 )") ]   
@@ -1244,7 +1332,7 @@ paperweightStart model =
             ]
     
         "exerpoint" ->
-            div [class "paperweightStartItem" ]
+            div [class "paperweightStartItem_layer_pop" ]
             [ div [ class "mj_box_title" ]
             [ h1 [ class "mj_yf_title" ]
                 [ text ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 3 )") ]
@@ -1253,7 +1341,7 @@ paperweightStart model =
              , stopPaperWeight
             ]
         "birth" ->
-            div [class "paperweightStartItem" ]
+            div [class "paperweightStartItem_layer_pop" ]
             [ div [ class "mj_box_title" ]
             [ h1 [ class "mj_yf_title" ]
                 [ text ("문진 맞춤 운동 ( "++ String.fromInt (model.askIndex) ++  " / 3 )") ]
@@ -1262,7 +1350,7 @@ paperweightStart model =
              , stopPaperWeight
             ]
         "etcStart" ->
-            div [class "paperweightStartItem" ]
+            div [class "paperweightStartItem_layer_pop" ]
             [ div [ class "mj_box_title" ]
             [ h1 [ class "mj_yf_title" ]
                 [ text ("문진 맞춤 운동 ( "++ String.fromInt (model.idxSearch) ++  " / " ++ String.fromInt (List.length model.askSearchData )++ " )") ]
@@ -1271,7 +1359,7 @@ paperweightStart model =
             , stopPaperWeight
             ]
         "completePaperWeight" ->
-            div [class "paperweightStartItem" ]
+            div [class "paperweightStartItem_layer_pop" ]
             [ div [ class "mj_box_title" ]
             [ h1 [ class "mj_yf_title" ]
                 [ text "문진 결과" ]
@@ -1293,7 +1381,7 @@ paperweightStart model =
                 [ text "60%" ]
             ]
         "paperweightResult" ->
-            div [class "paperweightStartItem" ]
+            div [class "paperweightStartItem_layer_pop" ]
             [ div [ class "mj_box_title" ]
             [ h1 [ class "mj_yf_title" ]
                 [ text "문진 맞춤 운동결과" ]
@@ -1478,16 +1566,7 @@ etcAsk model textStyle moveBtn boxStyle=
                 [ text "다음" ]
             ]
         ]
--- etcExample : Int -> Model -> 
--- etcExample idx model item =
---                 label [ classList 
---                 [(("answer_btn"++(String.fromInt (idx + 1))), True)
---                 , ("sexSelected" , model.askSelected == item.is_yes)
---                 ] 
---                 , onClick (SelectedAnswer "sex" (if item.is_yes == True then "true" else "false"))
---                  ]
---                 [  text item.text
---                 ]
+
 paperweightSex : Model -> String -> String -> String -> Html Msg
 paperweightSex model textStyle moveBtn boxStyle=
     div [ class boxStyle ]
@@ -1537,7 +1616,7 @@ paperweightBirth model textStyle moveBtn boxStyle birthStyle=
             [ div [ class "button  mj_before" , onClick (SelectedAnswer "sex" (if model.askSelected == True then "true" else "false"))]
                 [ text "이전" ]
             , 
-            if String.isEmpty model.year  || String.isEmpty model.month || String.isEmpty model.day || not model.dateValidate then
+            if String.isEmpty model.year  || String.isEmpty model.month || String.isEmpty model.day || model.dateValidate == False then
             div [ class "button mj_next  mj_disabled" ]
                 [ text "다음" ]
             else
@@ -1580,7 +1659,7 @@ caseItem item charaterType =
 
 
 videoItem item = 
-    div [ class "yf_workoutvideoboxwrap makeExerMjboxWrap" , onClick (if item.is_buy then NoOp else (CloseTrial item.ask_no item.exercise_id))]
+    div [ class "yf_workoutvideoboxwrap makeExerMjboxWrap" , onClick (CloseTrial item.ask_no item.exercise_id)]
         [ div [class "list_overlay_mj"]
         [i [ class "fas fa-play overlayplay_list" ][]],
 
@@ -1601,13 +1680,10 @@ videoItem item =
                     []
                     , text " "
                     , text item.duration ]
-            , div [class "is_buy", style "display" (if item.is_buy then "flex" else "none")][
-                text (if item.is_buy then "구입완료" else "")
-            ]
         ]
 
 videoItemApp item = 
-    div [ class "mjList_container mj_wrap", onClick (if item.is_buy then NoOp else (CloseTrial item.ask_no item.exercise_id))]
+    div [ class "mjList_container mj_wrap", onClick (CloseTrial item.ask_no item.exercise_id)]
         [div [class "mj_wrap"][
                  div [ class "yf_workoutvideo_image" ]
                 [ 
@@ -1629,15 +1705,13 @@ videoItemApp item =
                     , text " "
                     , text item.duration
                     ]
-            , div [class "is_buy_m", style "display" (if item.is_buy then "flex" else "none")][
-            text (if item.is_buy then "구입완료" else "")
-            ]
             ]
         ]
     
 selectedItemApp model = 
     div [class ("container myaccountStyle " ++ (if model.trialShow then "account" else "") ++ " scrollStyle ")
-    , style "overflow-y" "scroll"
+    -- , style "overflow-y" "scroll"
+    -- , id (if model.trialShow then "noScrInput" else "")
         ]
         [
             appHeaderRDetailClick  model.askDetail.title "makeExerHeader paperweightmobileFontsize" ((CloseTrial 0 0)) "fas fa-times"
@@ -1645,12 +1719,14 @@ selectedItemApp model =
         div [class "paperweightSelectedItem_containerApp"]
         [
             div[class "paperweightSelectedItem_first_App"][
-            img [src model.askDetail.thumbnail ][]
+            p [ class "m_yf_container" ]
+            [ 
+            div [class ("appimagethumb " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ model.askDetail.thumbnail ++") ") , onClick (GoVideo model.askDetail.pairing)][]
+            , div [id "myElement"][]
+            ]
             , div [class "askDetailFirstContainer_app"]
             [ div [class "askDetailFirstContainer_App_Text"]
                 [ 
-                --     div [class "mj_title"][text model.askDetail.title]
-                -- , 
                 div [class "mj_title_part_app"][text (model.askDetail.exercise_part_name ++ " - " ++ model.askDetail.difficulty_name)
                 ]
                 , span [class "mj_title_duration"]
@@ -1658,6 +1734,7 @@ selectedItemApp model =
                 , text model.askDetail.duration
                 ]
             ]
+            , div [class "samplevideo_text", style "z-index" "0"] [text model.is_ing]
             , ul [class "mj_description"]
              (List.map askDetailItems model.askDetail.exercise_items)
              , div [class "paperweightSelectedItem_second_app"][
@@ -1666,7 +1743,15 @@ selectedItemApp model =
                 text model.askDetail.description
             ]
         ]
-        , div [class "button is-link freeTrial", onClick (GoProduct model.askDetail.exercise_id)][text "1주일 무료 체험"]
+        , if model.askDetail.is_ing then
+        div [class "button is-link freeTrial" , onClick (GoVideo model.askDetail.pairing)
+        ][text "재생"]
+        else
+        a [class "button is-link freeTrial", Route.href Route.YP
+        ][text  "결제하기"]
+            
+        
+            
             ]
         ]
         
@@ -1679,12 +1764,21 @@ selectedItem model =
     div [class "paperweightLayer", style "display" 
         (if model.trialShow then "flex" else "none")
         ]
-        [
-        div [class "paperweightStartItem paperweightSelectedItem_container"]
-        [
-            div[class "paperweightSelectedItem_first"][
-            img [src model.askDetail.thumbnail ][]
-            , div []
+        [ div [class "makeExercise_paperWeight_slideContainer"][
+            div [class "selectedItem_container_selectedItem", style "left" model.slideWidth]
+        [div [class " paperweightSelectedItem_container"]
+        [ div [class "paperweightSelectedItem_third"]
+        [ if model.askDetail.is_ing then
+            div [class "button is-link" , onClick (GoVideo model.askDetail.pairing)][text "재생하기"]
+        else 
+            div [class "button is-info", onClick (OpenSlide "first")][text "결제하기"]
+            , div [class "button is-danger", onClick (CloseTrial 0 0)][text "닫기"]
+        ]
+        , div[class "paperweightSelectedItem_first "]
+             [ div [class ("detailExercise_web " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ model.askDetail.thumbnail ++") ") , onClick (GoVideo model.askDetail.pairing)][]
+            , div [id "myElement"][]
+            , div [class "samplevideo_text"] [text model.is_ing]
+            , div [class "detail_info_container"]
             [ div [class "mj_title"][text model.askDetail.title
             , span [class "mj_title_part"][text (model.askDetail.exercise_part_name ++ " - " ++ model.askDetail.difficulty_name)]
             ]
@@ -1696,17 +1790,15 @@ selectedItem model =
              (List.map askDetailItems model.askDetail.exercise_items)
             
             ]
-        ]
-        , div [class "paperweightSelectedItem_second"][
+            , div [class "paperweightSelectedItem_second"][
             h3 [][text "운동설명"]
             , div [class "description"][
                 text model.askDetail.description
             ]
         ]
-        , div [class "paperweightSelectedItem_third"]
-        [ div [class "button is-link", onClick (GoProduct model.askDetail.exercise_id)][text "1주일 무료 체험"]
-        , div [class "button is-danger", onClick (CloseTrial 0 0)][text "닫기"]
         ]
+        ]
+        , yp_price_slide model.yf_price Yf_price_Msg "돌아가기"]
         ]
     ]
 
@@ -1742,3 +1834,16 @@ resetLayer layerStyle model =
     ]
     ]
 
+yp_price_list model msg btnText = 
+    div [class "yp_price_layer"][
+    div [class "button yf_price_top_btn is-danger", onClick OpenPop][text btnText]
+    , YP.weblayout model
+        |> Html.map msg
+    ]
+yp_price_slide model msg btnText = 
+    div [class "yp_price_slide_layer"][
+     div [class "button yf_price_top_btn is-danger", onClick (OpenSlide "second")][text btnText]
+    , YP.weblayout model
+        |> Html.map msg
+    
+    ]

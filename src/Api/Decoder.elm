@@ -277,7 +277,7 @@ scrInfo info =
 -- together
 webtogetherdatawrap datawrap togetherdata detail page =
     Decode.succeed datawrap
-        |> required "data" (Decode.list (webtogetherdata togetherdata detail ))
+        |> required "data" (Decode.list (webtogetherdata togetherdata detail  ))
         |> required "paginate" (paginate page)
 
 webtogetherdata togetherdata detail = 
@@ -291,6 +291,7 @@ webtogetherdata togetherdata detail =
         |> required "recommend_cnt" int
         |> optional "nickname" (Decode.map Just string) Nothing
         |> optional "profile" (Decode.map Just string) Nothing
+        |> required "share_code" string
         
 
 webdetailtogether detail = 
@@ -299,49 +300,62 @@ webdetailtogether detail =
         |> required "title" string
         |> required "thembnail" string
 
-togetherdatawrap datawrap ogetherdata detail page item pair= 
+togetherdatawrap datawrap ogetherdata detail page item pair snippet yItem = 
     Decode.succeed datawrap
-        |> required "data" (Decode.list (tdata ogetherdata detail item pair))
+        |> required "data" (Decode.list (tdata ogetherdata detail item pair snippet yItem))
         |> required "paginate" (paginate page)
 
-togetherdatalikewrap datawrap ogetherdata detail item pair= 
-    Decode.succeed datawrap
-        |> required "data" (tdata ogetherdata detail item pair)
 
-mypostDataWrap datawrap ogetherdata detail item pair= 
+        
+    
+togetherdatalikewrap datawrap ogetherdata detail item pair snippet yItem = 
     Decode.succeed datawrap
-        |> required "data" (sddata ogetherdata detail item pair)
+        |> required "data" (tdata ogetherdata detail item pair snippet yItem )
 
-sddata togetherdata detail item pair= 
+mypostDataWrap datawrap ogetherdata detail item pair snippets yItem= 
+    Decode.succeed datawrap
+        |> required "data" (sddata ogetherdata detail item pair snippets yItem)
+
+sddata togetherdata detail item pair snippets yItem = 
     Decode.succeed togetherdata
         |> optional "content" (Decode.map Just string)Nothing
-        |> optional "detail" (Decode.map Just (Decode.list (sdetailTogether detail item pair))) Nothing
+        |> optional "detail" (Decode.map Just (Decode.list (sdetailTogether detail item pair snippets yItem))) Nothing
         |> required "id" int
         |> required "inserted_at" string 
         |> required "is_delete" bool
         |> required "link_code" string
         |> required "recommend_cnt" int
         |> optional "nickname" (Decode.map Just string) Nothing
-        
+              
+
+youtubeDetailItem snippet yItem = 
+    Decode.succeed snippet 
+        |> required "items" (Decode.list (youtubeItem yItem))
+
+youtubeItem yItem = 
+    Decode.succeed yItem 
+        |> required "id" string
         
 
-sdetailTogether detail item pair= 
+sdetailTogether detail item pair snippets yItem= 
     Decode.succeed detail 
         |> required "thembnail" string
         |> optional "difficulty_name" (Decode.map Just string) Nothing
-        |> required "duration" string
-        |> required "exercise_items" (Decode.list (togetherItem item))
+        |> optional "duration" (Decode.map Just string) Nothing
+        |> optional "exercise_items" (Decode.map Just (Decode.list (togetherItem item)))Nothing
         |> optional "exercise_part_name" (Decode.map Just string) Nothing
         |> required "id" int
-        |> required "inserted_at" string
-        |> required "pairing" (Decode.list (pairing pair))
+        |> optional "inserted_at" (Decode.map Just string) Nothing
+        |> optional "pairing" (Decode.map Just (Decode.list (pairing pair)))Nothing
         |> required "title" string
+        |> optional "content" (Decode.map Just string) Nothing
+        |> optional "snippet" (Decode.map Just (youtubeDetailItem snippets yItem)) Nothing  
 
 
-tdata togetherdata detail item pair= 
+tdata togetherdata detail item pair snippets yItem = 
     Decode.succeed togetherdata
         |> optional "content" (Decode.map Just string) Nothing
-        |> optional "detail" (Decode.map Just (Decode.list (sdetailTogether detail item pair))) Nothing
+        |> optional "detail" (Decode.map Just (Decode.list (sdetailTogether detail item pair snippets yItem))) Nothing
         |> required "id" int
         |> required "inserted_at" string 
         |> required "is_delete" bool
@@ -832,7 +846,7 @@ askExerList list =
         |> required "thembnail" string
         |> required "title" string
         |> required "ask_no" int
-        |> required "is_buy" bool
+        |> required "is_ing" bool
 
 sessionCheck data = 
     Decode.succeed data
@@ -842,11 +856,11 @@ sessionCheck data =
 
 
 
-askDetailData data detail item= 
+askDetailData data detail item pair= 
     Decode.succeed data
-        |> required "data" (askDetail detail item)
+        |> required "data" (askDetail detail item pair)
 
-askDetail detail item= 
+askDetail detail item pair= 
     Decode.succeed detail 
         |> required "description" string
         |> required "difficulty_name" string
@@ -856,7 +870,8 @@ askDetail detail item=
         |> required "exercise_part_name" string
         |> required "thumbnail" string
         |> required "title" string
-        |> required "is_buy" bool
+        |> required "is_ing" bool
+        |> required "pairing" (Decode.list (detailmypaperPairing pair))
 
 askDetailItem item =
     Decode.succeed item
@@ -978,5 +993,85 @@ myaskBirthData data birth =
 myaskBirth birth =
     Decode.succeed birth
         |> required "content" string
-        |> required "default" string
+        |> required "default" (Decode.nullable string)
         |> required "name" string
+
+shareData data share= 
+    Decode.succeed data 
+        |> required "data" (Decode.list (shareType share))
+
+shareType share = 
+    Decode.succeed share
+        |> required "code" string
+        |> required "name" string
+
+
+bannerListdata data banner = 
+    Decode.succeed data
+        |> required "data" (Decode.list (bannerList banner))
+
+bannerList banner = 
+    Decode.succeed banner
+        |> required "description" string
+        |> required "id" int
+        |> required "is_link" bool
+        |> optional "link" ( Decode.map Just string ) Nothing
+        |> required "src" string
+        |> optional "target" ( Decode.map Just string ) Nothing
+        |> required "title" string
+        |> required "backcolor" ( Decode.nullable string )
+        |> required "is_vertical" bool
+
+priceData  data price = 
+    Decode.succeed data
+        |> required "data" (Decode.list (priceList price))
+
+priceList price = 
+    Decode.succeed price 
+        |> required "day_num" int
+        |> required "description" string
+        |> required "id" int
+        |> required "is_pay" bool
+        |> required "name" string
+        |> required "price" int
+
+orderData data item = 
+    Decode.succeed data
+        |> required "data" (order item)
+
+order item = 
+    Decode.succeed item 
+        |> required "amount" int
+        |> required "buyer_email" string
+        |> required "buyer_name" string
+        |> required "digital" bool
+        |> required "merchant_uid" string
+        |> required "name" string
+
+possibleToWatch data = 
+    Decode.succeed data 
+        |> required "data" bool
+
+ordersData data list page = 
+    Decode.succeed data
+        |> required "data" (Decode.list (ordersList list))
+        |> required "paginate" (orderPaginate page)
+
+ordersList list = 
+    Decode.succeed list 
+        |> required "bought_at" string
+        |> required "end_at" string
+        |> required "id" int
+        |> required "is_ing" bool
+        |> required "name" string
+        |> required "price" int
+        |> required "start_at" string
+        |> required "state" string
+
+orderPaginate page = 
+    Decode.succeed page 
+        |> optional "is_pay" (Decode.map Just bool) Nothing
+        |> required "page" int
+        |> required "per_page" int
+        |> required "total_count" int
+        |> required "user_id" int

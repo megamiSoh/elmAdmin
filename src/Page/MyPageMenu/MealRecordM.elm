@@ -510,22 +510,7 @@ update msg model =
         NoOp ->
             (model, Cmd.none)
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
-            
-            -- let _ = Debug.log "hellow" scrollHeight
-                
-            -- in
-            
-            --  if (scrollHeight - Basics.round model.scrHeight) <= offsetHeight  then
-            --     if (model.foodData.paginate.total_count // model.per_page ) + 1 >= model.page then
-            --        if List.isEmpty model.foodData.data then
-            --         (model, Api.unfocus NoOp)
-            --         else
-            --         ({model | page = 1 + model.page, offsetHeight = String.fromInt offsetHeight}, foodEncode (1 + model.page) model.per_page model.searchFoodName model.session AddFoodData) 
-            --     else
-                    (model, Api.unfocus NoOp)
-            -- else
-            --     ({model | offsetHeight = String.fromInt offsetHeight}, Cmd.batch[Api.unfocus NoOp
-            --     ])
+            (model, Api.unfocus NoOp)
         SearchFood food ->
             ({model | searchFoodName = food, page = 1}, Cmd.none)
         GetFoodData (Ok ok) ->
@@ -585,7 +570,7 @@ view model =
     }
 
 stepDetailItem meal model= 
-    div [class "background"] [
+    div [] [
         div [class ("topSearch_container " ++ (if model.detailShow then "fadeContainer" else "") ++ (
             if model.showList then " leftFade" else ""
         ))] [

@@ -77,7 +77,15 @@ module Api.Endpoint exposing
     , myPaperweightList
     , mypaperweightDetail
     , renewWeekExercise
-    , askBirth)
+    , askBirth
+    , shareCode
+    , bannerList
+    , priceData
+    , orderGo
+    , possibleToCheck
+    , orders
+    , promote
+    )
 
 import Http
 import Url.Builder exposing (QueryParameter)
@@ -367,3 +375,21 @@ renewWeekExercise =
 
 askBirth = 
     url ["front" , "ask" , "birthday"][]
+
+shareCode =
+    url ["front", "together", "share_code"][]
+
+bannerList =
+    url ["front", "home", "banners"][]
+
+priceData = 
+    url ["front", "products", "period"][]
+orderGo = 
+    url ["front", "products", "request"][]
+
+possibleToCheck = 
+    url ["front", "orders", "any_is_ing"][]
+orders= 
+    url ["front", "orders"][]
+promote = 
+    url ["front","orders", "promote"][]

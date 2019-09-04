@@ -139,7 +139,6 @@ init session mobile
         }
         , Cmd.batch[faqEncode 1 10 session
         , scrollToTop NoOp
-        , Api.mypageMenu (E.bool False)
         ]
     )
 
@@ -185,9 +184,6 @@ type Msg
     | EditComplete (Result Http.Error Decoder.Success)
     | NoOp
     | ReceiveScroll E.Value
-    | ClickRight
-    | ClickLeft
-    | GoAnotherPage
 
 toSession : Model -> Session
 toSession model =
@@ -212,14 +208,6 @@ scrollInfoDecoder =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GoAnotherPage ->
-            (model, Cmd.batch [
-                 Api.setCookie (E.int 1)
-            ])
-        ClickRight ->
-            ( model, Api.scrollRight () )
-        ClickLeft ->
-            (model , Api.scrollLeft ())
         ReceiveScroll scr ->
             case Decode.decodeValue Decode.float scr of
                 Ok ok ->
@@ -280,7 +268,7 @@ update msg model =
         GoBack whereIs ->
             case whereIs of
                 "home" ->
-                    (model, Route.pushUrl (Session.navKey model.session) Route.MyPage)
+                    (model, Route.pushUrl (Session.navKey model.session) Route.Home)
                 "write" ->
                     ({model | showWrite = True, title = "", content = ""}, Cmd.none)
                 "list" ->
@@ -398,10 +386,7 @@ view model =
     else
     { title = "YourFitExer"
     , content = 
-        div [] [
-            div[][myPageCommonHeader ClickRight ClickLeft GoAnotherPage False]
-            , web model
-        ]
+        div [] [web model]
     }
 web model = 
     div [ class "container" ]

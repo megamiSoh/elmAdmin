@@ -8692,7 +8692,7 @@ label.panel-block:hover {
 }
 
 .columns:last-child {
-  margin-bottom: -0.75rem;
+  /* margin-bottom: -0.75rem; */
 }
 
 .columns:not(:last-child) {

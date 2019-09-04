@@ -51,6 +51,7 @@ type alias Model =
     , profileFileName : Maybe String
     , canNotUpdateField : String
     , protain : Protain
+    , ableToWatch : Bool
     }
 
 type alias FileData = 
@@ -95,6 +96,9 @@ type alias BodyInfoData =
 type alias Protain = 
     { need : Maybe Int
     , recommend : Maybe Int}
+
+type alias WatchCheckData = 
+    { data : Bool }
 
 -- init : Session -> Api.Check ->(Model, Cmd Msg)
 init session mobile = 
@@ -142,12 +146,16 @@ init session mobile =
                 , nickname = Nothing
                 , username = ""
                 , profile = Nothing}
-             }}
+             }
+        , ableToWatch = False     
+        }
         , Cmd.batch
         [  Decoder.dataWRap DataWrap MyData UserData
             |> Api.get MyInfoData Endpoint.myInfo (Session.cred session) 
         , Cmd.map DatePickerMsg datePickerCmd
         , scrollToTop NoOp
+        , Api.get PossibleToWatch (Endpoint.possibleToCheck) (Session.cred session) (Decoder.possibleToWatch WatchCheckData)
+        , Api.hamburgerShut ()
         ]
     )
 
@@ -204,6 +212,7 @@ type Msg
     | DatePickerMsg DatePicker.Msg
     | DatePickerShow
     | NoOp
+    | PossibleToWatch (Result Http.Error WatchCheckData)
 
 subscriptions :Model -> Sub Msg
 subscriptions model=
@@ -265,6 +274,10 @@ bodyInfoEncode model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        PossibleToWatch (Ok ok) ->
+            ({model | ableToWatch = ok.data}, Cmd.none)
+        PossibleToWatch (Err err) ->
+            (model, Cmd.none)
         NoOp->
             (model, Cmd.none)
         DatePickerShow ->
@@ -612,7 +625,7 @@ view model =
                     , content =       
                         div [] [
                             web model
-                            , div [class "container"][
+                            , div [class "container", style "z-index" "0"][
                             div [ class "myPage_mediabox" ]
                             [ myInfo model.mydata.user ChangeNick WantChangeNickname model.wantChangeNickname ChangeGo  PwdInput ChangePwd model.notMatchPwd RePwdInput OldPwd model.nickname ChangeProfileImage 
                              (case model.profileFileName  of
@@ -623,6 +636,7 @@ view model =
                                     "")
                             model.cannotChange GoProfileImage
                             ResetProfileImg
+                            model.ableToWatch
                                         ]
                         ]
                         ]
@@ -708,8 +722,17 @@ appTopMenu model =
          ,  div [class "mypageIdContainer"]
         [ strong [] [text "닉네임"] ,
         p [] [text (justData model.mydata.user.nickname)] ]
-        
+
+
+          ,  div [class "mypageIdContainer2"]
+        [ strong [] [text "유료 서비스"] ,
+         if model.ableToWatch then
+            p[][text "유료서비스 이용중입니다"]
+         else
+            p[][text "유료서비스 이용중이 아닙니다"]
         ]
+        ]
+        
 menuBottom item = 
         a [ class "m_mypage_mypagemenu" , Route.href item.route]
         [ img [ src item.icon ]
@@ -736,30 +759,6 @@ web model=
                 ]
             ]
         ]
--- ,
---             div [ class "myPage_mediabox" ]
---             [
---                     case model.selecTab of
---                         "myInfo" ->
---                             myInfo model.mydata.user ChangeNick WantChangeNickname model.wantChangeNickname ChangeGo  PwdInput ChangePwd model.notMatchPwd RePwdInput OldPwd model.nickname ChangeProfileImage 
---                             (case model.profileFileName  of
---                                 Just a ->
---                                     a
-                            
---                                 Nothing ->
---                                     "")
---                             model.cannotChange GoProfileImage
---                             ResetProfileImg
-                    
---                         "bodyInfo" ->
---                             bodyInfo model BodyRecordsInput BodySave IsMale 
-
---                         "accountInfo" ->
---                             accountInfo AccountDelete AccountDeleteConfirm model.show
-
---                         _ ->
---                             div [] [text "컨텐츠를 불러올 수 없습니다."]
---             ]
 tabPanner model= 
         div [ class "yf_yfworkout_search_wrap" ]
         [ div [ class "tapbox" ]
@@ -808,10 +807,12 @@ menu =
             {icon = "/image/icon_stats.png", title ="나의 통계", route = Route.MyS},
             {icon = "/image/icon_list.png", title ="스크랩리스트", route = Route.MyScrap},
             {icon = "/image/icon_management.png", title ="내 게시물 관리", route= Route.MyPost},
-            {icon = "/image/icon_mj.png", title ="문진운동 리스트", route= Route.MJList},
-            {icon = "/image/icon_notice.png", title ="공지사항", route = Route.Info},
-            {icon = "/image/icon_qna.png", title ="1:1 문의", route = Route.C},
-            {icon = "/image/icon_stats.png", title ="자주하는 질문", route = Route.Faq},
+            -- {icon = "/image/icon_mj.png", title ="문진운동 리스트", route= Route.MJList},
+            -- {icon = "/image/icon_notice.png", title ="공지사항", route = Route.Info},
+            {icon = "/image/icon_cart.png", title ="최근구매내역", route= Route.MJList},
+            -- {icon = "/image/icon_notice.png", title ="공지사항", route = Route.Info},
+            -- {icon = "/image/icon_qna.png", title ="1:1 문의", route = Route.C},
+            -- {icon = "/image/icon_stats.png", title ="자주하는 질문", route = Route.Faq},
             {icon = "/image/icon_qna.png", title ="로그아웃", route = Route.Logout} 
             
             ]

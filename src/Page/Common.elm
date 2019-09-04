@@ -9,6 +9,11 @@ import Task exposing (Task)
 import Browser.Dom as Dom
 import Json.Decode as Decode
 import File exposing(File)
+
+
+
+
+
 commonHeader : String -> String -> Html msg
 commonHeader icon title =
     div [ class "titlewrap" ]
@@ -66,9 +71,9 @@ commonJustHeader icon title =
 myPageCommonHeader scrRight scrLeft another show= 
     div [ class "submenu", id "mypageMenu", style "height"  (if show then "110px" else "0") ]
         [  
-            i [ class "fas fa-caret-left scrStyle", onClick scrLeft ]
+            i [ class "fas fa-caret-left scrStyle", onClick scrLeft , style "display"  (if show then "" else "none")  ]
             [] ,
-            div [ class "haderIconWrap", id "scrollCtr", style "height"  (if show then "110px" else "0"), style "zindex" "999999999" ]
+            div [ class "haderIconWrap", id "scrollCtr", style "height"  (if show then "110px" else "0") ]
             [ 
                 
                 a [ class "headerIcons", Route.href Route.MyPage]
@@ -101,17 +106,23 @@ myPageCommonHeader scrRight scrLeft another show=
                 , p []
                     [ text "내 게시물관리" ]
                 ]
+            -- , a [ class "headerIcons", Route.href Route.MJList]
+            --     [ img [ src "../image/icon_mj.png" ]
+            --         []
+            --     , p []
+            --         [ text "문진운동" ]
+            --     ]
+            -- , a [ class "headerIcons", Route.href Route.Info]
+            --     [ img [ src "../image/icon_notice.png" ]
+            --         []
+            --     , p []
+            --         [ text "공지사항" ]
+            --     ]
             , a [ class "headerIcons", Route.href Route.MJList]
-                [ img [ src "../image/icon_mj.png" ]
+                [ img [ src "../image/icon_cart.png" ]
                     []
                 , p []
-                    [ text "문진운동" ]
-                ]
-            , a [ class "headerIcons", Route.href Route.Info]
-                [ img [ src "../image/icon_notice.png" ]
-                    []
-                , p []
-                    [ text "공지사항" ]
+                    [ text "최근구매내역" ]
                 ]
             , a [ class "headerIcons", Route.href Route.C]
                 [ img [ src "../image/icon_qna.png" ]
@@ -119,14 +130,14 @@ myPageCommonHeader scrRight scrLeft another show=
                 , p []
                     [ text "1:1문의" ]
                 ]
-            , a [ class "headerIcons", Route.href Route.Faq]
-                [ img [ src "../image/icon_stats.png" ]
-                    []
-                , p []
-                    [ text "자주하는 질문" ]
-                ]
-            ],
-            i [ class "fas fa-caret-right scrStyle", onClick scrRight ]
+            -- , a [ class "headerIcons", Route.href Route.Faq]
+            --     [ img [ src "../image/icon_stats.png" ]
+            --         []
+            --     , p []
+            --         [ text "자주하는 질문" ]
+            --     ]
+            ]
+            , i [ class "fas fa-caret-right scrStyle", onClick scrRight , style "display"  (if show then "flex" else "none") ]
             [] 
         ]
 

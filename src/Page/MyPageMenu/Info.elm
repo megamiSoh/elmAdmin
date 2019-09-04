@@ -102,8 +102,8 @@ infoEncoder page per_page session =
                 , ("per_page", Encode.int per_page) ]
                 |> Http.jsonBody    
     in
-    (Decoder.infoData Data DataList Paginate)
-    |>Api.post Endpoint.infolist (Session.cred session) GetList body 
+    Api.noSessionpost Endpoint.infolist GetList body (Decoder.infoData Data DataList Paginate)
+    -- |>Api.post Endpoint.infolist (Session.cred session) GetList body 
 
 init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
@@ -148,10 +148,7 @@ init session mobile
         , errType = ""
         , detailId = 0}
         , Cmd.batch[ 
-            -- Api.getCookie()
-            -- ,
             infoEncoder 1 10 session
-            , Api.mypageMenu (Encode.bool False)
         ]
     )
 
@@ -186,9 +183,6 @@ type Msg
     | GotSession Session
     | GetDetail (Result Http.Error DetailDataWrap)
     | ReceiveScr Encode.Value
-    | ClickRight
-    | ClickLeft
-    | GoAnotherPage
 
 toSession : Model -> Session
 toSession model =
@@ -202,14 +196,6 @@ toCheck model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GoAnotherPage ->
-            (model, Cmd.batch [
-                 Api.setCookie (Encode.int 1)
-            ])
-        ClickRight ->
-            ( model, Api.scrollRight () )
-        ClickLeft ->
-            (model , Api.scrollLeft ())
         ReceiveScr scr ->
             case Decode.decodeValue Decode.float scr of
                 Ok ok ->
@@ -313,7 +299,7 @@ update msg model =
             (model, Api.saveId encodeId)
         BackBtn ->
             (model , 
-            Route.pushUrl (Session.navKey model.session) Route.MyPage
+            Route.pushUrl (Session.navKey model.session) Route.Home
             -- Api.historyUpdate (Encode.string "mypage")
             )
 
@@ -330,9 +316,7 @@ view model =
     else
         { title = "공지사항"
         , content = 
-        div [] [ div[][myPageCommonHeader ClickRight ClickLeft GoAnotherPage False]
-            , web model
-        ]
+        div [] [ web model]
         }
 editorView md textAreaInput readOnly=
         textarea
@@ -358,7 +342,7 @@ web model=
         ]
 app model = 
     div [class ("container topSearch_container " ++ if model.detailShow then "fadeContainer" else "")] [
-        appHeaderRDetail "공지사항" "myPageHeader whiteColor" Route.MyPage "fas fa-angle-left",
+        appHeaderRDetail "공지사항" "myPageHeader whiteColor" Route.Home "fas fa-angle-left",
         div ([ class "table scrollHegiht", id "searchHeight" ])
         [ 
             if List.length (model.data.data) > 0 then
@@ -381,9 +365,9 @@ app model =
     ]
 
 appContentsBody item =
-    div [class "tableRow",  onClick (DetailGo item.id)] [
+    div [class "m_tableRow",  onClick (DetailGo item.id)] [
         td[class "m_infor_tableCell"][text item.title],
-        td[class"notice_date m_infor_notice_date_tableCell"][text (String.dropRight 10 (item.inserted_at))]
+        td[class" m_infor_notice_date_tableCell"][text (String.dropRight 10 (item.inserted_at))]
     ]
 
 contentsBody model =

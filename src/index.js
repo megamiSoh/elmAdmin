@@ -7,12 +7,11 @@ import './css/datepicker.css'
 import { Elm } from './Main.elm';
 import registerServiceWorker from './registerServiceWorker';
 
-
 if(!!document.createRange) {
   document.getSelection().removeAllRanges();
 }
 var agent = navigator.userAgent.toLowerCase();
-
+var filtercheck;
 if (agent.indexOf("msie") != -1) {
   alert("인터넷익스플로러 브라우저입니다.");
   
@@ -21,10 +20,15 @@ if (agent.indexOf("msie") != -1) {
 // const url ='http://13.209.49.169:4000/api/v1/'
 const url = 'https://api.yfit.co.kr/api/v1/'
 var filter = "win16|win32|win64|mac|macintel"; 
+
+if (filter.indexOf( navigator.platform.toLowerCase() ) > 0) {
+  filtercheck = filter.indexOf( navigator.platform.toLowerCase() ) < 0
+}
+
 var flags = 
   { token : 
     localStorage.getItem("token"), 
-  checkBrowser : filter.indexOf( navigator.platform.toLowerCase() ) < 0 
+  checkBrowser : filter.indexOf( navigator.platform.toLowerCase() ) < 0
   }
   var something = (function() {
     var executed = false;
@@ -45,6 +49,9 @@ var app = Elm.Main.init({
 });
 
 
+
+
+
 app.ports.sendData.subscribe(function () {
   var val = localStorage.getItem("addItem")
   if(val != undefined) {
@@ -55,18 +62,11 @@ app.ports.sendData.subscribe(function () {
 });
 
 app.ports.dateValidate.subscribe(function (date){
-  let char = date.split(',')
-  let dateFormat = char
-  let dateCheck = new Date (date)
-  let oldDate = new Date(1900, 1, 1) < dateCheck
+  let dateFormat = date.split(',')
+  let dateCheck = new Date (date.replace(/,/g,'/'))
+  let oldDate = new Date(1900/1/1) < dateCheck
   let validate =  dateFormat[0] == dateCheck.getFullYear() && (dateFormat[1] - 1)  == dateCheck.getMonth() && dateFormat[2] == dateCheck.getDate() && new Date () > dateCheck && oldDate
-  console.log(validate)
   app.ports.dateValidResult.send(validate)
-  // if (validate) {
-  //   app.ports.dateValidResult.send(validate)
-  // } else {
-  //   return;
-  // }
 })
 
 app.ports.hideFooter.subscribe(function () {
@@ -93,6 +93,22 @@ app.ports.scrollRight.subscribe(function() {
     behavior: "smooth",
     left: 300
 });
+})
+
+// app.ports.openPop.subscribe(function () {
+//   window.open('/#/yourfitPrice', 'popup01', 'width= 1300, height = 650 scrollbars= 0, toolbar=0, menubar=no');
+// })
+app.ports.comma.subscribe(function (x) {
+  var list = x.price
+  var result = []
+  for(let i = 0; i < list.length; i++ ){
+    // alert(list[i])
+    result.push(list[i].toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","))
+  }
+  // alert()
+    // var commaFormat = x.toString()
+    app.ports.commaF.send(result)
+    // alert(JSON.stringify(x.price))
 })
 
 app.ports.scrollLeft.subscribe(function() {
@@ -344,7 +360,7 @@ app.ports.togetherDataList.subscribe(function(data) {
 })
 app.ports.removeJw.subscribe( function () {
   // jwplayer().remove()
-  jwplayer().lenght == undefined ? "" : jwplayer().remove()
+  jwplayer().length == undefined ? "" : jwplayer().remove()
   // alert (document.getElementById('myElement'))
 })
 app.ports.showToast.subscribe(function (text) {
@@ -458,15 +474,193 @@ if (checkDisplay.className == "logoutShow")  {
     } else {
       checkDisplay.className = "logoutShow";
       checkDisplay.style.height = "100vh"
-      // document.body.style.overflow = "scroll"
     }
 }
 })
+  
+
+var paymentCheck = false
+
+app.ports.payment.subscribe(function (info) {
+  alert ("가상결제이므로, 실제 결제는 이루어지지 않습니다.")
+  var locationUrl = window.location.origin.split("//")
+    IMP.init('imp85569385')
+  IMP.request_pay({
+    pay_method : 'card',
+    merchant_uid : info.merchant_uid,
+    name : info.name,
+    amount : info.amount,
+    buyer_email : info.buyer_email,
+    buyer_name : info.buyer_name,
+    digital : info.digital,
+    m_redirect_url : `${locationUrl[1]}/#/gateProgress`
+}, function(rsp) {
+    if ( rsp.success ) {
+        var msg = '결제가 완료되었습니다.';
+        msg += '고유ID : ' + rsp.imp_uid;
+        msg += '상점 거래ID : ' + rsp.merchant_uid;
+        window.location.href=`${window.location.origin}?imp_uid=${rsp.imp_uid}&merchant_uid=${rsp.merchant_uid}&imp_success=true#/gateProgress`
+        paymentCheck = true
+    } else {
+        var msg = '결제에 실패하였습니다';
+        msg += ' : ' + rsp.error_msg;
+        alert(msg)
+    }
+});
+})
+
+
+app.ports.mobilePaymentCheck.subscribe(function () {
+  var origin = window.location.href.split("?")[1].split('&')
+  var imp_uid = origin[0].split("=")[1]
+  var merchant_id = origin[1].split("=")[1]
+  var token = localStorage.getItem("token")
+  var form = 
+    {'imp_uid' : imp_uid  
+    , 'merchant_uid': merchant_id}
+
+  var headerInfo = new Headers ({
+    "Content-Type": "application/json",
+    "authorization": `bearer ${JSON.parse(token).token}`
+  })
+  var orderInfo = 
+    { method: 'POST',
+    headers: headerInfo,
+    body: JSON.stringify(form)};
+ fetch(url + 'front/orders/new', orderInfo)
+  .then(res => {
+    if (res.status == 200) {
+      window.location.replace(`${window.location.origin}#/paperweightList`)
+    }
+  })
+  .then(data => {
+
+  })
+})
+
+
+var slideIndex;
+app.ports.slide.subscribe(function (index) {
+  slideIndex = index
+
+  })
+if (document.getElementById('slide') !== null) {
+  var timer,onlyOnce;
+  onlyOnce = true;
+  timer =  function(){
+  if (onlyOnce) {
+    app.ports.autoSlide.send ("autoSlideStart")
+  }
+  }
+  window.setInterval(timer, 6000);
+
+  document.addEventListener('transitionend', function(e){
+    if (document.getElementById('slide') !== null) {
+      if ((-(parseInt(slideIndex) * 100)+ "%")  == document.getElementById('slide').style.left) {
+        e.preventDefault();
+        app.ports.transitionCheck.send ("right")
+      }
+
+      if ("0%"  == document.getElementById('slide').style.left) {
+        e.preventDefault();
+        app.ports.transitionCheck.send ("left")
+      }
+
+      if (document.getElementById('stopInterval') !== null) {
+        e.preventDefault();
+        onlyOnce = false
+        setTimeout(() => {
+          app.ports.transitionCheck.send ("remove")
+          onlyOnce = true
+        }, 30000);
+      }
+    }
+  }, { capture: false })
+      if(document.getElementById("slideId ") !== null){
+        var el = document.getElementById("slideId ")
+        var startPageX, endPageX
+        el.addEventListener('touchstart', function (e) {
+          var touchposition = e.changedTouches[0]
+          startPageX = touchposition.pageX
+          onlyOnce = false
+      
+        })
+        el.addEventListener('touchmove', function (e) {
+          e.preventDefault;
+        })
+        el.addEventListener('touchend', function (e) {
+          var touchposition = e.changedTouches[0]
+          endPageX = touchposition.pageX
+          if (startPageX - endPageX < 0) {
+            app.ports.swipe.send("left")
+          } else {
+            app.ports.swipe.send("right")
+          }
+          setTimeout(() => {
+            onlyOnce = true
+          }, 30000);
+        })}
+  }
+
+      
+      
+app.ports.hamburgerShut.subscribe(function() {
+  if (document.getElementsByClassName("hamburger_is_active")[0] == undefined){
+    // document.getElementById("expandMenu").setAttribute('class','hamburger_is_active')
+    }
+    else {
+      document.getElementById("expandMenu").removeAttribute('class','hamburger_is_active')
+      document.getElementById("expandMenu").setAttribute('class','navbar-menu yf_menu')
+    }
+}) 
+
+
+
+
+  
 
 app.ports.valueReset.subscribe(function (id) {
   // alert(document.getElementById(id +"after"))
   // document.getElementById(id +"before").value = ""
   // document.getElementById(id +"after").value = ""
+  
+})
+
+app.ports.youtubeVideo.subscribe(function (videoId) {
+  var decodeValue = JSON.stringify(videoId)
+  // app.ports.hideThum.send(videoId)
+  var iframes = document.querySelectorAll('iframe');
+    for (var i = 0; i < iframes.length; i++) {
+        iframes[i].parentNode.removeChild(iframes[i]);
+    }
+  var innerDiv = document.createElement('div');
+  innerDiv.id = 'player';
+  document.getElementById("playerHere" + videoId.youtube_id).appendChild(innerDiv)
+  var player;
+    player = new YT.Player('player', {
+      height: '100%',
+      width: '100%',
+      videoId: videoId.videoId,
+      events: {
+        'onReady': onPlayerReady,
+      }
+    });
+  function onPlayerReady(event) {
+    event.target.playVideo();
+  }
+
+
+
+
+  document.addEventListener('touchmove', function(e)
+{
+  var dv = document.getElementById("playerHere" + videoId.youtube_id)
+  var st = document.getElementById("searchHeight").scrollTop
+  if ((dv.offsetTop + dv.offsetHeight) <= st ) {
+    player.stopVideo();
+  }
+}, 
+{ capture: false } )
 })
 
 
@@ -491,7 +685,6 @@ app.ports.valueReset.subscribe(function (id) {
   }, 
   { capture: false });
 
- 
 
 document.addEventListener('touchmove', function(e) {
   if (document.getElementById("noScrInput")){
@@ -505,18 +698,18 @@ document.addEventListener('touchmove', function(e) {
 }, { passive: false });
 
 document.addEventListener('DOMContentLoaded', () => {
-  const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
 
+  const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
   if ($navbarBurgers.length > 0) {
 
   $navbarBurgers.forEach( el => {
       el.addEventListener('click', () => {
-      if (document.getElementsByClassName("is-active")[0] == undefined){
-      document.getElementById("expandMenu").setAttribute('class','is-active')
-    
-    }
+      window.scrollTo(0, 0)
+      if (document.getElementsByClassName("hamburger_is_active")[0] == undefined){
+      document.getElementById("expandMenu").setAttribute('class','hamburger_is_active')
+      }
       else {
-        document.getElementById("expandMenu").removeAttribute('class','is-active')
+        document.getElementById("expandMenu").removeAttribute('class','hamburger_is_active')
         document.getElementById("expandMenu").setAttribute('class','navbar-menu yf_menu')
       }
     })
@@ -527,5 +720,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+});
 
-});registerServiceWorker();
+registerServiceWorker();

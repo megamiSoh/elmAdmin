@@ -213,7 +213,7 @@ update msg model =
             ({model | session =session},  
             case model.errType of
                 "getdetail"->
-                    Decoder.mypostDataWrap MyD.TogetherDataWrap MyD.TogetherData MyD.DetailTogether MyD.TogetherItems MyD.Pairing
+                    Decoder.mypostDataWrap MyD.TogetherDataWrap MyD.TogetherData MyD.DetailTogether MyD.TogetherItems MyD.Pairing MyD.Snippet MyD.DetailItems
                     |>Api.get GetDetailList (Endpoint.postList model.postId) (Session.cred session)  
                 "delete" ->
                     (Decoder.resultD)
@@ -242,7 +242,7 @@ update msg model =
             in
             if model.check then
                 ({model | postId = id , showDetail = True , zindex = ""} , 
-                    Decoder.mypostDataWrap MyD.TogetherDataWrap MyD.TogetherData MyD.DetailTogether MyD.TogetherItems MyD.Pairing
+                    Decoder.mypostDataWrap MyD.TogetherDataWrap MyD.TogetherData MyD.DetailTogether MyD.TogetherItems MyD.Pairing MyD.Snippet MyD.DetailItems
                     |>Api.get GetDetailList (Endpoint.postList id) (Session.cred model.session)  
                     )
             else

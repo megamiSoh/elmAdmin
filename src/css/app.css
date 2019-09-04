@@ -15,6 +15,7 @@ a {
   width: 100%;
   /* padding: .5rem; */
   box-shadow: 0px 3px 3px rgba(24,23,23,0.36);
+  z-index: 9999;
 }
 .m_home_topbox img
 {
@@ -144,7 +145,6 @@ a {
 
 .m_sign_input
 {
- /* font-size: 3rem; */
  height: 5rem;
 }
 
@@ -363,7 +363,7 @@ ul.commonHeaderBack li {
   /* display: flex; */
   margin: 10px;
   padding: 5px;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
 }
 .loginwrap {
   height: 80vh;
@@ -688,13 +688,12 @@ position: relative;
 
 .m_yf_work_textbox
 {
- 
-  padding: 0.5rem;
+  padding: 1rem 0.5rem 0.5rem 0.5rem;
   width: 100%;
   display: flex;
   float: left;
   border-bottom:solid #9A9A9A .1px;
-  text-align: center;
+  text-align: center;  
 }
 
 .m_yf_work_time{
@@ -710,6 +709,7 @@ position: relative;
 .m_yf_work_text{
 /*  font-size:3rem; */
   width: 50%;
+  
 }
 .m_yf_scrapt
 {width: 10%;
@@ -718,7 +718,6 @@ margin-left: 2rem;}
 
 .m_work_script
 {
-  margin: 1rem 0 0 0;
   text-align: left;
   padding: .4rem;
   margin: .4rem 0 0 0;
@@ -1325,7 +1324,7 @@ margin-top: 2rem;
 
 .m_to_yf_like,.m_to_yf_scrap
 {
-  width: 50%;
+  width: 100%;
   display: inline-block;
   border-top: solid #E4E4E4 .1px;
   
@@ -1689,6 +1688,7 @@ margin-top: 2rem;}
   width: 5rem;
   margin-right: 2rem;
   padding: .8rem;
+ 
 }
 
 
@@ -1700,6 +1700,7 @@ margin-top: 2rem;}
   width: 100%;
   height: 20%;
 }
+
 
 
 /* myPost */
@@ -1847,23 +1848,51 @@ padding-left: .5rem;
 
 /* info */
 
+.m_tableRow td
+{
+  float: left;
+  border:  none;
+  border-bottom: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+
+}
+
+.m_tableRow
+{
+  border-bottom: solid #E4E4E4 .1px;
+  width: 100%;
+
+}
+
 
 .m_infor_tableCell
 {
   /* font-size: 3rem; */
   padding: 0;
-  width: 50%;
+
 }
 .m_infor_tableCell {
   padding: 1.4rem 1rem !important;
+  width: 280px;
+
+  overflow: hidden; 
+  text-overflow: ellipsis;
+  white-space: nowrap; 
   
 }
 .m_infor_notice_date_tableCell
 {
+  /* width: 100px; */
+  font-size: .8rem;
+  padding: 1.4rem 1rem !important;
+  float: right;
+ 
   width: 20%;
-  /* font-size: 2rem; */
-  padding: 1rem 0!important;
-  text-align: right;
+  border: none;
+ 
+
  
 }
 .notice_date.m_infor_notice_date_tableCell {
@@ -2293,6 +2322,7 @@ margin-right: 1rem;
   height: 100%;
   width: 100%;
   position: absolute;
+  z-index: 99;
 }
 .m_timebox {
   width: 100%;
@@ -2468,11 +2498,25 @@ padding: .3rem;
 .m_yf_box_scrap
 {
   float: left;
+  
 }
 
 .m_scrap_date
 {
 font-size: .9rem;
+float: left;
+margin-top: 2.5rem;
+color: #9A9EA7;
+}
+
+.m_scrap_box_name
+
+{
+  overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
+width: 150px;
+text-align: left;
 }
 
 .jwplayer {
@@ -2495,15 +2539,14 @@ font-size: .9rem;
 
 .home_subtitle
 {
-  background: url(/image/anigif.gif) repeat;
-
-
-  height: 85px;
+  background-color: #e3e3e3;
+  height: 250px;
   color: white;
-  padding: 1rem;
-  font-size: 1.1rem;
+  /* padding: 1rem;
+  font-size: 1.1rem; */
   text-align: center;
   width: 100%;
+  
 }
 
 
@@ -2698,6 +2741,9 @@ display: flex;
 .mealHeader li:last-child {
   font-size: .9rem;
 }
+
+
+
 .topSearch_container {
   /* transform: scale(1); */
   transition: transform .5s ease-in-out;
@@ -2822,7 +2868,7 @@ display: flex;
     justify-content: space-between;
 }
 .myaccountStyle {
-  position: absolute;
+  position: fixed;
   bottom: 0;
   width: 100%;
   height: 0;
@@ -2843,12 +2889,22 @@ display: flex;
   transform: translate(0,0);
   -webkit-transform: translate(0,0);
   overflow: hidden;
+  -webkit-overflow-scrolling: auto!important;
+}
+.account::after {
+  content: '';
+  /* background-color: red; */
+  height: 100px;
+  width: 100%;
+  display: block;
+  position: relative;
+  bottom: 0;
 }
 .yfdetailShow {
   min-height: 700px;
     top: 0;
     overflow: auto;
-    -webkit-overflow-scrolling: touch;
+    /* -webkit-overflow-scrolling: touch; */
 }
 .calendarImg {
   width: 100%;
@@ -2924,7 +2980,19 @@ display: table;
     align-items: center;
     padding: .4rem;
     background-color: #eeeeee;
+
 }
+
+.mypageIdContainer2 {
+  display: flex;
+    justify-content: space-evenly;
+    flex-direction: row;
+
+    align-items: center;
+    padding: .4rem;
+    background-color: #eeeeee;
+}
+
 .eventDefault {
   width: 100%;
   height: 100%;
@@ -2953,3 +3021,6 @@ display: table;
 {
 margin: 0 .5rem 0 .5rem; 
 }
+
+.togetherWrite_yf_dark
+{margin-top: 1rem;}

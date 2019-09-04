@@ -78,7 +78,12 @@ port touch : (Value -> msg) -> Sub msg
 port progressComplete : (Value -> msg) -> Sub msg
 port calcurationComplete : (Value -> msg) -> Sub msg
 port dateValidResult : (Value -> msg) -> Sub msg
-
+port hideThum : (Value -> msg) -> Sub msg
+port sliderRestart : (Value -> msg) -> Sub msg
+port autoSlide : (Value -> msg) -> Sub msg
+port transitionCheck : (Value -> msg) -> Sub msg
+port swipe : (Value -> msg) -> Sub msg
+port commaF : (Value -> msg) -> Sub msg
 viewerChanges toMsg decoder =
     onStoreChange (\value -> toMsg (decodeFromChange decoder value))
 
@@ -88,7 +93,6 @@ decodeFromChange viewerDecoder val =
         |> Result.toMaybe
 
 
--- storeCredWith : Cred -> Cmd msg
 storeCredWith (Cred token)  =
     let
         json =
@@ -152,19 +156,24 @@ port progressGo : () -> Cmd msg
 port progressCalcuration : () -> Cmd msg
 port valueReset : Value -> Cmd msg
 port dateValidate : Value -> Cmd msg
+port youtubeVideo : Value -> Cmd msg
+port slide : Value -> Cmd msg
+port payment : Value -> Cmd msg
+port mobilePaymentCheck : () -> Cmd msg
+port comma : Value -> Cmd msg
+port openPop : () -> Cmd msg
+port hamburgerShut : () -> Cmd msg
 type alias Flags = 
     { token : String
-    -- , checkBrowser : Bool
     }
 
--- unfocus : Cmd msg
 unfocus noop =
     Task.attempt(\_ -> noop) (Dom.blur "keyboardBlur")
 
 flagsDecoder flags = 
     Decode.succeed flags
         |> required "token" string
-        -- |> required "checkBrowser" bool
+
 application config =
     let
         init flags url navKey =
@@ -179,7 +188,6 @@ application config =
                             ok
                         Err err ->
                             True
-                        -- |> Result.withDefault (Check True)
             in
             config.init  maybeViewer checkBrowser  url navKey
     in
@@ -248,6 +256,16 @@ post url maybeCred tagger body decoder =
         , tracker = Nothing
         }
 
+noSessionpost url tagger body decoder =
+    Endpoint.request
+        { method = "POST"
+        , url = url
+        , expect = Http.expectJson tagger decoder
+        , headers = []
+        , body = body
+        , timeout = Nothing
+        , tracker = Nothing
+        }
 
 
     
@@ -266,20 +284,11 @@ delete tagger url cred body decoder =
         }
 
 
--- login : Http.Body -> Decoder (Cred -> a) -> Cmd msg
--- login body decoder msg=
---     post Endpoint.login Nothing msg body (decoderFromCred decoder)
 
 login body msg decoder =
     post Endpoint.login Nothing msg body decoder
 
 
--- settings : Cred -> Http.Body -> Decoder (Cred -> a) -> Cmd msg
--- settings cred body decoder msg =
-    -- put Endpoint.user cred msg body (Decode.field "user" (decoderFromCred decoder))
--- 
--- testCode = 
---     Decode.field "token" Decode.string
 decoderFromCred : Decoder (Cred -> a) -> Decoder a
 decoderFromCred decoder =
     Decode.map2 (\fromCred cred -> fromCred cred)
@@ -287,11 +296,9 @@ decoderFromCred decoder =
         credDecoder
 
 
--- testDecode : Decoder (Cred -> a) -> Decoder a
 testDecode decoder =
     Decode.map (\fromCred cred -> fromCred cred)
         decoder
-        -- credDecoder
 
 
 -- ERRORS
@@ -316,19 +323,7 @@ decodeErrors error =
         Http.BadBody _ ->
                 "badbody"
 
--- testErrorMsg error =
---     case error of
---         Http.BadStatus response ->
---                 if String.fromInt(response) == "401" then
---                     Api.
---         Http.BadUrl response ->
---                 response
---         Http.Timeout  ->
---                 "time out"   
---         Http.NetworkError ->
---                 "networkErr"
---         Http.BadBody _ ->
---                 "badbody"
+
 
 
 errorsDecoder : Decoder (List String)
@@ -341,6 +336,3 @@ fromPair : ( String, List String ) -> List String
 fromPair ( field, errors ) =
     List.map (\error -> field ++ " " ++ error) errors
 
-
--- refresh cred msg= 
---     get msg Endpoint.refresh cred credDecoder

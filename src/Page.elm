@@ -55,6 +55,8 @@ type Page
     | CD
     | MJList
     | MJD
+    | YP
+    | GP
 
 -- view:Maybe Cred -> Api.Check  -> Page -> {check : String , title : String, content: Html msg} -> Browser.Document msg
 view maybeViewer checkB  page { title, content}  =
@@ -79,6 +81,8 @@ footerCommon page =
     else if page == Together then
         appFooter page
     else if page == YourfitExer then
+        appFooter page
+    else if page == Home then
         appFooter page
     else
         div [] []
@@ -109,21 +113,21 @@ webContents content page maybeViewer=
         case maybeViewer of
         Just _ ->
             if page == MyPage then
-            div [ class "" ][ 
-                content, webtoastPop
-                ,logoutlayer ]
+                div [ class "" ][ 
+                    content, webtoastPop
+                        ,logoutlayer ]
             else
-            div [ class "" ][ 
-                content, webtoastPop
-                ,logoutlayer ]
+                div [ class "" ][ 
+                    content, webtoastPop
+                        ,logoutlayer ]
         Nothing ->
-            if page == MakeExer then
-            need2login
-            else if page == MyPage then
-            need2login
-            
-            else 
-            div [] [content, webtoastPop]
+            case page of
+                MakeExer ->
+                    need2login
+                MyPage ->
+                    need2login
+                _ ->
+                    div [] [content, webtoastPop]
   
 
 appContents content page maybeViewer=
@@ -132,29 +136,30 @@ appContents content page maybeViewer=
             
             div [ class "appWrap" ][ content, apptoastPop,mlogoutlayer ]
         Nothing ->
-            if page == MakeExer  then
-            div [][ 
-                appHeaderSearch "맞춤운동" "makeExerHeader"
-                , need2loginApp
-            ]
-            else if page == MyPage then
-            div [][ 
-                justappHeader "마이페이지" "myPageHeader"
-                , div [ class "loginHeight"] [
-                    div [class "loginbottom"] [text "로그인 후 이용가능한 서비스 입니다."] 
-                , a [class "button", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
-                ]
-                , div [](List.map menuBottom (menu))
+            case page of
+                MakeExer ->
+                    div [][ 
+                        appHeaderSearch "맞춤운동" "makeExerHeader"
+                        , need2loginApp
+                    ]
+                MyPage ->
+                    div [][ 
+                        justappHeader "마이페이지" "myPageHeader"
+                        , div [ class "loginHeight"] [
+                            div [class "loginbottom"] [text "로그인 후 이용가능한 서비스 입니다."] 
+                        , a [class "button", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
+                        ]
+                        , div [](List.map menuBottom (menu))
 
-            ]
-            else if page == C then
-            div [][ 
-                justappHeader "1:1문의" "myPageHeader"
-                , need2loginApp
+                    ]
+                C ->
+                    div [][ 
+                        justappHeader "1:1문의" "myPageHeader"
+                        , need2loginApp
 
-            ]
-            else
-            div [] [content, apptoastPop]
+                    ]
+                _ ->
+                    div [] [content, apptoastPop]
   
 
 menuBottom item = 
@@ -165,13 +170,8 @@ menuBottom item =
 
 menu = 
     [
-    -- {icon = "/image/icon_calendar.png", title ="캘린더", route = Route.MyC},
-    -- {icon = "/image/icon_diet.png", title ="식단기록", route = Route.MealRM},
-    -- {icon = "/image/icon_stats.png", title ="나의 통계", route = Route.MyS},
-    -- {icon = "/image/icon_list.png", title ="스크랩리스트", route = Route.MyScrap},
-    -- {icon = "/image/icon_management.png", title ="내 게시물 관리", route= MyPost},
+    {icon = "/image/icon_qna.png", title ="자주하는 질문", route = Route.Faq},
     {icon = "/image/icon_notice.png", title ="공지사항", route = Route.Info},
-    -- {icon = "/image/icon_qna.png", title ="1:1 문의", route = Route.Faq},
     {icon = "/image/icon_qna.png", title ="로그인", route = Route.Login}
     ]
 
@@ -219,12 +219,12 @@ viewHeader page maybeViewer =
                         case page of
                             MyPage ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
-                            Faq ->
-                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            -- Faq ->
+                            --     a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             MyC ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
-                            Info ->
-                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            -- Info ->
+                            --     a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             ScrapD ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             PostD ->
@@ -233,8 +233,8 @@ viewHeader page maybeViewer =
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             FaqD ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
-                            InfoD ->
-                                a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+                            -- InfoD ->
+                            --     a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             MealR ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             MyPost ->
@@ -249,8 +249,9 @@ viewHeader page maybeViewer =
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             MJList  ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
+
                             _ ->
-                                a [ class "navbar-item yf_item",Route.href Route.MyPage ]
+                                a [ class "navbar-item yf_item" ,  Route.href Route.MyPageBottomMenu]
                                 [ text "마이페이지"]
                         ]
                     ]

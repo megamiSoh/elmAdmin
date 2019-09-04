@@ -57,6 +57,8 @@ import Page.Detail.ContactDetail as CD
 import TextApi as TA
 import Page.MyPageMenu.PaperWeightList as MJList
 import Page.Detail.PaperWeightDetail as MJD
+import Page.YourFitPrice as YP
+import Page.GateProgress as GP
 -- type alias Check = 
 --     String
 
@@ -107,6 +109,8 @@ type Model
      | CDModel CD.Model
      | MJListModel MJList.Model
      | MJDModel MJD.Model
+     | YPModel YP.Model
+     | GPModel GP.Model
     --  | PageModel Page.Model
     --  | CheckDevice Check
     
@@ -160,6 +164,8 @@ type Msg
     | CDMsg CD.Msg
     | MJListMsg MJList.Msg
     | MJDMsg MJD.Msg
+    | YPMsg YP.Msg
+    | GPMsg GP.Msg
 
 subscriptions model = 
     case model of
@@ -251,6 +257,10 @@ subscriptions model =
             Sub.map MJListMsg (MJList.subscriptions item)
         MJDModel item ->
             Sub.map MJDMsg (MJD.subscriptions item)
+        YPModel item ->
+            Sub.map YPMsg (YP.subscriptions item)
+        GPModel item ->
+            Sub.none
 
 init : Maybe Cred -> Bool -> Url -> Key -> ( Model, Cmd Msg )
 init maybeViewer check url navKey =
@@ -403,6 +413,12 @@ changeRouteTo maybeRoute model =
         Just Route.MJD ->
             MJD.init session check
                 |> updateWith MJDModel MJDMsg model
+        Just Route.YP ->
+            YP.init session check
+               |> updateWith YPModel YPMsg model
+        Just Route.GP ->
+            GP.init session check
+                |> updateWith GPModel GPMsg model
             
 
 
@@ -494,6 +510,10 @@ toCheck page =
             MJList.toCheck item
         MJDModel item ->
             MJD.toCheck item
+        YPModel item ->
+            YP.toCheck item
+        GPModel item ->
+            GP.toCheck item
 
 
 toSession : Model -> Session
@@ -585,6 +605,10 @@ toSession page =
             MJList.toSession item
         MJDModel item ->
             MJD.toSession item
+        YPModel item ->
+            YP.toSession item
+        GPModel item ->
+            GP.toSession item
         
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -747,6 +771,12 @@ update msg model =
         (MJDMsg subMsg, MJDModel mmodel ) ->
             MJD.update subMsg mmodel
                 |> updateWith MJDModel MJDMsg mmodel
+        (YPMsg subMsg, YPModel ymodel) ->
+            YP.update subMsg ymodel
+                |> updateWith YPModel YPMsg ymodel
+        (GPMsg subMsg, GPModel gmodel) ->
+            GP.update subMsg gmodel
+                |> updateWith GPModel GPMsg gmodel
         ( _, _ ) ->
             ( model, Cmd.none )  
         
@@ -870,7 +900,12 @@ view model =
             viewPage Page.MJList MJListMsg (MJList.view item)
         MJDModel item ->
             viewPage Page.MJD MJDMsg (MJD.view item)
-
+        YPModel item ->
+            viewPage Page.YP YPMsg (YP.view item)
+        GPModel item ->
+            viewPage Page.GP GPMsg (GP.view item)
+        -- _ ->
+        --      viewPage Page.Other (\_ -> Ignored) Blank.view
 
 main : Program Value Model Msg
 main =

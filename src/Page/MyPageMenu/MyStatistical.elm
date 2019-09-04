@@ -601,7 +601,7 @@ update msg model =
                     Err _ -> 
                         ({model | checkDevice = ""}, Cmd.none)
         BackBtn ->
-            (model, Route.backUrl(Session.navKey model.session) 1)
+            (model, Route.pushUrl(Session.navKey model.session) Route.MyPage)
 
 
 

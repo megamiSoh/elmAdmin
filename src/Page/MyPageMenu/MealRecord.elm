@@ -323,10 +323,6 @@ update msg model =
             (model , Api.scrollLeft ())
         Blur id->
             (model, foodEncode 1 model.per_page model.foodSearch model.session )
-            -- let _ = Debug.log "blur" id
-                
-            -- in
-            -- update (SearchInput model.foodSearch) model
         GotSession session ->
             ({model | session = session }, 
             case model.errType of 
@@ -497,18 +493,8 @@ update msg model =
                     ({model | name = item.foodName , kcal = item.kcal, quantityShow = True, category = category, quantityValue = "1", activeQuantity = ""}, Api.getscrollHeight (Encode.bool (not model.quantityShow)))
             
         SearchInput foodname ->
-            -- let _ = Debug.log "foodname" foodname
-                
-            -- in
-            
             ({model | foodSearch = foodname, page = 1}, Cmd.none)
         GetFoodData (Ok ok) ->
-            -- let _ = Debug.log "ok" ok.data
-                
-            -- in
-            -- if model.food /= ok && model.page == 1 then
-            -- update (SearchInput model.foodSearch) {model | food = ok}
-            -- else
             ({model | food = ok}, Cmd.none)
         GetFoodData (Err err) ->
             let 

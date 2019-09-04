@@ -10,7 +10,7 @@ import Page.Common as Common
 import Date exposing (..)
 import DatePicker exposing (Msg(..))
 -- myInfo : Html msg
-myInfo item changeNick changeBtn wantChangeNickname changeGo pwdInput changePwd notmatchPwd repwdInput oldInput nick getFile profileImg cannotChangeImg goprofilechange resetimg=         
+myInfo item changeNick changeBtn wantChangeNickname changeGo pwdInput changePwd notmatchPwd repwdInput oldInput nick getFile profileImg cannotChangeImg goprofilechange resetimg abletoWatch =         
     div [ class "columns" ]
     [ div [ class "column mypage_yf_profile" ]
         [ p []
@@ -37,6 +37,14 @@ myInfo item changeNick changeBtn wantChangeNickname changeGo pwdInput changePwd 
                 [ text "계정정보" ]
             , li [class"mypage_count"]
                 [ text item.username ]
+                , li [class"mypage_font"]
+                  [ text "유료 서비스" ]
+            , if abletoWatch then
+                    li [class"mypage_date"]
+                        [ text "유료서비스 이용중입니다." ]
+                else
+                    li [class"mypage_date"]
+                    [ text "유료서비스 이용중이 아닙니다."]
             , li []
                 [ 
                 div [class"mypage_font"] [text "닉네임"] ,
@@ -56,6 +64,7 @@ myInfo item changeNick changeBtn wantChangeNickname changeGo pwdInput changePwd 
                             ]
                 else
                     div [ class "button is-link mypage_nickname_btn", onClick (changeBtn "nick")] [text "닉네임 설정"]
+               
                 , a [ class "button", Route.href Route.SetPwd] [text "비밀번호 변경"]
                 ]
             , li []
