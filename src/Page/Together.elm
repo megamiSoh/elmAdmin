@@ -882,31 +882,17 @@ tabbox model=
 nocontentsBody model=
     div [ class "together_searchbox_wrap" ]
         [ div [ class "together_searchbox" ]
-            [ div [ class "together_mediabox" ]
-                [ div [ class "media-content together_yf_content"]
-                [ img [ src "image/takeimage.png", alt "takeimage" ]
-                []
-                ],
-                --    h1 [ class "to_yf_h2" ]
-                --    [ text "내가 만든 운동을 공유하는 공간입니다." ] ,
+            [
                 div [class "noResult"] [text "게시물이 없습니다."]
             ]
         
         ]
-    ]
 
 contentsBody model=
     div [ class "together_searchbox_wrap" ]
         [ div [ class "together_searchbox" ]
-            [ div [ class "together_mediabox" ]
-                [ div [ class "media-content together_yf_content"]
-                [ img [ src "image/takeimage.png", alt "takeimage" ]
-                []
-                ]
-                --   , h1 [ class "to_yf_h2" ]
-                --    [ text "내가 만든 운동을 공유하는 공간입니다." ]
-                ]
-            , div [] [
+            [ 
+            div [] [
                 if model.showDetail then
                 div [class "togetherdetail"] [
                        div [class "togetherdetailItem"] [
