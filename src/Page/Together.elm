@@ -568,9 +568,9 @@ update msg model =
             ({model | loading = False}, Cmd.none)
         IsActive title ->
             if model.check then
-                ({model | isActive = title, page = 1} ,dataEncoder 1 2 model.session title)
+                ({model | isActive = title, page = 1, share_code = title} ,dataEncoder 1 2 model.session title)
             else
-                ({model | isActive = title, page = 1} , webDataEncoder model.page model.per_page model.session title)
+                ({model | isActive = title, page = 1, share_code = title} , webDataEncoder 1 model.per_page model.session title)
             
         CheckDevice str ->
            let 
