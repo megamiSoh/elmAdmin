@@ -129,7 +129,7 @@ bodyInfo model inputTagger bodySave ismale  datePicker firstdate datepickerShow 
             [ label [ class "label" ]
                 [ text "체중" ]
             , p []
-                [ input [ class "input myPage2_yf_input_box",  value model.weight, onInput (inputTagger "weight") ]
+                [ input [ class "input myPage2_yf_input_box",  value model.weight, onInput (inputTagger "weight"), maxlength 3 ]
                     [], text "Kg" 
                 ]
             ]
@@ -137,16 +137,16 @@ bodyInfo model inputTagger bodySave ismale  datePicker firstdate datepickerShow 
             [ label [ class "label" ]
                 [ text "목표체중" ]
             , p []
-                [ input [ class "input myPage2_yf_input_box", value  model.goalWeight, onInput (inputTagger "goalWeight") ]
-                    [],text "Cm" 
+                [ input [ class "input myPage2_yf_input_box", value  model.goalWeight, onInput (inputTagger "goalWeight"), maxlength 3 ]
+                    [],text "Kg" 
                 ]
             ]
         , div [ class "myPage2_title" ]
             [ label [ class "label" ]
                 [ text "신장" ]
             , p []
-                [ input [ class "input myPage2_yf_input_box", value model.height, onInput (inputTagger "height") ]
-                    [], text "Kg" 
+                [ input [ class "input myPage2_yf_input_box", value model.height, onInput (inputTagger "height") , maxlength 3]
+                    [], text "Cm" 
                 ]
             ]
         , div [ class "myPage2_title" ]

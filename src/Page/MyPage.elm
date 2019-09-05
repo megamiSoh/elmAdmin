@@ -258,17 +258,6 @@ bodyInfoEncode model =
     |>Api.post Endpoint.bodyRecord (Session.cred model.session) SaveComplete body 
 
 
--- initFromApolloLanding : Flags -> ( Model, Cmd Msg )
--- initFromApolloLanding  =
---     let
---         datePickerData =
---             DatePicker.initFromDate "my-datepicker" (fromCalendarDate 1969 canSelectMonth 8 20)
---     in
---     ( { datePickerData = datePickerData
---       , selectedDate = Nothing
---       }
---     , Cmd.none
---     )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -416,7 +405,7 @@ update msg model =
             in  
             ({model | deleteAuth = "bodyInfo"}, (Session.changeInterCeptor (Just serverErrors) model.session))
         BodyRecordsInput category str ->
-            let 
+            let
                 split = String.split "." str
                 tail = List.drop 1 split
                 len = List.map (\x ->

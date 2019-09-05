@@ -236,7 +236,7 @@ profileEncode profileImg session =
 updateFieldBodyInfo item model = 
     case String.toFloat item of
         Just ok ->
-            if ok == 0 then
+            if ok == 0 || ok > 999 then
             ({model | canNotUpdateField = "유효하지 않은 입력 값 입니다."}, Cmd.none)
             else
             ({model | showDetail = "", canNotUpdateField = ""}, Cmd.none)
@@ -406,7 +406,7 @@ update msg model =
             else
             (model, saveEncode model)
         BodyInfo info what ->
-            let
+            let _ = Debug.log "what" what
                 split = String.split "." what
                 tail = List.drop 1 split
                 len = List.map (\x ->
