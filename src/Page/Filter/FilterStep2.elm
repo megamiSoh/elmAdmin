@@ -408,21 +408,11 @@ update msg model =
 view : Model -> {title : String , content : Html Msg}
 view model =
     if model.check then
-        if model.loading then
-            { title = "맞춤운동 필터"
-            , content = div [class "spinnerBack"] [spinner]
-            }
-        else
             { title = "맞춤운동 필터"
             , content = 
                 div [] [ app model ]   
-        }
-    else
-        if model.loading then
-            { title = "맞춤운동 필터"
-            , content = div [class "spinnerBackWeb"] [spinner]
             }
-        else
+    else
             { title = "맞춤운동 필터"
             , content = 
                 div [] [
@@ -448,6 +438,7 @@ justokIntData data =
 app model =
     div [] [
         appHeaderConfirmDetailleft "운동추가" "makeExerHeader" NextPage GoRegist "완료"
+        , div [class "spinnerBack" , style "display" (if model.loading then "flex" else "none")] [spinner]
         , appcontentsItem model
     ]
 
@@ -455,6 +446,7 @@ web model =
      div [ class "container" ]
             [   
                 commonJustHeader "/image/icon_customworkout.png" "맞춤운동"
+                , div [class "spinnerBackWeb" , style "display" (if model.loading then "flex" else "none")] [spinner]
                 , contentsItem model
                 , goBtn
             ]
@@ -464,13 +456,11 @@ contentsItem model =
             [
                 thumbSetting model,
                 itemCount model,
-                if List.length model.addData > 0 then
-                div [ class "filterstep2_yf_listselect" ]
+                div [ class "filterstep2_yf_listselect" , style "display" (if List.length model.addData <= 0 then "none" else "block")]
                 ( List.indexedMap (\idx x ->
                 selectedItem idx x model
                 ) model.addData)
-                else 
-                div [class "noResult"][text "운동을 다시 설정 해 주세요."]
+                , div [class "noResult", style "display" (if List.length model.addData <= 0 then "flex" else "none")][text "운동을 다시 설정 해 주세요."]
             ]
 
 appcontentsItem model = 
@@ -478,23 +468,15 @@ appcontentsItem model =
             [
                 appthumbSetting model,
                 appitemCount model,
-                if List.length model.addData > 0 then
-                div [ class "filterstep2_yf_listselect" ]
+                div [ class "filterstep2_yf_listselect" , style "display" (if List.length model.addData <= 0 then "none" else "block") ]
                 ( List.indexedMap (\idx x ->
                 selectedItem idx x model
                 ) model.addData)
-                else 
-                div [class "noResult"][text "운동을 다시 설정 해 주세요."]
+                , div [class "noResult" , style "display" (if List.length model.addData <= 0 then "flex" else "none")][text "운동을 다시 설정 해 주세요."]
             ]                    
 
 thumbSetting model= 
     div [ class "yf_box_top" ]
-        -- [ div [ class "yf_thumbnail" ]
-        --     [ img [ src "/image/thumbnail.png" ]
-        --         [], text "대표썸네일지정" 
-        --     ]
-        -- , 
-        
         [div [ class "yf_titleinput" ]
         
             [ 
@@ -513,18 +495,12 @@ thumbSetting model=
 
 appthumbSetting model = 
     div [ class "m_yf_box_top" ]
-        -- [ div [ class "m_yf_thumbnail" ]
-        --     [ img [ src "/image/thumbnail.png" ]
-        --         []
-        --     ]
-        -- ,
         [ div [ class "m_yf_titleinputbox" ]
             [ input [ class ( "input m_yf_titleinput " ++ model.validation ), type_ "text", placeholder "운동제목을 입력해 주세요.",  onInput UpdateTitle , maxlength 50]
                 []
             , textarea [placeholder "운동 설명을 입력 해 주세요.",  onInput Description, maxlength 200] []
             ]
-                      , div [class"m_filterStep2_text"] [text model.errTitle]
-        -- , div [class "thubmTitle"] [text "썸네일지정" ]
+            , div [class"m_filterStep2_text"] [text model.errTitle]
         ]
 
 itemCount model= 
@@ -553,24 +529,17 @@ selectedItem idx item model=
             ]
         , div [ class "filterstep2_worklistbox" ]
             [ div [ class "filterstep2_iconbox" ]
-                [ 
-                    if justokData item.title == "" then
-                    img [ src "/image/m_timeicon.png" ]
-                    []
-                    else
-                    img [ src (justData item.thembnail) ]
+                [ img [ src (if justokData item.title == "" then "/image/m_timeicon.png" else (justData item.thembnail)) ]
                     []
                 ]
             , 
             div [class"filterstep2_textbox"]
                 [ 
-            if justokData item.title == "" then
-            ul [class "filterstep2_text"]
+            ul [class "filterstep2_text", style "display" (if justokData item.title == "" then "block" else "none")]
                 [ li [ class "filterstep2_work1" ]
                     [ text ("휴식 - "++ String.fromInt(justokIntData item.value ) ++ "Min") ] 
                 ]
-            else
-                ul [class "filterstep2_text"]
+                , ul [class "filterstep2_text", style "display" (if justokData item.title == "" then "none" else "block")]
                     [ li [ class "filterstep2_work1" ]
                         [ text (justokData item.title ++ " - "++ String.fromInt(justokIntData item.value ) ++ "Set") ]
                     , li [ class "filterstep2_work2" ]
@@ -619,13 +588,11 @@ appselectedItem idx item model=
                 ]
             , div [class"m_filterstep2_textbox"]
                 [
-                    if justokData item.title =="" then
-                    ul [class "filterstep2_text"]
+                    ul [class "filterstep2_text", style "display" (if justokData item.title == "" then "block" else "none")]
                     [ li [ class "m_filterstep2_work1" ]
                         [ text ("휴식 - "++ String.fromInt(justokIntData item.value ) ++ "Min") ]
                     ]
-                    else
-                    ul [class "filterstep2_text"]
+                    , ul [class "filterstep2_text", style "display" (if justokData item.title == "" then "none" else "block")]
                     [ li [ class "m_filterstep2_work1" ]
                         [ text (justokData item.title ++ " - "++ String.fromInt(justokIntData item.value ) ++ "Set") ]
                     , li [ class "m_filterstep2_work2" ]
@@ -638,18 +605,13 @@ appselectedItem idx item model=
                     ]
                 ]
             , 
-            div [ class "m_filterstep2_addbox", onClick (Expand (idx, justokIntData item.value )) ][
-                if String.fromInt(idx) == model.style then
-                    img [ src "/image/editicon2.png" ]
-                        []
-                else 
-                    img [ src "/image/editicon.png " ]
-                        []
-                    ]
+            div [ class "m_filterstep2_addbox", onClick (Expand (idx, justokIntData item.value )) ][ img [ src (if String.fromInt(idx) == model.style then "/image/editicon2.png" else "/image/editicon.png ") ][]
+            ]
                 ], 
             appexpandPanel idx model item.title
         ]
--- class ("settingbox expandStyle target " 
+
+
 expandPanel idx model rest=
     div [ classList [
         (("filterstep2_settingbox" ++ String.fromInt(idx)), True),
@@ -658,7 +620,7 @@ expandPanel idx model rest=
     ] ]
         [ div [ class "filterstep2_yf_setting" ]
             [ if justokData rest == "" then text "휴식 설정"  else text "세트 설정" ]
-        , div [ class "filterstep2_yf_setting2" ]
+            , div [ class "filterstep2_yf_setting2" ]
             [ div [ class "button filterstep2_mbtn", onClick (Minus idx) ]
                 [ text "-" ]
             , input [ class "input filterstep2_yf_num", type_ "text", value 

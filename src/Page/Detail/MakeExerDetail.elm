@@ -249,23 +249,12 @@ update msg model =
 view : Model -> {title : String , content : Html Msg}
 view model =
     if model.check then
-        if model.loading then
         { title = "맞춤운동"
         , content = 
             div [class "container"] [
                 appHeaderConfirmDetail model.getData.title "makeExerHeader" Route.MakeExer "fas fa-times"  Route.EditFilter "수정"
-                , div [class "spinnerBack"] [
-                        spinner
-                        ]
-            ]
-        }
-
-        else
-         { title = "맞춤운동"
-        , content = 
-            div [class "container"] [
-            appHeaderConfirmDetail model.getData.title "makeExerHeader" Route.MakeExer "fas fa-times"  Route.EditFilter "수정"
-            , appcontentsItem model.getData model GoVideo model.zindex
+                -- , div [class "spinnerBack", style "display" (if model.loading then "inline-block" else "none")] [spinner]
+                , appcontentsItem model.getData model GoVideo model.zindex
             ]
         }
     else
@@ -288,12 +277,9 @@ app msg model=
     div [class "container"] [
         appHeaderConfirmDetail model.getData.title "makeExerHeader" Route.MakeExer "fas fa-times"  Route.EditFilter "수정"
         , div [] [
-            if model.loading then
-            div [class "spinnerBack"] [
+            div [class "spinnerBack", style "display" (if model.loading then "inline-block" else "none")] [
                 spinner
                 ]
-            else 
-            div [] []
         ]
         , appcontentsItem model.getData model GoVideo model.zindex
     ]
@@ -403,9 +389,6 @@ contentsItem item loading scrap modelscrap govideo scrapText zindex =
                         ], text scrapText
                     ]
                 ]
-            -- if loading then 
-            -- div [] []
-            -- else
             
             , div [ class "yf_explanation" ]
             [

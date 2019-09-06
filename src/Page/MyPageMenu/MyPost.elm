@@ -396,12 +396,12 @@ appcontentsBody model infiniteloading loading show=
             [ 
                 ul [ class "m_cbp_tmtimeline" ]
                 (List.map appcontentsLayout model)
-                ,if infiniteloading then
-                    div [class "loadingPosition"] [
-                    infiniteSpinner
-                    ]
-                else
-                span [] []
+                -- ,if infiniteloading then
+                --     div [class "loadingPosition"] [
+                --     infiniteSpinner
+                --     ]
+                -- else
+                -- span [] []
                
         ]
         , appdeltelayer show

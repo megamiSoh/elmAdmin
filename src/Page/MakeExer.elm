@@ -972,15 +972,13 @@ makeExerBody model =
                             [ text "맞춤운동 리스트" ]
                         ],
                     div [] [
-                        if List.isEmpty model.getlistData.data then
-                            div [class "nopaperWeightResult"] [
+                            div [class "nopaperWeightResult", style "display" (if List.isEmpty model.getlistData.data then "flex" else "none")] [
                             text "맞춤운동이 없습니다."
                             ]
-                        else
-                            div[][
-                                div [ class "make_boxwrap" ]
+                            , div[][
+                                div [ class "make_boxwrap", style "display" (if List.isEmpty model.getlistData.data then "none" else "block") ]
                                 (List.map bodyItem model.getlistData.data)
-                                ,pagination
+                                , pagination
                                     PageBtn
                                     model.getlistData.paginate
                                     model.pageNum]
@@ -1000,18 +998,9 @@ app model =
         [ h1 [ class "m_make_yf_h2" ]
             [ text "맞춤운동 리스트" ]
         ]
-            ,div [class "yf_noResult_make"] [
-                if List.isEmpty model.newList then
-                div [][text "맞춤운동이 없습니다."]
-                else 
-                div[](List.map appItemContent model.newList)
-                ,
-                if model.infiniteLoading then
-                    div [class "loadingPosition"] [
-                    infiniteSpinner
-                    ]
-                else
-                    span [] []
+            ,div [] [
+                div [class "yf_noResult_make", style "display" ( if List.isEmpty model.newList then "block" else "none")][text "맞춤운동이 없습니다."]
+                , div[style "display" ( if List.isEmpty model.newList then "none" else "block")](List.map appItemContent model.newList)
             ]
     ]
 

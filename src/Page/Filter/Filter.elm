@@ -222,24 +222,14 @@ update msg model =
 view : Model -> {title : String , content : Html Msg}
 view model =
     if model.check then
-        if model.loading then
         { title = "맞춤운동 필터"
         , content = 
             div [] [
                 appHeaderConfirmDetailR "맞춤운동" "makeExerHeader" BackBtn GoNextPage "확인"
-                , div [] [
-        spinner
-            ]
-            ]
-        }
-        else
-        { title = "맞춤운동 필터"
-        , content = 
-            div [] [
-                appHeaderConfirmDetailR "맞춤운동" "makeExerHeader" BackBtn GoNextPage "확인"
-                , div [] [
-        lazy5 filterbox2 model.part model.level model.exer model.tool model
-    ]
+                , div [] 
+                    [ div [class "spinnerBack", style "display" (if model.loading then "flex" else "none")] [spinner]
+                    , lazy5 filterbox2 model.part model.level model.exer model.tool model
+                    ]
             ]
         }
     else
@@ -252,19 +242,10 @@ view model =
 web model = 
      div [ class "container" ]
             [
-                -- if model.loading then
-                -- spinner
-                -- else
                 lazy5 filterbox model.part model.level model.exer model.tool model,
                 btnBox
             ]
-app model =
-    div [] [
-        if model.loading then
-        spinner
-        else
-        lazy5 filterbox2 model.part model.level model.exer model.tool model
-    ]
+
 
   
 leastItem item list=

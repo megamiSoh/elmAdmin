@@ -591,13 +591,7 @@ view model =
     { title = "함께해요"
     , content = 
             div [] [
-                if model.loading then
-                    div [class "spinnerBack"] [
-                        spinner
-                        ]
-                else 
-                    div [] []
-                    , app model
+                app model
             ]
     }
     else
@@ -656,7 +650,10 @@ app model =
      
     div [class "container scrollContainer"] [
         justappHeader "함께해요" "togetherHeader",
-        div [class "scroll", id "scrollE" ] [
+        div [class "spinnerBack", style "display" (if model.loading then "flex" else "none")] [
+        spinner
+        ]
+        , div [class "scroll", id "scrollE" ] [
             if model.need2login then
             need2loginAppDetailRoute Route.Together
             else
@@ -665,12 +662,6 @@ app model =
                 appStartBtn,
                 div [class "togetherscrollContent" ] (List.indexedMap (
                         \idx x -> appContentsItem idx x model ) model.appData )
-                -- ,if model.infiniteLoading then
-                , div [class "loadingPosition", style "display" (if model.infiniteLoading then "block" else "none")] [
-                infiniteSpinner
-                ]
-                -- else
-                -- span [] []
             ]
         ]
     ]

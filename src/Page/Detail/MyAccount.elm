@@ -406,7 +406,7 @@ update msg model =
             else
             (model, saveEncode model)
         BodyInfo info what ->
-            let _ = Debug.log "what" what
+            let
                 split = String.split "." what
                 tail = List.drop 1 split
                 len = List.map (\x ->

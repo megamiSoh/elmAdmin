@@ -354,12 +354,12 @@ app model =
                     td [colspan 3] [text "공지사항이 없습니다."]
                 ]
             ]
-        , if model.infiniteLoading then
-                div [class "loadingPosition"] [
-                spinner
-                ]
-        else
-        span [] []
+        -- , if model.infiniteLoading then
+        --         div [class "loadingPosition"] [
+        --         spinner
+        --         ]
+        -- else
+        -- span [] []
     ]
     
     ]

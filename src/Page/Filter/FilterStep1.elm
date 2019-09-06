@@ -478,25 +478,16 @@ justIntData data =
 view : Model -> {title : String , content : Html Msg}
 view model =
     if model.check then
-        -- if model.loading then
         { title = "맞춤운동 필터 Step 1"
         , content = 
                 div [] [
-                    div [class "spinnerBack", style "display" (if model.loading then "block" else "none")] [spinner]
+                    div [class "spinnerBack", style "display" (if model.loading then "flex" else "none")] [spinner]
                     , div [] [
                     appHeader model
                     , appitemContainer model
                 ]
                 ]
             }
-        -- else
-        -- { title = "맞춤운동 필터 Step 1"
-        -- , content = 
-        --         div [] [
-        --             appHeader model
-        --             , appitemContainer model
-        --         ]
-        --     }
     else
     { title = "맞춤운동 필터 Step 1"
     , content = 
@@ -505,22 +496,6 @@ view model =
             ]
         }
 
-app model = 
-    div [] [
-        div [] [
-            if model.loading then
-            div [class "spinnerBack"] [spinner]
-            else
-            div [] []
-        ]
-        , appHeader model , 
-        div [] [
-            if model.loading then
-            div [] []
-            else
-            appitemContainer model
-        ]
-    ]
 
 appHeader model = 
     div [class "appheadermakeExer"] [
@@ -550,9 +525,6 @@ web model =
                 commonHeader2 "/image/icon_customworkout.png" "맞춤운동"
                 ,search model,
             div [] [
-                -- if model.loading then
-                --     spinner
-                -- else
                 itemContainer model
             ]
             , goBtn model 
@@ -660,12 +632,6 @@ appitemContainer model =
                 ]
                  else 
                     div [class "noResult"] [text "검색 된 운동이 없습니다."]
-                , if model.infiniteLoading then
-                    div [class "loadingPosition"] [
-                    spinner
-                    ]
-                    else
-                    span [] []
             ]
             , 
             if List.length (model.addItem) == 0 then

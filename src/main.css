@@ -3092,6 +3092,7 @@ input.vaidColor2:focus {
   overflow: hidden;
   top: 45px; 
   padding-top: 15rem;
+  left: 0;
 }
 .spinnerBack {
   height: 100vh;
@@ -3100,8 +3101,7 @@ input.vaidColor2:focus {
   padding-bottom: 75%;
   justify-content: center;
   align-items: center;
-  /* background-color: #80808014; */
-  background-color: white;
+  background-color: #eaeaea;
   position: fixed;
   width: 100%;
   z-index: 999999999;
