@@ -84,6 +84,8 @@ port autoSlide : (Value -> msg) -> Sub msg
 port transitionCheck : (Value -> msg) -> Sub msg
 port swipe : (Value -> msg) -> Sub msg
 port commaF : (Value -> msg) -> Sub msg
+port receivetogetherId : (Value -> msg) -> Sub msg
+port reOpenFile : (Value -> msg) -> Sub msg
 viewerChanges toMsg decoder =
     onStoreChange (\value -> toMsg (decodeFromChange decoder value))
 
@@ -163,6 +165,8 @@ port mobilePaymentCheck : () -> Cmd msg
 port comma : Value -> Cmd msg
 port openPop : () -> Cmd msg
 port hamburgerShut : () -> Cmd msg
+port togetherId : () -> Cmd msg
+port openFile : () -> Cmd msg
 type alias Flags = 
     { token : String
     }

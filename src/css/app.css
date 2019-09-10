@@ -1342,7 +1342,7 @@ margin-top: 2rem;
 .m_togetherWrite_textarea
 {
 
-height: 30rem;
+height: 10rem!important;
 /* font-size: 3rem; */
 }
 

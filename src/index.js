@@ -20,8 +20,8 @@ if (agent.indexOf("msie") != -1) {
 
 
 
-// const url ='http://13.209.49.169:4000/api/v1/'
-const url = 'https://api.yfit.co.kr/api/v1/'
+const url ='http://13.209.49.169:4000/api/v1/'
+// const url = 'https://api.yfit.co.kr/api/v1/'
 var filter = "win16|win32|win64|mac|macintel"; 
 
 if (filter.indexOf( navigator.platform.toLowerCase() ) > 0) {
@@ -167,10 +167,18 @@ app.ports.saveId.subscribe(function (id) {
 })
 
 app.ports.getId.subscribe(function () {
-  // alert(1111)
   var get = localStorage.getItem("id")  
   if (get == null) {
-    return false
+    if (window.location.hash == "#/togetherWrite") {
+      app.ports.receiveId.send (null)
+      // var myself = document.getElementById("together_bottom_btn")
+      // document.getElementById("bttom_btn_inpit").addEventListener(focus, function(){
+      //     alert(111)
+      //     myself.style.position = "absolute"
+      //     myself.style.bottom = "300px"
+      //   })
+    }else {
+    return false}
   } else {
     var parse = JSON.parse (get)
    if (parse.code ==  undefined) {
@@ -181,8 +189,21 @@ app.ports.getId.subscribe(function () {
     else {
     app.ports.receiveId.send (parse)} 
   }
+ 
 })
 
+app.ports.openFile.subscribe( function () {
+  if (document.getElementById("together_bottom_btn") !== null) {
+    var input = document.getElementById("together_bottom_btn");
+    input.click();
+  } else {
+  }
+})
+
+app.ports.togetherId.subscribe(function () {
+  localStorage.removeItem("id")
+  app.ports.receivetogetherId.send('success')
+})
 app.ports.removeId.subscribe(function() {
 localStorage.removeItem("id")
 })
@@ -691,6 +712,7 @@ app.ports.youtubeVideo.subscribe(function (videoId) {
 
 document.addEventListener('touchmove', function(e) {
   if (document.getElementById("noScrInput")){
+    
     // document.body.setAttribute('style','overflow:hidden;');
   e.preventDefault();}
   
@@ -699,6 +721,7 @@ document.addEventListener('touchmove', function(e) {
     return;
   }
 }, { passive: false });
+
 
 document.addEventListener('DOMContentLoaded', () => {
 

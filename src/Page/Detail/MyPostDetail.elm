@@ -42,7 +42,7 @@ type alias TogetherData =
     , nickname: Maybe String
     }
 type alias DetailTogether = 
-    { thembnail : String
+    { thembnail : Maybe String
     , difficulty_name : Maybe String
     , duration : Maybe String
     , exercise_items : Maybe (List TogetherItems)
@@ -50,9 +50,10 @@ type alias DetailTogether =
     , id : Int
     , inserted_at : Maybe String
     , pairing : Maybe (List Pairing) 
-    , title : String
+    , title : Maybe String
     , content : Maybe String
     , snippet : Maybe Snippet
+    , photo : Maybe String
     }
 
 type alias TogetherItems = 
@@ -282,7 +283,7 @@ contentsBody item model=
     div [ class "yf_yfworkout_search_wrap" ]
         [ div [ class "tapbox" ]
             [ div [ class "yf_large" ]
-                [ text item.title ],
+                [ text (caseString item.title) ],
                 contentsItem item model
                
             ]
@@ -295,10 +296,10 @@ contentsItem item model=
                 [
                     div [ class "tapbox" ]
                     [ div [ class "yf_large" ]
-                        [ text item.title ]
+                        [ text (caseString item.title) ]
                     ]
                 , div [class "postVideoWrap"] [
-                    div [ class ("imagethumb " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thembnail ++") ") , onClick (VideoCall (T.justListData item.pairing)) ][]
+                    div [ class ("imagethumb " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ (caseString item.thembnail) ++") ") , onClick (VideoCall (T.justListData item.pairing)) ][]
 
 
                     -- img [class "postImg" ,src item.thembnail, onClick (VideoCall item.pairing) ] []
@@ -326,13 +327,18 @@ contentsItem item model=
                (List.indexedMap YfD.description (List.sortBy .sort (T.exerciseItemCase item.exercise_items)))
             ]
 
-
+caseString item = 
+    case item of
+        Just string ->
+             string
+        _ ->
+            ""
 
 appcontentsItem item model video goback= 
             div [ ]
-            [  appHeaderRDetailClick2 item.title "myPageHeader" goback "fas fa-times" 
+            [  appHeaderRDetailClick2 (caseString item.title) "myPageHeader" goback "fas fa-times" 
                 , div [class "PostVideo"] [
-                     div [ class ("appimagethumb " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thembnail ++") ") , onClick (video (T.justListData item.pairing)) ][]
+                     div [ class ("appimagethumb " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ (caseString item.thembnail) ++") ") , onClick (video (T.justListData item.pairing)) ][]
                     , div [id "myElement"][]
                 ], 
                 div [ class "m_yf_post_textbox" ]

@@ -19,6 +19,8 @@ import Page.Detail.Editorwirte exposing (..)
 import Markdown.Block as Block exposing (Block)
 import Markdown.Config exposing (HtmlOption(..),  defaultSanitizeOptions)
 import Markdown.Inline as Inline
+import Task as Task
+import File exposing(File)
 
 defaultOptions =
     { softAsHardLineBreak = False
@@ -41,6 +43,9 @@ type alias Model =
     , inputValue : String
     , listShow : Bool
     , errType : String
+    , previewUrl : String
+    , getFile : List File.File
+    , m_height : String
     }
 
 type alias DetailData =    
@@ -84,7 +89,10 @@ init session mobile
             , thumbnail = ""
             , description = Nothing}
         , check = mobile
-        , errType = ""}
+        , errType = ""
+        , previewUrl = ""
+        , m_height = "fixed"
+        , getFile = []}
         , Api.getId ()
     )
 type EditorTab
@@ -96,7 +104,7 @@ type PreviewTab
 
 
 type Msg 
-    = GetFile String
+    = GetFile (List File.File)
     | GotSession Session
     | BackBtn
     | GetShare Encode.Value
@@ -106,7 +114,13 @@ type Msg
     | ShareComplete (Result Http.Error Decoder.Success)
     | GetList (Result Http.Error YfD.GetData)
     | ListShow 
+    | WriteComplete (Result Http.Error Decoder.Success)
+    | GotPreviews (List String)
+    -- | OnemoreTry Encode.Value
     -- | KeyDown Int
+
+-- openFile = 
+--     on "click" Decode.value (\_ -> "together_bottom_btn")
 
 shareTogether id session content= 
     let
@@ -120,10 +134,14 @@ shareTogether id session content=
     in
     Api.post (Endpoint.togetherShare id) (Session.cred session) ShareComplete body (Decoder.resultD)
 
-
--- onKeyDown:(Int -> msg) -> Attribute msg
--- onKeyDown tagger = 
---     on "keydown" (Decode.map tagger keyCode)
+togetherWrite getFile title session = 
+    let
+        body = 
+            (List.map (Http.filePart "photo") getFile) ++
+            (List.map (Http.stringPart "content") [title])
+                |> Http.multipartBody 
+    in
+    Api.post Endpoint.togetherWrite (Session.cred session) WriteComplete body (Decoder.resultD)
 
 toSession : Model -> Session
 toSession model =
@@ -139,11 +157,31 @@ subscriptions model =
     Sub.batch [
         Api.receiveId GetShare
         , Session.changes GotSession (Session.navKey model.session)
+        -- , Api.reOpenFile OnemoreTry
     ]
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        -- OnemoreTry try ->
+        --     (model, Api.openFile ())
+        GotPreviews url ->
+            let
+                getUrl =
+                    List.head (url)
+            in
+            case getUrl of
+                Just ok ->
+                    ({model | previewUrl = ok}, Cmd.none)
+                Nothing ->
+                    (model, Cmd.none)
+        WriteComplete (Ok ok) ->
+            let
+                text = Encode.string "등록되었습니다."
+            in
+            (model, Cmd.batch[Route.pushUrl (Session.navKey model.session) Route.Together,  Api.showToast text])
+        WriteComplete (Err err) ->
+            (model, Cmd.none)
         GotSession session ->
             ({model | session = session}, 
             case model.errType of
@@ -185,9 +223,9 @@ update msg model =
             else
             (model, Cmd.none)
         Content str ->
-            ({model | content = str}, Cmd.none)
+            ({model | content = str, m_height = "absolute"}, Cmd.none)
         GoRegist ->
-            (model, Cmd.none)
+            (model, togetherWrite model.getFile model.content model.session)
         GoShare ->
             let
                 st = Encode.encode 0 (Encode.string model.content)
@@ -204,10 +242,27 @@ update msg model =
                     ({model | checkDevice = "공유동영상", videoId = ok}, Api.get GetList (Endpoint.makeDetail ok) (Session.cred model.session)  (Decoder.yfDetailDetail YfD.GetData YfD.DetailData YfD.DetailDataItem YfD.Pairing) )
             
                 Err _ ->
-                    ({model | checkDevice = "공유동영상"}, Cmd.none)
+                    if model.check then
+                    ({model | checkDevice = ""}, Api.openFile ())
+                    else
+                    ({model | checkDevice = ""}, Cmd.none)
             
         GetFile filename ->
-                ({model | fileName = filename}, Cmd.none)
+            let
+                title =
+                    List.head (filename)
+            in
+            case title of
+                Just a ->
+                   
+                    ({model | fileName = File.name a, getFile = filename}
+                    -- , Cmd.none
+                   , Task.perform GotPreviews <| Task.sequence <|
+                    List.map File.toUrl filename
+                    )
+            
+                Nothing ->
+                    (model, Cmd.none)
         BackBtn ->
             (model, Route.pushUrl (Session.navKey model.session) Route.Together)
 
@@ -216,8 +271,20 @@ view model =
     if model.check then
     { title = "함께해요 글쓰기"
     , content =
-        div [] [
+        div [ class "transitionEvent", id (if  String.isEmpty model.checkDevice then "noScrInput" else "")] [
             app model
+            , div [class "bottom_btn_container"][
+                label [ class "file-label", style "display" (if  String.isEmpty model.checkDevice then "block" else "none") ]
+                [ input [ class "file-input", type_ "file", name "resume" , on "change" (Decode.map GetFile targetFiles), multiple False , id "together_bottom_btn"]
+                    []
+                , span [ class "file-cta" ]
+                    [ span [ class "file-icon" ]
+                        [ i [ class "fas fa-upload" ]
+                            []
+                        ]
+                    ]
+                ]
+            ]
         ]
     }
     else
@@ -251,13 +318,13 @@ bodyContents model =
     div [ class "togetherWrite_searchbox" ]
         [ div [ class "togetherWrite_mediabox" ]
             [
-                if model.checkDevice == "" then
-                div [] []
+                if String.isEmpty model.checkDevice then
+                    if String.isEmpty model.previewUrl then
+                    p [class "no_preview"][text "선택 된 이미지가 없습니다."]
+                    else 
+                    img [src model.previewUrl ][]
+                    -- ]
                 else
-                -- div [] [
-                --     img [ src "/image/dummy_video_image3.png" ]
-                --     []
-                -- , text model.checkDevice]
                 videoContent model
                , div [class "togethertextarea to_yf_textarea"] [
                    editorView model.content Content False "내가 만든 운동영상을 공유해요"
@@ -267,7 +334,7 @@ bodyContents model =
             [ 
                 if model.checkDevice == "" then
                 label [ class "file-label" ]
-                [ input [ class "file-input", type_ "file", name "resume" , onChange GetFile ]
+                [ input [ class "file-input", type_ "file", name "resume" , on "change" (Decode.map GetFile targetFiles), multiple False ]
                     []
                 , span [ class "file-cta" ]
                     [ span [ class "file-icon" ]
@@ -298,13 +365,16 @@ bodyContents_app model =
                 div [] []
                 else
                 div [] [
-                text model.checkDevice
-                , videoContent2 model
+                videoContent2 model
                 ]
                 ]
-                -- , textarea [ class "textarea m_togetherWrite_textarea", placeholder "운동, 다이어트, 식단, 일상에 대한 대화를 나눠요", rows 10 , onInput Content ]
-                -- []
-                , div [class "m_apptogethertextarea"] [editorView model.content Content False "운동, 다이어트, 식단, 일상에 대한 대화를 나눠요"
+                , div [class "m_apptogethertextarea"] [
+                    if String.isEmpty model.previewUrl then
+                    div [][]
+                    else
+                    img [src model.previewUrl ][],
+                   textarea [ class "textarea m_togetherWrite_textarea", placeholder "운동, 다이어트, 식단, 일상에 대한 대화를 나눠요", rows 10 , onInput Content ]
+                    []
             ]]
     
         -- ]
@@ -384,14 +454,6 @@ goBtn model =
     ]
 
 
-onChange: (String -> msg) -> Html.Attribute msg
-onChange tagger = 
-    on "change" (Decode.map tagger targetValue)
-
-targetFiles : Decode.Decoder (List String)
-targetFiles = 
-    Decode.at ["target", "files"] (Decode.list Decode.string)
-
 
 videoContent2 model = 
     div [ class "columns m_togetherWrite_yf_box" ]
@@ -438,3 +500,7 @@ videoContent2 model =
 
 
 
+
+
+targetFiles = 
+    Decode.at ["target", "files"] (Decode.list File.decoder)
