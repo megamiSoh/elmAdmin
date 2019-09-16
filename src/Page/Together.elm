@@ -99,8 +99,6 @@ type alias TogetherData =
     , profile : Maybe String
     }
 
-
-
 type alias DetailTogether = 
     { thembnail : Maybe String
     , difficulty_name : Maybe String
@@ -128,20 +126,24 @@ type alias TogetherItems =
     , sort : Int
     , title : String
     , value : Int }
+
 type alias Pairing = 
     { file : String
     , image : String
     , title : String 
     }
+
 type alias Paginate = 
     { page : Int
     , per_page : Int
     , total_count : Int }
+
 type alias Like = 
     { data : LikeData}
 
 type alias LikeData = 
     { count : Int }
+
 type alias ScreenInfo = 
     { scrollHeight : Int
     , scrollTop : Int
@@ -153,7 +155,6 @@ type alias ShareTypeData =
 type alias ShareType = 
     { code : String
     , name : String }
-
 
 init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
@@ -229,7 +230,6 @@ init session mobile
             else
             webDataEncoder 1 9 session ""
         )
-        -- , mydata session
         , Cmd.batch [
             Api.removeJw ()
             , Api.scrollControl ()
@@ -237,6 +237,7 @@ init session mobile
             , Api.hamburgerShut ()
         ]]
     )
+
 webDataEncoder : Int -> Int -> Session -> String -> Cmd Msg
 webDataEncoder page perpage session share_code = 
     let
@@ -266,6 +267,7 @@ dataEncoder page perpage session share_code =
     (Decoder.togetherdatawrap TogetherDataWrap TogetherData DetailTogether Paginate TogetherItems Pairing Snippet DetailItems)
     |> Api.post Endpoint.togetherList (Session.cred session) GetData list 
 
+loadingEncoder : Int -> Int -> Session -> String -> Cmd Msg
 loadingEncoder page perpage session share_code = 
     let
         list = 
@@ -279,14 +281,18 @@ loadingEncoder page perpage session share_code =
     (Decoder.togetherdatawrap  TogetherDataWrap TogetherData DetailTogether Paginate TogetherItems Pairing Snippet DetailItems)
     |> Api.post Endpoint.togetherList (Session.cred session) LoadingGetData list 
 
+scrollEvent : (ScreenInfo -> msg) -> Attribute msg
 scrollEvent msg = 
     on "scroll" (Decode.map msg scrollInfoDecoder)
 
+scrollInfoDecoder : Decode.Decoder ScreenInfo
 scrollInfoDecoder =
     Decode.map3 ScreenInfo
         (Decode.at [ "target", "scrollHeight" ] Decode.int)
         (Decode.at [ "target", "scrollTop" ] Decode.int)
         (Decode.at [ "target", "offsetHeight" ] Decode.int)    
+
+onLoad : msg -> Attribute msg
 onLoad msg =
     on "load" (Decode.succeed msg)
 
@@ -304,7 +310,6 @@ type Msg
     = IsActive String
     | CheckDevice Encode.Value
     | GetData (Result Http.Error TogetherDataWrap)
-    -- | Loading Encode.Value
     | IsLike (Int, Int)
     | LikeComplete (Result Http.Error Like)
     | PageBtn (Int, String)
@@ -331,6 +336,7 @@ type Msg
     | GoWrite
     | GoNextPage Encode.Value
 
+mydata : Session -> Cmd Msg
 mydata session = 
     Decoder.sessionCheckMydata
         |> Api.get MyInfoData Endpoint.myInfo (Session.cred session)    
@@ -474,7 +480,7 @@ update msg model =
             in
             ({model | appData = udtLike,oneOfdata = ok.data, togetherData = result}, Api.getscrollHeight (Encode.bool True))
         LikeUpdate (Err err) ->
-            let _ = Debug.log "err" err
+            let
                 serverErrors =
                     Api.decodeErrors err
             in  
@@ -496,8 +502,6 @@ update msg model =
                         [ ("file", Encode.string x.file)
                         , ("image", Encode.string x.image)
                         , ("title", Encode.string x.title)]
-                -- id = 
-                --     Encode.string (String.fromInt(idx))
             in
             ({model | videoStart = stringint, zindex = "zindex" ++ String.fromInt(idx)}, Api.togetherDataList pair)
         ScrapComplete (Ok ok) ->
@@ -525,7 +529,6 @@ update msg model =
             ({model| infiniteLoading = False, loading = False}, Cmd.none)
             else
             ({model | appData = model.appData ++ ok.data, infiniteLoading = False, loading = False}, Cmd.none
-            -- , Api.togetherDataList page 
             )
         LoadingGetData (Err err) ->
             ({model | loading = False}, Cmd.none)
@@ -618,6 +621,8 @@ view model =
                     web model nocontentsBody
                 ]
             }
+
+justData : Maybe String -> String
 justData item = 
     case item of
         Just val ->
@@ -626,6 +631,7 @@ justData item =
         Nothing ->
             "Guest"
 
+justDatadescription : Maybe String -> String
 justDatadescription item = 
     case item of
         Just val ->
@@ -634,6 +640,7 @@ justDatadescription item =
         Nothing ->
             " - "
 
+justString : Maybe String -> String
 justString item = 
     case item of    
         Just string ->
@@ -641,9 +648,9 @@ justString item =
         Nothing ->
             ""
 
-web model contentsItem= 
-    div [
-        ] [div [class "container",
+web : Model -> (Model -> Html Msg) -> Html Msg
+web model contentsItem = 
+    div [] [div [class "container",
                 scrollEvent ScrollEvent, id "searchHeight"][
                     if model.need2login then
                     need2loginAppDetailRoute Route.Together
@@ -661,8 +668,8 @@ web model contentsItem=
                     ]
             ]
 
+app : Model -> Html Msg
 app model =
-     
     div [class "container scrollContainer"] [
         justappHeader "함께해요" "togetherHeader",
         div [class "spinnerBack", style "display" (if model.loading then "flex" else "none")] [
@@ -681,7 +688,7 @@ app model =
         ]
     ]
 
-
+apptabItem : Model -> ShareType -> Html Msg
 apptabItem model item = 
     li [ classList [
                     ("m_together_yf_active" , model.isActive == item.code)
@@ -704,6 +711,7 @@ apptabItem model item =
                     [],  text item.name
                 ]
 
+appTab : Model -> Html Msg
 appTab model = 
     div [  ]
         [  ul [ class "m_to_menubox", style "width" "100%" ] 
@@ -711,7 +719,7 @@ appTab model =
             
         ]
             
-
+appStartBtn : Html Msg
 appStartBtn = 
     div [ class "m_to_mediabox" ]
         [ div [ class "media-content m_to_yf_content" ]
@@ -726,6 +734,8 @@ appStartBtn =
             ]
         ]
 
+
+justListData : Maybe (List b) -> List b
 justListData item = 
     case item of
         Just a ->
@@ -734,6 +744,7 @@ justListData item =
         Nothing ->
             []
 
+appContentsItem : Int -> TogetherData -> Model -> Html Msg
 appContentsItem idx item model=
     if item.is_delete then
      span [] []
@@ -912,23 +923,16 @@ appContentsItem idx item model=
                         
                     ]
                 ]
-        -- --  div [ class "level-left m_to_yf_scrap", onClick (Scrap item.id) ]
-        --     [
-        --     --      text( "스크랩" ++ String.fromInt(item.isLike) ++"개" ) 
-        --     -- , 
-        --     -- i [ class "fas fa-bookmark together_bookmark" ]
-        --     --     []
-        --     ] 
-        
-        -- ]
 
 
+tabItem : Model -> ShareType -> Html Msg
 tabItem model item = 
     li [ classList [
             ("together_yf_active" , model.isActive == item.code)
         ], onClick (IsActive item.code ) ]
         [ text item.name ]
 
+tabbox : Model -> Html Msg
 tabbox model=
     div [ class "tapbox" ]
         [ div [ class "tabs is-toggle is-fullwidth is-large" ]
@@ -937,6 +941,7 @@ tabbox model=
               ( tabItem model model.all :: List.map (\x -> tabItem model x) model.shareCode )
             ]
         ]
+nocontentsBody : Model -> Html Msg
 nocontentsBody model=
     div [ class "together_searchbox_wrap" ]
         [ div [ class "together_searchbox" ]
@@ -946,6 +951,7 @@ nocontentsBody model=
         
         ]
 
+contentsBody : Model -> Html Msg
 contentsBody model=
     div [ class "together_searchbox_wrap" ]
         [ div [ class "together_searchbox" ]
@@ -986,6 +992,7 @@ contentsBody model=
         ]
     ]
 
+detailItem : TogetherData -> Model -> Html Msg
 detailItem item model =
     let
         pairing = 
@@ -1044,7 +1051,7 @@ detailItem item model =
                         , if List.length (justListData detail) < 5 then
                         div [class "detailData"]  
                             (List.indexedMap (\idx x ->
-                                webdetailData idx x model.showAllText
+                                webdetailData idx x 
                             ) (List.sortBy .sort (justListData detail)))
                         
                         else
@@ -1052,7 +1059,7 @@ detailItem item model =
                             div [][
                             div [class "detailData"]  
                             (List.indexedMap (\idx x ->
-                                webdetailData idx x model.showAllText
+                                webdetailData idx x 
                             )  (List.sortBy .sort (justListData detail)))
                             , div [class "cursor moreStyle", onClick ShowAllText] [text "닫기.."]
                             ]
@@ -1060,7 +1067,7 @@ detailItem item model =
                             div [][
                             div [class "detailData"]  
                             (List.indexedMap (\idx x ->
-                                webdetailData idx x model.showAllText
+                                webdetailData idx x
                             ) (List.take 4 (List.sortBy .sort (justListData detail))))
                             , div [class "cursor moreStyle", onClick ShowAllText] [text "더보기.."]
                             ]
@@ -1083,8 +1090,6 @@ detailItem item model =
             div [] [
             div [ class "together_yf_text togetherVideo" ]
                     [    div [class "button is-danger together_closebtn", onClick (TogetherDetail 0)] [text "닫기"],
-                    -- case thumbnail of
-                    --     Just thumb ->
                             div ([class "thumbTest"])[  
                                 div [class "clickThis"
                                 , style "display" 
@@ -1129,7 +1134,7 @@ detailItem item model =
                         , if List.length (justListData detail) < 5 then
                         div [class "detailData"]  
                             (List.indexedMap (\idx x ->
-                                webdetailData idx x model.showAllText
+                                webdetailData idx x 
                             ) (List.sortBy .sort (justListData detail)))
                         
                         else
@@ -1137,7 +1142,7 @@ detailItem item model =
                             div [][
                             div [class "detailData"]  
                             (List.indexedMap (\idx x ->
-                                webdetailData idx x model.showAllText
+                                webdetailData idx x
                             )  (List.sortBy .sort (justListData detail)))
                             , div [class "cursor moreStyle", onClick ShowAllText] [text "닫기.."]
                             ]
@@ -1145,7 +1150,7 @@ detailItem item model =
                             div [][
                             div [class "detailData"]  
                             (List.indexedMap (\idx x ->
-                                webdetailData idx x model.showAllText
+                                webdetailData idx x 
                             ) (List.take 4 (List.sortBy .sort (justListData detail))))
                             , div [class "cursor moreStyle", onClick ShowAllText] [text "더보기.."]
                             ]
@@ -1164,7 +1169,9 @@ detailItem item model =
                     ]
                 ]
             ]
-webdetailData idx item len = 
+
+webdetailData : Int -> TogetherItems -> Html Msg
+webdetailData idx item  = 
     div [] [
         ul [] [
         li [][text ((String.fromInt (item.sort)) ++ ". " ++ item.title ++ " x " ++ (
@@ -1175,6 +1182,8 @@ webdetailData idx item len =
         ))]
     ]
     ]
+
+userItem : Int -> WebTogetherData -> Model -> Html Msg
 userItem idx item model =
     let
         contentsHead contents = 
@@ -1233,7 +1242,6 @@ userItem idx item model =
                             ]
                         ]
                     , img [class "toImg", src (contentsHead "photo")] []
-                    -- , div [][text (contentsHead "content")]
                     ]
                 ]     
             _ ->
@@ -1260,25 +1268,28 @@ userItem idx item model =
                 ]
     
 
+exerciseItemCase : Maybe (List a) -> List a
 exerciseItemCase exercise_item = 
     case exercise_item of
         Just ok ->
             ok
         Nothing ->
             []
+
+detailData : DetailTogether -> Model -> Int -> Html Msg
 detailData item model id= 
-    if List.length item.exercise_item < 5 then
+    if List.length (exerciseItemCase item.exercise_items) < 5 then
         div[class "detailData"] [
         ul [] [
          li [] 
-         (List.indexedMap (\idx x->  exerciseItems idx x model id) (List.sortBy .sort item.exercise_item))]
+         (List.indexedMap (\idx x->  exerciseItems idx x model id) (List.sortBy .sort (exerciseItemCase item.exercise_items)))]
      ]
     else
     if model.idx == item.id then
             div[class "detailData"] [
                 ul [] [
                 li [] 
-                (List.indexedMap (\idx x->  exerciseItems idx x model id) (List.sortBy .sort item.exercise_item))
+                (List.indexedMap (\idx x->  exerciseItems idx x model id) (List.sortBy .sort (exerciseItemCase item.exercise_items)))
             ]
             , div [onClick (ShowAllTextApp 0)] [text "닫기"]
             ]
@@ -1286,11 +1297,12 @@ detailData item model id=
             div[class "detailData"] [
                 ul [] [
                 li [] 
-                (List.take 4 (List.indexedMap (\idx x->  exerciseItems idx x model id) (List.sortBy .sort item.exercise_item)))
+                (List.take 4 (List.indexedMap (\idx x->  exerciseItems idx x model id) (List.sortBy .sort (exerciseItemCase item.exercise_items))))
             ]
             , div [onClick (ShowAllTextApp item.id)] [text "더보기 .."]
             ]
 
+appDetailData : DetailTogether -> Model -> Int -> Html Msg
 appDetailData item model id= 
     if List.length (exerciseItemCase item.exercise_items) < 5 then
         div[class "detailData"] [
@@ -1316,14 +1328,9 @@ appDetailData item model id=
             , div [onClick (ShowAllTextApp item.id)] [text "더보기 .."]
             ]
      
-   
+exerciseItems : Int -> TogetherItems -> Model -> Int -> Html Msg
 exerciseItems idx item model id=
-    li [
-        -- classList 
-        -- [ ("hideList", (idx >= 3))
-        -- , ("allShow", model.showAllText == id)
-        -- ]
-    ] [
+    li [] [
         text ((String.fromInt (item.sort)) ++ ". " ++ item.title ++ " x " ++ (
             if item.is_rest == False then
             String.fromInt (item.value) ++ "세트"

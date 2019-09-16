@@ -42,6 +42,7 @@ type Msg
     | GotSession Session
 
 
+subscription : Model -> Sub Msg
 subscription model = 
     Session.changes GotSession (Session.navKey model.session)
 
@@ -53,6 +54,7 @@ toCheck : Model -> Bool
 toCheck model =
     model.check
 
+pwdEncode : Model -> Session -> Cmd Msg
 pwdEncode model session = 
     let
         list = 
@@ -93,7 +95,6 @@ update msg model =
             in
             (model, Cmd.batch[Api.showToast textEncode, 
             Route.pushUrl (Session.navKey model.session) Route.MyPage
-            -- Api.historyUpdate (E.string "myPage")
             ])
         PwdComplete (Err err) ->
             let
@@ -113,6 +114,7 @@ view model =
     ]}
 
 
+setPwdSetting : Model -> Html Msg
 setPwdSetting model = 
     div [ class "containerwrap" ]
     [ div [ class "container is-fullhd" ]

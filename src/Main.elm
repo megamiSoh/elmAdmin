@@ -59,11 +59,7 @@ import Page.MyPageMenu.PaperWeightList as MJList
 import Page.Detail.PaperWeightDetail as MJD
 import Page.YourFitPrice as YP
 import Page.GateProgress as GP
--- type alias Check = 
---     String
 
-type alias MainModel = 
-    { mypageMenu : String }
 
 type Model 
      = Redirect Session Bool
@@ -111,11 +107,6 @@ type Model
      | MJDModel MJD.Model
      | YPModel YP.Model
      | GPModel GP.Model
-    --  | PageModel Page.Model
-    --  | CheckDevice Check
-    
-
-
 
 type Msg
     = Ignored
@@ -167,13 +158,13 @@ type Msg
     | YPMsg YP.Msg
     | GPMsg GP.Msg
 
+subscriptions : Model -> Sub Msg
 subscriptions model = 
     case model of
         Redirect session _ ->
             Sub.none
         Home item ->
             Sub.map HomeMsg (Home.subscriptions item)
-            -- Sub.none
         MakeExerModel item ->
             Sub.map MakeExerMsg (MakeExer.subscriptions item)
         MyPageModel item->
@@ -181,7 +172,6 @@ subscriptions model =
         TogetherModel item ->
             Sub.map TogetherMsg (Together.subscriptions item)
         YourfitExerModel item ->
-            -- Sub.none
             Sub.map YourfitExerMsg (YourfitExer.subscriptions item)
         YourfitDetailModel item ->
             Sub.map YourfitDetailMsg (YourfitDetail.subscriptions item)
@@ -266,12 +256,11 @@ init : Maybe Cred -> Bool -> Url -> Key -> ( Model, Cmd Msg )
 init maybeViewer check url navKey =
         changeRouteTo (Route.fromUrl url) (Redirect (Session.fromViewer navKey maybeViewer) check)
 
--- changeRouteTo : Maybe Route ->  Model  -> (Model , Cmd Msg)
+changeRouteTo : Maybe Route ->  Model  -> (Model , Cmd Msg)
 changeRouteTo maybeRoute model =
     let
         session = toSession model
         check = toCheck model
-
     in
     case maybeRoute of
         Nothing -> 
@@ -421,7 +410,7 @@ changeRouteTo maybeRoute model =
                 |> updateWith GPModel GPMsg model
             
 
-
+toCheck : Model -> Bool
 toCheck page =  
     case page of
         Redirect session check ->
@@ -616,8 +605,6 @@ update msg model =
     case ( msg, model ) of
         ( Ignored, _ ) ->
             ( model, Cmd.none )
-        -- (UpdateStr subMsg , CheckDevice cdmodel) ->
-        --     (model, Cmd.none)
         ( ClickedLink urlRequest, _ ) ->
             case urlRequest of
                 Browser.Internal url ->
@@ -686,7 +673,7 @@ update msg model =
                 |> updateWith FaqModel FaqMsg model
         (InfoMsg subMsg, InfoModel imodel) ->
             Info.update subMsg imodel
-                |> updateWith InfoModel InfoMsg imodel
+                |> updateWith InfoModel InfoMsg model
         (MealRMsg subMsg, MealRModel mmodel) ->
             MealR.update subMsg mmodel
                 |> updateWith MealRModel MealRMsg model
@@ -722,65 +709,65 @@ update msg model =
                 |> updateWith FaqWModel FaqWMsg model
         (LoginMsg subMsg , LoginModel lmodel) ->
             Login.update subMsg lmodel
-                |> updateWith LoginModel LoginMsg lmodel
+                |> updateWith LoginModel LoginMsg model
         (SignupMsg subMsg, SignupModel smodel) ->
             Signup.update subMsg smodel
-                |>updateWith SignupModel SignupMsg smodel
+                |>updateWith SignupModel SignupMsg model
         (MakeEditMsg subMsg, MakeEditModel mmodel) ->
             MakeEdit.update subMsg mmodel
-                |> updateWith MakeEditModel MakeEditMsg mmodel
+                |> updateWith MakeEditModel MakeEditMsg model
         (EmptyMsg subMsg, EmptyModel emodel) ->
             Empty.update subMsg emodel
-                |> updateWith EmptyModel EmptyMsg emodel
+                |> updateWith EmptyModel EmptyMsg model
         (EditFilterMsg subMsg, EditFilterModel emodel) ->
             EditFilter.update subMsg emodel
-                |> updateWith EditFilterModel EditFilterMsg emodel
+                |> updateWith EditFilterModel EditFilterMsg model
         (PostDMsg subMsg, PostDModel pmodel) ->
             PostD.update subMsg pmodel
-                |> updateWith PostDModel PostDMsg pmodel
+                |> updateWith PostDModel PostDMsg model
         (ScrapDMsg subMsg, ScrapDModel smodel) ->
             ScrapD.update subMsg smodel
-                |> updateWith ScrapDModel ScrapDMsg smodel
+                |> updateWith ScrapDModel ScrapDMsg model
         (MSearchMsg subMsg, MSearchModel mmodel) ->
             MSearch.update subMsg mmodel
-                |> updateWith MSearchModel MSearchMsg mmodel
+                |> updateWith MSearchModel MSearchMsg model
         (MakeEditLastMsg subMsg, MakeEditLastModel mmodel) ->
             MakeEditLast.update subMsg mmodel
-                |> updateWith MakeEditLastModel MakeEditLastMsg mmodel
+                |> updateWith MakeEditLastModel MakeEditLastMsg model
         (PrivateMsg subMsg, PrivateModel pmodel) ->
             Private.update subMsg pmodel
-                |> updateWith PrivateModel PrivateMsg pmodel
+                |> updateWith PrivateModel PrivateMsg model
         (SetPwdMsg subMsg, SetPwdModel smodel) ->
             SetPwd.update subMsg smodel
-                |> updateWith SetPwdModel SetPwdMsg smodel
+                |> updateWith SetPwdModel SetPwdMsg model
         (FPwdMsg subMsg , FPwdModel fmodel) ->
             FPwd.update subMsg fmodel
-                |> updateWith FPwdModel FPwdMsg fmodel
+                |> updateWith FPwdModel FPwdMsg model
         (TAMsg subMsg, TAModel tmodel) ->
             TA.update subMsg tmodel
-                |> updateWith TAModel TAMsg tmodel
+                |> updateWith TAModel TAMsg model
         (CMsg subMsg, CModel cmodel) ->
             C.update subMsg cmodel
-                |> updateWith CModel CMsg cmodel
+                |> updateWith CModel CMsg model
         (CDMsg subMsg, CDModel cmodel) ->
             CD.update subMsg cmodel
-                |> updateWith CDModel CDMsg cmodel
+                |> updateWith CDModel CDMsg model
         (MJListMsg subMsg, MJListModel mmodel) ->
             MJList.update subMsg mmodel
-                |> updateWith MJListModel MJListMsg mmodel
+                |> updateWith MJListModel MJListMsg model
         (MJDMsg subMsg, MJDModel mmodel ) ->
             MJD.update subMsg mmodel
-                |> updateWith MJDModel MJDMsg mmodel
+                |> updateWith MJDModel MJDMsg model
         (YPMsg subMsg, YPModel ymodel) ->
             YP.update subMsg ymodel
-                |> updateWith YPModel YPMsg ymodel
+                |> updateWith YPModel YPMsg model
         (GPMsg subMsg, GPModel gmodel) ->
             GP.update subMsg gmodel
-                |> updateWith GPModel GPMsg gmodel
+                |> updateWith GPModel GPMsg model
         ( _, _ ) ->
             ( model, Cmd.none )  
         
-            
+updateWith : (subModel -> Model) -> (subMsg -> Msg) -> Model -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )      
 updateWith toModel toMsg model (subModel, subCmd) =
     (toModel subModel
     , Cmd.map toMsg subCmd)
@@ -804,8 +791,7 @@ view model =
     case model of
         Redirect _ _->
             viewPage Page.Other (\_ -> Ignored) Blank.view
-        -- CheckDevice item ->
-        --     viewPage Page.Other (\_ -> Ignored) Blank.view
+
         Home home ->
             viewPage Page.Home HomeMsg (Home.view home)
         
@@ -904,8 +890,6 @@ view model =
             viewPage Page.YP YPMsg (YP.view item)
         GPModel item ->
             viewPage Page.GP GPMsg (GP.view item)
-        -- _ ->
-        --      viewPage Page.Other (\_ -> Ignored) Blank.view
 
 main : Program Value Model Msg
 main =

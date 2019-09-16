@@ -18,7 +18,7 @@ import Page.Detail.MyPostDetail as MyD
 
 type alias Model = 
     { session : Session
-    ,checkDevice : String
+    , checkDevice : String
     , check : Bool
     , page : Int
     , per_page : Int
@@ -62,7 +62,7 @@ type alias Paginate =
     , per_page : Int
     , total_count : Int }
 
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
         { session = session
@@ -113,17 +113,19 @@ init session mobile
         ]
     )
 
+scrollEvent : (ScreenInfo -> msg) -> Attribute msg
 scrollEvent msg = 
     on "scroll" (Decode.map msg scrollInfoDecoder)
 
 
-
+scrollInfoDecoder : Decode.Decoder ScreenInfo
 scrollInfoDecoder =
     Decode.map3 ScreenInfo
         (Decode.at [ "target", "scrollHeight" ] Decode.int)
         (Decode.at [ "target", "scrollTop" ] Decode.int)
         (Decode.at [ "target", "offsetHeight" ] Decode.int)  
 
+mypostList : Int -> Int -> Session -> Cmd Msg
 mypostList page per_page session = 
     let
         body = 
@@ -139,7 +141,6 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch[Api.successId SaveId
     , Session.changes GotSession (Session.navKey model.session)]
-    -- P.check CheckDevice
 
 type Msg 
     = GetList (Result Http.Error DataList)
@@ -168,7 +169,6 @@ toSession model =
 toCheck : Model -> Bool
 toCheck model =
     model.check
--- Endpoint.myPostDelete id
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -231,7 +231,6 @@ update msg model =
                 Ok ok ->
                     (model,
                     Route.pushUrl (Session.navKey model.session) Route.PostD
-                    -- Api.historyUpdate (Encode.string "myPostDetail")
                      )
             
                 Err _ ->
@@ -249,18 +248,10 @@ update msg model =
             (model, Api.saveId encodeId)
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
              if (scrollHeight - scrollTop) <= offsetHeight then
-                -- case toInt of
-                --     Just val ->
-                        -- if (val  < (model.takeList + 10)) then
-                        --     ({model | takeList = val, infiniteLoading = False},Cmd.none)
-                        -- else 
                 if List.length model.checkList > 0 then
                 (model, Cmd.none)
                 else
                 ({model | infiniteLoading = True}, mypostList model.page model.per_page model.session)
-                    -- Nothing ->
-                    --     (model, Cmd.none)
-                
             else
                 (model, Cmd.none)
         PageBtn (idx, str) ->
@@ -341,10 +332,12 @@ view model =
             [
                 commonJustHeader "/image/icon_management.png" "나의 게시물관리"
                 , div [style "display" (if List.isEmpty model.data.data then "none" else "block")] [contentsBody model.data model.pageNum model.show]
-                , div [style "display" (if List.isEmpty model.data.data then "block" else "none")] [nocontentsBody model.data model.pageNum model.show]
+                , div [style "display" (if List.isEmpty model.data.data then "block" else "none")] [nocontentsBody model.pageNum model.show]
             ]
             ]
         }
+
+justData : Maybe String -> String
 justData item =
     case item of
         Just val ->
@@ -353,6 +346,7 @@ justData item =
         Nothing ->
             "내용 없음"
 
+web : Model -> Html Msg
 web model= 
      div [ class "container" ]
         [
@@ -360,12 +354,16 @@ web model=
             , contentsBody model.data model.pageNum model.show
             
         ]
+
+app : Model -> (List Data -> Bool -> Bool -> String -> Html Msg) -> Html Msg
 app model appcontent=
     div[class "container"] [
         appHeaderRDetail "나의 게시물관리" "myPageHeader whiteColor" Route.MyPage "fas fa-angle-left"
         , appcontent model.dataList model.infiniteLoading model.loading model.show
     ]
-nocontentsBody model pageNum show=
+
+nocontentsBody : Int -> String -> Html Msg
+nocontentsBody pageNum show=
     div [ class "myPost_searchbox" ]
         [ div [ class "myPost_mediabox" ]
             [ 
@@ -375,14 +373,14 @@ nocontentsBody model pageNum show=
                 ]
         ]
         ]
+    
+contentsBody : DataList -> Int -> String -> Html Msg
 contentsBody model pageNum show=
     div [ class "myPost_searchbox" ]
         [ div [ class "myPost_mediabox" ]
             [ 
-            
             div[] [ul [ class "cbp_tmtimeline" ]
             (List.map contentsLayout model.data)
-            
             , pagination 
                 PageBtn
                 model.paginate
@@ -390,22 +388,20 @@ contentsBody model pageNum show=
         ]
         , deltelayer show
         ]
+
+appcontentsBody : List Data -> Bool -> Bool -> String -> Html Msg
 appcontentsBody model infiniteloading loading show=
     div [ class "myPost_searchbox" ]
         [  div [ class "m_myPost_mediabox", scrollEvent ScrollEvent ]
             [ 
                 ul [ class "m_cbp_tmtimeline" ]
                 (List.map appcontentsLayout model)
-                -- ,if infiniteloading then
-                --     div [class "loadingPosition"] [
-                --     infiniteSpinner
-                --     ]
-                -- else
-                -- span [] []
-               
         ]
         , appdeltelayer show
         ]
+
+
+noappcontentsBody : List Data -> Bool -> Bool -> String -> Html Msg
 noappcontentsBody model infiniteloading loading show=
     div [ class "myPost_searchbox" ]
         [  div [ class "m_myPost_mediabox", scrollEvent ScrollEvent ]
@@ -417,6 +413,8 @@ noappcontentsBody model infiniteloading loading show=
                
         ]
         ]
+
+contentsLayout : Data -> Html Msg
 contentsLayout item= 
     li []
         [ time [ class "cbp_tmtime" ]
@@ -440,6 +438,7 @@ contentsLayout item=
             ]
         ]
 
+appcontentsLayout : Data -> Html Msg
 appcontentsLayout item= 
     li []
         [ time [ class "m_cbp_tmtime" ]
@@ -465,7 +464,7 @@ appcontentsLayout item=
         ]
     
 
-
+appdeltelayer : String -> Html Msg
 appdeltelayer show =
     div [class ("m_delete_post " ++ show)] [
          div [ class "yf_delete_popup" ]
@@ -480,6 +479,7 @@ appdeltelayer show =
             ]
     ]
 
+deltelayer : String -> Html Msg
 deltelayer show =
     div [class ("delete_post " ++ show)] [
          div [ class "yf_delete_popup" ]

@@ -98,20 +98,13 @@ app.ports.scrollRight.subscribe(function() {
 });
 })
 
-// app.ports.openPop.subscribe(function () {
-//   window.open('/#/yourfitPrice', 'popup01', 'width= 1300, height = 650 scrollbars= 0, toolbar=0, menubar=no');
-// })
 app.ports.comma.subscribe(function (x) {
   var list = x.price
   var result = []
   for(let i = 0; i < list.length; i++ ){
-    // alert(list[i])
     result.push(list[i].toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","))
   }
-  // alert()
-    // var commaFormat = x.toString()
     app.ports.commaF.send(result)
-    // alert(JSON.stringify(x.price))
 })
 
 app.ports.scrollLeft.subscribe(function() {
@@ -147,10 +140,7 @@ app.ports.getKey.subscribe(function () {
   var get = localStorage.getItem ("contentsKey") 
   if (window.location.hash == "#/mealRecord" ||  window.location.hash == "#/mealRecordM")
   {
-    var list = get.split(',')
-    // console.log(
   app.ports.receiveKey.send(get)
-  // console.log({code : list[0], date : list[1]})
   } else {
   app.ports.receiveKey.send(get)
 }
@@ -171,12 +161,6 @@ app.ports.getId.subscribe(function () {
   if (get == null) {
     if (window.location.hash == "#/togetherWrite") {
       app.ports.receiveId.send (null)
-      // var myself = document.getElementById("together_bottom_btn")
-      // document.getElementById("bttom_btn_inpit").addEventListener(focus, function(){
-      //     alert(111)
-      //     myself.style.position = "absolute"
-      //     myself.style.bottom = "300px"
-      //   })
     }else {
     return false}
   } else {
@@ -383,9 +367,7 @@ app.ports.togetherDataList.subscribe(function(data) {
 }
 })
 app.ports.removeJw.subscribe( function () {
-  // jwplayer().remove()
   jwplayer().length == undefined ? "" : jwplayer().remove()
-  // alert (document.getElementById('myElement'))
 })
 app.ports.showToast.subscribe(function (text) {
     var x = document.getElementById("webToast") || document.getElementById("appToast");
@@ -403,9 +385,6 @@ app.ports.getscrollHeight.subscribe(function(data) {
     
     }
     else {
-    //   console.log (heightValue)
-    // document.documentElement.style.top = '-' + String(heightValue) + 'px'
-    // document.documentElement.style.position = "fixed"
   }
   }  else {
     if (document.getElementById("calendarImg")) {
@@ -422,12 +401,6 @@ app.ports.scrollControl.subscribe (function () {
     document.body.style.overflow = ""
   } 
   else if( window.location.hash == "#/myAccount") {
-    // document.getElementById().ontouchend = (e) => {
-    //   e.preventDefault();
-      
-    // }
-   // console.log()
-  //  document.documentElement.style.height = 0
   }
    else {
     document.body.style.overflow = "hidden"
@@ -630,7 +603,6 @@ if (document.getElementById('slide') !== null) {
       
 app.ports.hamburgerShut.subscribe(function() {
   if (document.getElementsByClassName("hamburger_is_active")[0] == undefined){
-    // document.getElementById("expandMenu").setAttribute('class','hamburger_is_active')
     }
     else {
       document.getElementById("expandMenu").removeAttribute('class','hamburger_is_active')
@@ -643,16 +615,8 @@ app.ports.hamburgerShut.subscribe(function() {
 
   
 
-app.ports.valueReset.subscribe(function (id) {
-  // alert(document.getElementById(id +"after"))
-  // document.getElementById(id +"before").value = ""
-  // document.getElementById(id +"after").value = ""
-  
-})
 
 app.ports.youtubeVideo.subscribe(function (videoId) {
-  var decodeValue = JSON.stringify(videoId)
-  // app.ports.hideThum.send(videoId)
   var iframes = document.querySelectorAll('iframe');
     for (var i = 0; i < iframes.length; i++) {
         iframes[i].parentNode.removeChild(iframes[i]);
@@ -698,12 +662,10 @@ app.ports.youtubeVideo.subscribe(function (videoId) {
       var total = scrTop + scrofh >= scrH
       if (total) {
           app.ports.touch.send(scrH)
-          console.log(scrH)
       }
      
     }
     else {
-      // console.log ("get outout")
       return;
     }
   }, 
@@ -712,12 +674,9 @@ app.ports.youtubeVideo.subscribe(function (videoId) {
 
 document.addEventListener('touchmove', function(e) {
   if (document.getElementById("noScrInput")){
-    
-    // document.body.setAttribute('style','overflow:hidden;');
   e.preventDefault();}
   
   else {
-    // console.log ("get outout")
     return;
   }
 }, { passive: false });

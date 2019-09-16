@@ -7,12 +7,14 @@ import Html exposing (..)
 import Port exposing(..)
 import Page.Common exposing(..)
 import Route as Route
+
 type alias Model 
     = {
         session : Session
         , check : Bool
     }
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
         { session = session
@@ -70,7 +72,7 @@ view model =
         ]
     }
 
-
+termsArticle : String -> Html Msg
 termsArticle style = 
     div[class"pre_box"][
     pre [ class style ]
@@ -572,6 +574,8 @@ termsArticle style =
         ]
     ]
 
+
+goBtn : Html Msg
 goBtn = 
      div [ class "button is-dark yf_darkbut", onClick Back ]
     [ text "확인" ]

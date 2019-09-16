@@ -10,7 +10,8 @@ type alias Model
     = {
         session : Session
     }
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
         {session = session}

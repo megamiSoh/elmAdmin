@@ -128,6 +128,7 @@ subscriptions model =
     , Session.changes GotSession (Session.navKey model.session)
     , Api.touch ReceiveScroll]
 
+faqEncode : Int -> Int -> Session -> Cmd Msg
 faqEncode page per_page session =
     let
         body = 
@@ -137,7 +138,8 @@ faqEncode page per_page session =
                     |> Http.jsonBody 
     in
     Api.post Endpoint.faqlist (Session.cred session) FaqList body (Decoder.faqList Faq Data Page)
-    
+
+detailApi : String -> Session -> Cmd Msg    
 detailApi id session = 
     Api.get AppDetail (Endpoint.faqDetail id) (Session.cred session) (Decoder.faqdetail CD.Data Detail)
 
@@ -175,12 +177,15 @@ toCheck : Model -> Bool
 toCheck model =
     model.check
 
+regist : Model -> (Result Http.Error Decoder.Success -> msg) -> Cmd msg
 regist model = 
     Fw.faqEncode model.title model.content model.session
 
+scrollEvent : (ScreenInfo -> msg) -> Attribute msg
 scrollEvent msg = 
     on "scroll" (Decode.map msg scrollInfoDecoder)
 
+scrollInfoDecoder : Decode.Decoder ScreenInfo
 scrollInfoDecoder =
     Decode.map3 ScreenInfo
         (Decode.at [ "target", "scrollHeight" ] Decode.int)
@@ -287,15 +292,6 @@ update msg model =
                     faqEncode  (model.page + 1) model.per_page session
                 )
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
-            -- let 
-            --     endOfPage =  model.faq.paginate.total_count // model.per_page 
-            -- in
-            --  if (scrollHeight - scrollTop) <= offsetHeight then
-            --     if model.page < (endOfPage + 1) then
-            --     ({model | page = model.page + 1}, faqEncode  (model.page + 1) model.per_page model.session )
-            --     else
-            --     ({model | ofheight = True}, Cmd.none)
-            -- else
                 (model, Cmd.none)
         DeleteSuccess (Ok ok) ->
             (model, Cmd.batch [
@@ -393,6 +389,8 @@ view model =
             , web model
         ]
     }
+
+web : Model -> Html Msg
 web model = 
     div [ class "container" ]
         [
@@ -409,6 +407,8 @@ web model =
             ],
             faqWrite
         ]
+
+app : Model -> Html Msg
 app model = 
     div [class ("container topSearch_container " ++ (if model.showWrite || model.showDetail then "fadeContainer" else ""))] [
         appHeaderConfirmDetailleft "1:1문의" "myPageHeader" (GoBack "home") (GoBack "write") "글쓰기" 
@@ -419,10 +419,14 @@ app model =
         appContentsBody model
 
     ]
+
+appContentsBody : Model -> Html Msg
 appContentsBody model=
     div [class "table scrollHegiht" , scrollEvent ScrollEvent, id "searchHeight"] [
         div [class "m_loadlistbox"] (List.indexedMap (\idx x ->  itemLayout idx x model) model.appFaqData)
     ]
+
+itemLayout : Int -> Data -> Model -> Html Msg
 itemLayout idx item model =
         div [class "eventArea" ,onClick (Show idx item.id)] [
             div [class "eventAreaChild"] [
@@ -441,17 +445,21 @@ itemLayout idx item model =
             ]
             , expandQ idx model item.id
         ]
+
+expandAnswer : String -> Html Msg
 expandAnswer title = 
         div [class"answerbox"] [
             p[class"answerbox_text"][text ("Re: " ++  title)]
         ]
+
+showAnswer : Maybe String -> Html Msg
 showAnswer answer= 
     div [class"tr_showAnswer"]
         [   pre [class "faq_q"][text (justString answer)] 
         ]
 
 
-
+expandQ : Int -> Model -> Int -> Html Msg
 expandQ idx model id =
     div [classList [
         ("heightZero", True),
@@ -480,12 +488,9 @@ expandQ idx model id =
            
                 expandAnswer (decodeChar model.detail.title)
                 , showAnswer model.detail.answer
-
-                
-            
     ]
 
-
+contentsBody : Model -> Html Msg
 contentsBody model =
     div [ class "info_mediabox" ]
         [ div [ class "table info_yf_table" ]
@@ -504,6 +509,7 @@ contentsBody model =
             ]
         ]
 
+contentsLayout : Int -> Data -> Model -> Html Msg
 contentsLayout idx item model = 
     div [class "tableRow cursor", onClick (DetailGo item.id)] [
         div [class "tableCell qna_numtext"] [text (
@@ -524,7 +530,8 @@ contentsLayout idx item model =
         div [class "tableCell qna_title_date"] [text (String.dropRight 10 item.inserted_at)]
     ]
 
-pagenation=
+pagenation : Html Msg
+pagenation =
     div [ class "yf_Pagination" ]
         [ nav [ class "pagination is-centered" ]
             [ ul [ class "pagination-list" ]
@@ -547,17 +554,22 @@ pagenation=
                 ]
             ]
         ]
+
+faqWrite : Html Msg
 faqWrite = 
     div [ class " yf_dark" ]
         [ a [ class "button is-dark", Route.href Route.FaqW]
             [ text "글쓰기" ]
         ]
+
+floating  : Html Msg
 floating = 
     div[ onClick (GoBack "write"), class "float" ]
         [ i [ class "fas fa-pen icon_pen" ]
             []
         ]
-     
+
+justString : Maybe String -> String     
 justString item = 
     case item of
         Just ok ->
@@ -565,12 +577,15 @@ justString item =
     
         Nothing ->
             "등록된 답변이 없습니다."
+
+decodeChar : String -> String
 decodeChar char = 
     char
         |> String.replace  "%26" "&"
         |> String.replace  "%25" "%"
 
 
+appDetail : Model -> Html Msg
 appDetail model =
     div [class ("container faqcontainer myaccountStyle " ++ (if model.showWrite || model.showDetail then "account" else "" ))] [
        

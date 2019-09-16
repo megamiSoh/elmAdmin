@@ -20,10 +20,16 @@ type Cred
 type Check = 
     Check Bool
 
+type alias Flags = 
+    { token : String
+    }
+
+credHeader : Cred -> List Http.Header
 credHeader (Cred str) =
     [ Http.header "authorization" ("bearer " ++ str)
     ]
 
+credFormHeader : Cred -> List Http.Header
 credFormHeader (Cred str) =
     [ Http.header "authorization" ("bearer " ++ str)
     , Http.header "Content-Type" "application/x-www-form-urlencoded"
@@ -33,21 +39,20 @@ credDecoder : Decoder Cred
 credDecoder =
     Decode.succeed Cred
         |> required "token" Decode.string
--- credDecoder : Decoder Cred
+
+
 checkBrowserDecoder : Decoder Check
 checkBrowserDecoder =
     Decode.succeed Check
         |> required "checkBrowser" Decode.bool
 
-
+credInDecoder : Cred -> Decoder Cred
 credInDecoder (Cred token) =
     Decode.succeed Cred
         |> required "token" Decode.string
 
 
 
-
--- PERSISTENCE
 
 
 port onStoreChange : (Value -> msg) -> Sub msg
@@ -86,30 +91,6 @@ port swipe : (Value -> msg) -> Sub msg
 port commaF : (Value -> msg) -> Sub msg
 port receivetogetherId : (Value -> msg) -> Sub msg
 port reOpenFile : (Value -> msg) -> Sub msg
-viewerChanges toMsg decoder =
-    onStoreChange (\value -> toMsg (decodeFromChange decoder value))
-
-
-decodeFromChange viewerDecoder val =
-    Decode.decodeValue(viewerDecoder)val
-        |> Result.toMaybe
-
-
-storeCredWith (Cred token)  =
-    let
-        json =
-            Encode.object
-            [ 
-            ( "token", Encode.string token )
-            ]
-    in
-    storeCache (Just json)
-
-
-
-logout : Cmd msg
-logout =
-    storeCache Nothing
 
 port callScreen : () -> Cmd msg
 port storeCache : Maybe Value -> Cmd msg
@@ -167,17 +148,53 @@ port openPop : () -> Cmd msg
 port hamburgerShut : () -> Cmd msg
 port togetherId : () -> Cmd msg
 port openFile : () -> Cmd msg
-type alias Flags = 
-    { token : String
-    }
 
+
+
+viewerChanges : (Maybe viewer -> msg) -> Decoder viewer -> Sub msg
+viewerChanges toMsg decoder =
+    onStoreChange (\value -> toMsg (decodeFromChange decoder value))
+
+decodeFromChange : Decoder viewer -> Value -> Maybe viewer
+decodeFromChange viewerDecoder val =
+    Decode.decodeValue(viewerDecoder)val
+        |> Result.toMaybe
+
+storeCredWith : Cred -> Cmd msg
+storeCredWith (Cred token)  =
+    let
+        json =
+            Encode.object
+            [ 
+            ( "token", Encode.string token )
+            ]
+    in
+    storeCache (Just json)
+
+
+
+logout : Cmd msg
+logout =
+    storeCache Nothing
+
+unfocus : msg -> Cmd msg
 unfocus noop =
     Task.attempt(\_ -> noop) (Dom.blur "keyboardBlur")
 
+flagsDecoder : (String -> Flags) -> Decoder Flags
 flagsDecoder flags = 
     Decode.succeed flags
         |> required "token" string
 
+application :
+        { init : Maybe Cred -> Bool -> Url -> Nav.Key -> ( model, Cmd msg )
+        , onUrlChange : Url -> msg
+        , onUrlRequest : Browser.UrlRequest -> msg
+        , subscriptions : model -> Sub msg
+        , update : msg -> model -> ( model, Cmd msg )
+        , view : model -> Browser.Document msg
+        }
+    -> Program Value model msg
 application config =
     let
         init flags url navKey =
@@ -204,10 +221,11 @@ application config =
         , view = config.view
         }
 
-
+storageDecoder : Decoder Cred
 storageDecoder  =
     Decode.field "token" credDecoder
 
+get : (Result Http.Error a -> msg)-> Endpoint -> Maybe Cred -> Decoder a -> Cmd msg
 get msg url maybeCred decoder =
     Endpoint.request
         { method = "GET"
@@ -226,23 +244,8 @@ get msg url maybeCred decoder =
         }
 
 
--- put : Endpoint -> Cred -> (WebData success -> msg ) -> Http.Body -> Decoder success -> Cmd msg
-put url cred  tagger body decoder =
-    Endpoint.request
-        { method = "PUT"
-        , url = url
-        , expect = Http.expectJson tagger decoder
-        , headers =  credHeader cred 
-        , body = body
-        , timeout = Nothing
-        , tracker = Nothing
-        }
 
-
-
-
-
--- post : Endpoint -> Maybe Cred ->(WebData success -> msg)-> Http.Body -> Decoder success -> Cmd msg
+post : Endpoint -> Maybe Cred -> (Result Http.Error a -> msg) -> Http.Body -> Decoder a -> Cmd msg
 post url maybeCred tagger body decoder =
     Endpoint.request
         { method = "POST"
@@ -259,7 +262,7 @@ post url maybeCred tagger body decoder =
         , timeout = Nothing
         , tracker = Nothing
         }
-
+noSessionpost : Endpoint -> (Result Http.Error a -> msg) -> Http.Body -> Decoder a -> Cmd msg
 noSessionpost url tagger body decoder =
     Endpoint.request
         { method = "POST"
@@ -271,24 +274,7 @@ noSessionpost url tagger body decoder =
         , tracker = Nothing
         }
 
-
-    
-
-
--- delete : (WebData success ->msg ) -> Endpoint -> Cred -> Http.Body -> Decoder success -> Cmd msg
-delete tagger url cred body decoder =
-    Endpoint.request
-        { method = "DELETE"
-        , url = url
-        , expect = Http.expectJson tagger decoder
-        , headers =  credHeader cred 
-        , body = body
-        , timeout = Nothing
-        , tracker = Nothing
-        }
-
-
-
+login : Http.Body -> (Result Http.Error a -> msg) -> Decoder a -> Cmd msg
 login body msg decoder =
     post Endpoint.login Nothing msg body decoder
 
@@ -299,12 +285,6 @@ decoderFromCred decoder =
         decoder
         credDecoder
 
-
-testDecode decoder =
-    Decode.map (\fromCred cred -> fromCred cred)
-        decoder
-
-
 -- ERRORS
 
 
@@ -313,7 +293,7 @@ addServerError list =
     "Server error" :: list
 
 
--- decodeErrors : Http.Error -> String
+decodeErrors : Http.Error -> String
 decodeErrors error =
     case error of
         Http.BadStatus response ->

@@ -27,8 +27,7 @@ type alias Model =
     }
 
 type alias LoginState = 
-    {error : String}
-
+    { error : String}
 
 type Problem
     = InvalidEntry ValidatedField String
@@ -39,7 +38,7 @@ type alias Form =
     , password : String
     }
 
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile =
     ( { session = session
     , check = mobile
@@ -56,15 +55,6 @@ init session mobile =
       }
     , Cmd.none
     )
-
-
-
--- VIEW
-
-
-
-
-
 
 type Msg
     = SubmittedForm
@@ -135,12 +125,6 @@ update msg model =
 updateForm : (Form -> Form) -> Model -> ( Model, Cmd Msg )
 updateForm transform model =
     ( { model | form = transform model.form }, Cmd.none )
-
-
-
-
-
-    
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -214,7 +198,7 @@ trimFields form =
 -- HTTP
 
 
--- login : TrimmedForm -> Http.Request Viewer
+login : TrimmedForm -> Cmd Msg
 login (Trimmed form) =
     let
         user =
@@ -222,18 +206,16 @@ login (Trimmed form) =
                 [ ( "username", Encode.string form.email )
                 , ( "password", Encode.string form.password )
                 ]
-
         body =
             user
                 |> Http.jsonBody
     in
     Api.login body CompletedLogin tokenDecoder 
 
+tokenDecoder : Decoder Api.Cred
 tokenDecoder =
     Decode.succeed Api.Cred
         |> required "token" Decode.string
-
--- EXPORT
 
 
 toSession : Model -> Session
@@ -266,7 +248,7 @@ view model =
         ]   
     }
 
-
+layout : Model -> Html Msg
 layout model = 
     div [ class "loginwrap" ]
     [ div [ class "yf_contents" ]
@@ -339,6 +321,7 @@ layout model =
         
     ]
 
+mobileLayout : Model -> Html Msg
 mobileLayout model = 
     div [][
     div [ class "topbox" ]
@@ -399,8 +382,6 @@ mobileLayout model =
                 [ li [ class "yf_login_li" ]
                     [ 
                         input [ type_ "submit",  class "button m_emailloginbtn" , onClick SubmittedForm, value "로그인하기"] [ text "로그인하기" ]
-                        -- , div [ class "button m_emailloginbtn", onClick SubmittedForm ]
-                        -- [ text "로그인하기" ]
                     ]
                 , li [class "yf_login_li"]
                     [ a [ class "button m_emailsignup", Route.href Route.Signup]
@@ -416,8 +397,3 @@ mobileLayout model =
                 
             ]
 
-    
-
--- subscriptions : Model -> Sub Msg
--- subscriptions model =
---     P.check CheckDevice

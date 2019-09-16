@@ -36,15 +36,9 @@ cred session =
         Guest _ ->
             Nothing
             
-check c = 
-    case c of
-        Just ok ->
-            ok
-    
-        Nothing ->
-            True
 
 
+changeInterCeptor : Maybe String -> Session -> Cmd msg
 changeInterCeptor error sessionHere=
     case error of
         Just err ->
@@ -71,7 +65,7 @@ navKey session =
         Guest key ->
             key
 
-
+changes : (Session -> msg) -> Nav.Key -> Sub msg
 changes toMsg key =
     Api.viewerChanges (\maybeViewer -> toMsg (fromViewer key maybeViewer)) Api.credDecoder
 

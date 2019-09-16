@@ -13,7 +13,7 @@ type alias Model
         , check : Bool
     }
 
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
         {session = session
@@ -43,11 +43,9 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    {
-    
-    title = ""
+    { title = ""
     , content =
-     div [class "bar_container"][
-        div [class "bar"][]
-     ]
-        }
+        div [class "bar_container"][
+            div [class "bar"][]
+        ]
+    }

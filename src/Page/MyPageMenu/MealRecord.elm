@@ -106,12 +106,6 @@ type alias RegistOrEdit =
 
 init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile = 
-    -- let
-    --     todayDate = 
-    --         ( Date.fromCalendarDate 2019 Jan 1
-    --         , Date.today |> Task.perform ReceiveDate
-    --         )
-    -- in
     ({session = session
     , activeBtn = Just "10"
     , check = mobile
@@ -137,7 +131,6 @@ init session mobile =
     , registKcal = ""
     , currentDay = Date.fromCalendarDate 2019 Jan 1
     , today = ""
-    -- , today = Date.fromCalendarDate 2019 Jan 1
     , data = 
         { data = []
         , paginate = 
@@ -276,6 +269,8 @@ onKeyDown:(Int -> msg) -> Attribute msg
 onKeyDown tagger = 
     on "keyup" (Decode.map tagger keyCode)
 
+
+justToint : String -> Float
 justToint string =
     case String.toFloat string of
         Just int ->
@@ -392,15 +387,7 @@ update msg model =
                 _ ->
                     (model, Cmd.none)
         QuantityInput value ->
-            -- case String.toFloat value of
-            --     Just float ->
-            --         if float == 0 then
-            --             (model, Cmd.none)
-            --         else
                         ({model |quantityValue = value }, Cmd.none)
-            
-                -- Nothing ->
-                --     (model, Cmd.none)
         MealDeleteComplete (Ok ok) ->
             ({model | quantityShow = False}, Cmd.batch[dayKindOfMealEncode model.mealPage model.mealPer_page model.session model.code model.date
             , Api.showToast (Encode.string "삭제 되었습니다.")])
@@ -457,7 +444,6 @@ update msg model =
             (model, Cmd.none)
         FoodQuantityClose ->
                 ({model | quantityShow = False}, Api.getscrollHeight (Encode.bool (not model.quantityShow))
-                -- , Api.getscrollHeight (Encode.bool (not model.quantityShow))
                 )       
             
         UpNdown updown ->
@@ -540,14 +526,6 @@ view model =
                 searchBox model,
                 registMeal model ,
                 saveBtn
-                -- , div [class "foodQuantity_container_Wrap", style "display" (
-                --     if model.quantityShow then
-                --     "flex"
-                --     else
-                --     "none"
-                -- )] [
-                --     foodQuantity model
-                -- ]
                 , div [style "display" 
                 ( if model.quantityShow then "flex" else "none")][
                 case model.category of
@@ -568,21 +546,20 @@ view model =
         ]
     }
 
+
+calendarDate : Model -> Html Msg
 calendarDate model = 
     div [ class "myCalendar_tapbox" ]
         [ div [ class "myCalendar_datebox" ]
             [ 
-                -- i [ class "fas fa-angle-left myCalendar_yf_left", onClick (ChangeDate "before") ]
-                -- [], 
                 if model.date == model.today then 
                 div [class "date_container"] [text model.date, span [class"today"] [text "today"] ]
                 else 
                 div [class "date_container"] [text model.date, span [class"today"] [] ]
-            -- , i [ class "fas fa-angle-right myCalendar_yf_right", onClick (ChangeDate "next") , style "color" (if model.date == model.today then "#d2caca" else "#000" )]
-            --     []
             ]
         ]
 
+directRegistMeal : Model -> Html Msg
 directRegistMeal model = 
     div [ class "inputkaclbox" ]
         [
@@ -605,7 +582,7 @@ directRegistMeal model =
             ]
         ]
 
-
+tabMenu : Model -> Html Msg
 tabMenu model =
     div [ class "mealRecord_tapbox" ]
         [ div [ class "tabs is-toggle is-fullwidth is-large" ]
@@ -638,6 +615,7 @@ tabMenu model =
             ]
         ]
 
+searchBox : Model -> Html Msg
 searchBox model = 
     div [ class "mealRecord_searchbox" ]
         [ div [ class "field mealRecord_yf_field" ]
@@ -649,6 +627,7 @@ searchBox model =
             , searchResult model 
         ]
 
+searchResult : Model -> Html Msg
 searchResult model =
     div [ class "mealRecord_searchbox2" ]
         [   div [class "searchResultCount"] [text ("총 " ++ String.fromInt model.food.paginate.total_count ++ "검색 결과")]
@@ -690,6 +669,8 @@ searchResult model =
             ]
             
         ]
+
+foodQuantity : Model -> Html Msg
 foodQuantity model = 
     div [class "foodquantity_container"] 
         [ div [class "foodSettingClose", onClick FoodQuantityClose] [
@@ -738,6 +719,8 @@ foodQuantity model =
                 , li [class "button", onClick FoodQuantityClose] [text "취소"]
                 ]
         ]
+
+mealLayout : Int -> FoodData -> Model -> Html Msg
 mealLayout idx item model =
     tr [onClick (FoodQuantity ({foodName = item.name , kcal = item.kcal, diaryNo = 0 }, Nothing)), class "cursor"] [
         td[][  text (
@@ -748,6 +731,7 @@ mealLayout idx item model =
     ]
 
 
+registContents : Int -> KindOfMeal -> Html Msg
 registContents idx item =
     tr []
         [ th []
@@ -764,6 +748,7 @@ registContents idx item =
             ]
         ]
 
+registMeal : Model -> Html Msg
 registMeal model =
     div [ class "mealRecord_searchbox2" ]
         [ table [ class "table mealRecord_yf_table" ]
@@ -809,6 +794,8 @@ registMeal model =
             ]
         ]
 
+
+saveBtn : Html Msg
 saveBtn =
     div [ class " yf_dark" ]
         [ a [ class "button is-dark", Route.href Route.MyC ]

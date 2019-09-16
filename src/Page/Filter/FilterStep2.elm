@@ -119,6 +119,7 @@ listformUrlencoded object =
         |> String.join ","
 
 
+registVideo : Model -> List Item -> Session -> Cmd Msg
 registVideo model edit session=
     let
         
@@ -140,6 +141,7 @@ defaultOptions =
     , rawHtml = ParseUnsafe
     }
 
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = 
     (
@@ -202,11 +204,11 @@ toCheck : Model -> Bool
 toCheck model =
     model.check
 
-    
-
+takeLists : Int -> List a -> List a
 takeLists idx model = 
     List.take idx model
 
+dropLists : Int -> List a -> List a
 dropLists idx model = 
     List.drop idx model
 
@@ -245,7 +247,6 @@ update msg model =
                         (model, Cmd.none)
         FilterSaveSuccess str ->
             (model, 
-            -- -- Api.historyUpdate (E.string "filterStep1" )
             Route.pushUrl (Session.navKey model.session) Route.FilterS1
             )
         NextPage ->
@@ -260,7 +261,6 @@ update msg model =
             (model, Cmd.batch [
                 Api.deleteData ()
                 , Route.pushUrl (Session.navKey model.session) Route.MakeExer
-                -- , -- Api.historyUpdate (E.string "makeExercise")
                 , Api.showToast text])
         GoRegistResult (Err err) ->
             let 
@@ -402,7 +402,6 @@ update msg model =
         BackBtn ->
             (model,
              Route.pushUrl (Session.navKey model.session) Route.FilterS1
-            -- -- Api.historyUpdate (E.string "filterStep1")
              )
 
 view : Model -> {title : String , content : Html Msg}
@@ -420,7 +419,7 @@ view model =
                     ] 
             }
         
-
+justokData : Maybe String -> String
 justokData data = 
     case data of
         Just ok ->
@@ -429,12 +428,15 @@ justokData data =
         Nothing ->
             ""
 
+justokIntData : Maybe Int -> Int
 justokIntData data =
     case data of
         Just ok ->
             ok
         Nothing ->
             3
+
+app : Model -> Html Msg
 app model =
     div [] [
         appHeaderConfirmDetailleft "운동추가" "makeExerHeader" NextPage GoRegist "완료"
@@ -442,6 +444,7 @@ app model =
         , appcontentsItem model
     ]
 
+web : Model -> Html Msg
 web model =
      div [ class "container" ]
             [   
@@ -451,6 +454,7 @@ web model =
                 , goBtn
             ]
 
+contentsItem : Model -> Html Msg
 contentsItem model = 
     div [ class "filterstep2_yf_box" ]
             [
@@ -463,6 +467,7 @@ contentsItem model =
                 , div [class "noResult", style "display" (if List.length model.addData <= 0 then "flex" else "none")][text "운동을 다시 설정 해 주세요."]
             ]
 
+appcontentsItem : Model -> Html Msg
 appcontentsItem model = 
     div [ class "m_filterstep2_yf_box" ]
             [
@@ -475,6 +480,7 @@ appcontentsItem model =
                 , div [class "noResult" , style "display" (if List.length model.addData <= 0 then "flex" else "none")][text "운동을 다시 설정 해 주세요."]
             ]                    
 
+thumbSetting : Model -> Html Msg
 thumbSetting model= 
     div [ class "yf_box_top" ]
         [div [ class "yf_titleinput" ]
@@ -493,6 +499,7 @@ thumbSetting model=
             ]
         ]
 
+appthumbSetting : Model -> Html Msg
 appthumbSetting model = 
     div [ class "m_yf_box_top" ]
         [ div [ class "m_yf_titleinputbox" ]
@@ -503,13 +510,18 @@ appthumbSetting model =
             , div [class"m_filterStep2_text"] [text model.errTitle]
         ]
 
+
+itemCount : Model -> Html Msg
 itemCount model= 
     div [ class "filterstep2_yf_select" ]
         [ text ("총 "++ String.fromInt(List.length (model.addData)) ++" 건선택") ]
+
+appitemCount : Model -> Html Msg
 appitemCount model= 
     div [ class "m_filterstep2_yf_select" ]
         [ text ("총 "++ String.fromInt(List.length (model.addData)) ++" 건선택") ]
-        
+
+justData : Maybe String -> String        
 justData item = 
     case item of
         Just a ->
@@ -517,6 +529,8 @@ justData item =
     
         Nothing ->
             ""
+
+selectedItem : Int -> FilterData -> Model -> Html Msg
 selectedItem idx item model=
     div [ class "filterstep2_videolistbox" ]
         [ div [ class "yf_switch" ]
@@ -567,6 +581,7 @@ selectedItem idx item model=
         ]
 
 
+appselectedItem : Int -> FilterData -> Model -> Html Msg
 appselectedItem idx item model=
     div [ class "m_filterstep2_videolistbox" ]
         [ div [ class "m_yf_switch" ]
@@ -612,6 +627,7 @@ appselectedItem idx item model=
         ]
 
 
+expandPanel : Int -> Model -> Maybe String -> Html Msg
 expandPanel idx model rest=
     div [ classList [
         (("filterstep2_settingbox" ++ String.fromInt(idx)), True),
@@ -641,7 +657,7 @@ expandPanel idx model rest=
             ]
         ]
 
--- class ("settingbox expandStyle target " 
+appexpandPanel : Int -> Model -> Maybe String -> Html Msg 
 appexpandPanel idx model rest=
     div [ classList [
         (("filterstep2_settingbox" ++ String.fromInt(idx)), True),
@@ -673,6 +689,7 @@ appexpandPanel idx model rest=
             ]
         ]
 
+goBtn : Html Msg
 goBtn = 
     div [ class "make_yf_butbox" ]
         [ div [ class "yf_backbtm" ]

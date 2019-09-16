@@ -68,7 +68,7 @@ type alias Paginate =
     , total_count : Int
     , user_id : Int }
 
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
         {session = session
@@ -150,18 +150,22 @@ toCheck : Model -> Bool
 toCheck model =
     model.check
 
+scrollEvent : (ScreenInfo -> msg) -> Attribute msg
 scrollEvent msg = 
     on "scroll" (Decode.map msg scrollInfoDecoder)
 
+onLoad : msg -> Attribute msg
 onLoad msg =
     on "load" (Decode.succeed msg)
 
+scrollInfoDecoder : Decode.Decoder ScreenInfo
 scrollInfoDecoder =
     Decode.map3 ScreenInfo
         (Decode.at [ "target", "scrollHeight" ] Decode.int)
         (Decode.at [ "target", "scrollTop" ] Decode.int)
         (Decode.at [ "target", "offsetHeight" ] Decode.int)  
 
+scrapDataEncoder : Int -> Int -> Session -> Cmd Msg
 scrapDataEncoder page per_page session = 
     let
         list = 
@@ -271,7 +275,6 @@ update msg model =
                     Ok ok ->
                         (model, 
                         Route.pushUrl (Session.navKey model.session) Route.ScrapD
-                        -- Api.historyUpdate (Encode.string "myScrapDetail")
                         )
                 
                     Err _ ->
@@ -298,18 +301,10 @@ update msg model =
             ({model | count = model.count + 1}, Cmd.none)
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
              if (scrollHeight - scrollTop) <= offsetHeight then
-                -- case toInt of
-                --     Just val ->
-                        -- if (val  < (model.takeList + 10)) then
-                        --     ({model | takeList = val, infiniteLoading = False},Cmd.none)
-                        -- else 
                 if List.length model.checkList > 0 then
                 (model, Cmd.none)
                 else
                 ({model | infiniteLoading = True}, scrapDataEncoder model.page model.per_page model.session)
-                    -- Nothing ->
-                    --     (model, Cmd.none)
-                
             else
                 (model, Cmd.none)
         NoOp ->
@@ -384,15 +379,19 @@ view model =
                 ]]
         }
 
+listwebDetail : DataList -> Html Msg
 listwebDetail item = 
    div [onClick (GetCodeId (item.scrap_code, item.scrap_id))] (
         List.map scrapItem item.detail
     )
+
+listappDetail : DataList -> Html Msg
 listappDetail item = 
     div [onClick (GetCodeId (item.scrap_code, item.scrap_id))] (
         List.map appcontent item.detail
     )
 
+appcontent : DetailData -> Html Msg
 appcontent item= 
         div [ class "containerm_mypage_scrap" ]
         [ div []
@@ -411,6 +410,7 @@ appcontent item=
             ]
         ]
 
+justData : Maybe String -> String
 justData just =
     case just of
         Just a ->
@@ -418,6 +418,8 @@ justData just =
     
         Nothing ->
             ""
+
+contentsCount : Int -> Html Msg
 contentsCount count=
     div []
         [ div [ class "myScrap_yf_large" ]
@@ -425,6 +427,7 @@ contentsCount count=
         ]
  
 
+scrapItem :  DetailData -> Html Msg
 scrapItem item= 
     div [ class "myScrap_yf_box" ]
         [ img [ src item.thembnail ]

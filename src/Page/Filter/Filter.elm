@@ -41,6 +41,7 @@ type alias CodeData =
     , name : String
     }
 
+filterEncoder : Model -> Encode.Value
 filterEncoder model = 
     Encode.object
         [ ("difficulty_code", (Encode.list Encode.string) model.isActiveLevel)
@@ -53,7 +54,7 @@ filterEncoder model =
         ]
 
 
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
         { session = session
@@ -85,7 +86,6 @@ type Msg
     | IsActiveLevel String
     | IsActiveExer String
     | IsActiveTool String
-    -- | CheckDevice Encode.Value
     | BackBtn
     | NextBtn
     | GetPart (Result Http.Error FilterCode)
@@ -156,7 +156,6 @@ update msg model =
             )
         FilterSaveSuccess str ->
             (model,
-            -- -- Api.historyUpdate(Encode.string "filterStep1")
              Route.pushUrl (Session.navKey model.session) Route.FilterS1
              )
         GoNextPage ->
@@ -213,7 +212,6 @@ update msg model =
                 ({model | isActiveTool = [tool] ++ model.isActiveTool}, Cmd.none)
         BackBtn ->
             (model, 
-            -- -- Api.historyUpdate(Encode.string "makeExercise")
             Route.pushUrl (Session.navKey model.session) Route.MakeExer 
             )
         NextBtn ->
@@ -239,20 +237,24 @@ view model =
                 web model
             ]
         }
+
+web : Model -> Html Msg
 web model = 
      div [ class "container" ]
             [
                 lazy5 filterbox model.part model.level model.exer model.tool model,
                 btnBox
             ]
-
-
-  
+        
+leastItem : String -> List String -> List String
 leastItem item list=
     List.filter (\x -> x /= item) list
+
+filterItem : String -> List String -> Int
 filterItem item list=
     List.length (List.filter (\x -> x == item) list)
 
+filterbox : List CodeData -> List CodeData -> List CodeData -> List CodeData -> Model -> Html Msg
 filterbox part level exer tool model=
     div [ class "filter_yf_box" ]
     
@@ -266,8 +268,7 @@ filterbox part level exer tool model=
 
           ],
           ul []
-            
-                    [ li [ class "filter_yf_li" ]
+            [ li [ class "filter_yf_li" ]
                 [ text "운동부위" ]
             , li [class "filter_btn"]
             (
@@ -325,6 +326,7 @@ filterbox part level exer tool model=
             
         ]
 
+btnBox : Html Msg
 btnBox =
     div [ class "filter_yf_butbox" ]
         [ div [ class "filter_yf_nextbtm" ]
@@ -333,6 +335,7 @@ btnBox =
             ]
         ]
 
+filterbox2 : List CodeData -> List CodeData -> List CodeData -> List CodeData -> Model -> Html Msg
 filterbox2  part level exer tool model=
     div [ class "m_filter_yf_box" ]
         [ ul []
