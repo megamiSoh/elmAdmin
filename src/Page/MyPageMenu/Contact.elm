@@ -605,7 +605,18 @@ appDetail model =
        ]
         else
         div [][appHeaderConfirmDetailR "문의하기" "myPageHeader" (GoBack "list") GoRegist "등록" 
-        , Fw.apptitle Title model
-        , Fw.apptextArea Content model
+        , apptitle Title model
+        , apptextArea Content model
         ]
     ]
+
+
+apptitle : (String -> msg) -> Model ->  Html msg
+apptitle titleinput model = 
+        input [ class "input", type_ "text", placeholder "제목을 입력해주세요" , maxlength 50, onInput titleinput, id (if model.showWrite then "noScrInput" else ""), value model.title]
+                []
+
+apptextArea : (String -> msg) -> Model ->  Html msg
+apptextArea contentinput model =
+        textarea [ class "textarea m_textarea", placeholder "내용을 입력해주세요", rows 10, maxlength 250 , onInput contentinput, value model.content ]
+        []

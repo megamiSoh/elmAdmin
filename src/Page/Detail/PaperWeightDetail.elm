@@ -33,13 +33,9 @@ type alias Model =
     , errType : String
     , product_no : Int
     }
--- Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
+
 type alias GetData = 
     { data : Maybe DetailData }
-
--- type alias CodeId = 
---     { code : String
---     , id : String }
 
 type alias DetailData =    
     { description : String
@@ -71,14 +67,12 @@ type alias AskDetail =
     , title : String
     , is_buy: Bool }
 
-
 type alias AskDetailItem = 
     { exercise_id : Int
     , is_rest : Bool
     , sort : Int
     , title : String
     , value : Int }
-
 
 type alias DetailDataItem = 
     { action_id : Maybe Int
@@ -114,7 +108,7 @@ listDataInit =
     , thumbnail = ""
     , title = ""}
 
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+init : Session -> Bool -> (Model, Cmd Msg)
 init session mobile
     = (
         { session = session
@@ -143,6 +137,7 @@ init session mobile
         }
         , Api.getId ()
     )
+
 subscriptions :Model -> Sub Msg
 subscriptions model =
     Sub.batch
@@ -154,7 +149,6 @@ subscriptions model =
         ]
 type Msg 
     = BackPage
-    -- | CheckDevice Encode.Value 
     | ReceiveId Encode.Value
     | GetListData (Result Http.Error GetData)
     | Loading Encode.Value
@@ -171,7 +165,6 @@ type Msg
     | PayConfirm
     | ReRegistExercise Int
     | ProductComplete (Result Http.Error Decoder.Success)
-    
 
 toSession : Model -> Session
 toSession model =
@@ -278,8 +271,6 @@ update msg model =
             )
         BackDetail ->
             ({model | need2login = False}, Cmd.none
-            -- Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
-            --  |> Api.get GetListData (Endpoint.scrapDetail model.videoId.code model.videoId.id ) (Session.cred model.session) 
             )
 
         GoVideo ->
@@ -325,8 +316,6 @@ update msg model =
                 case d of
                     Ok item ->
                         ({model | loading = False},Cmd.none)
-                        -- (model, Cmd.none)
-                
                     Err _->
                          ({model | loading = False},Cmd.none)
         ReceiveId id ->
@@ -338,8 +327,6 @@ update msg model =
                 Ok item ->
                     ({model | videoId = item}, 
                     Api.get GetListData (Endpoint.mypaperweightDetail item) (Session.cred model.session) (Decoder.detailMypaperweight GetData DetailData DetailDataItem Pairing)
-                    -- Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
-                    -- |>Api.get GetListData (Endpoint.scrapDetail item.code item.id ) (Session.cred model.session) 
                     )
             
                 Err _ ->
@@ -348,7 +335,6 @@ update msg model =
         BackPage ->
             ( model, 
             Route.pushUrl (Session.navKey model.session) Route.MJList
-            -- -- Api.historyUpdate (Encode.string "myScrap")
             )
 
 view : Model -> {title : String , content : Html Msg}
@@ -362,43 +348,43 @@ view model =
         
         }
 
-app model back videoCall= 
-        div [ class "container" ]
-                [
-                   appHeaderRDetailClick model.listData.title  "myPageHeader whiteColor" back "fas fa-times"
-                   , div [] [
-                        --  if model.need2login then
-                        -- need2loginAppDetail BackDetail
-                        -- else
-                        appcontentsItem model.listData model.zindex videoCall
-                     ]
-                ]
+-- app : Model -> msg ->  (List Pairing -> msg) -> Html msg
+-- app model back videoCall= 
+--         div [ class "container" ]
+--                 [
+--                    appHeaderRDetailClick model.listData.title  "myPageHeader whiteColor" back "fas fa-times"
+--                    , div [] [
+--                         appcontentsItem model.listData model.zindex videoCall
+--                      ]
+--                 ]
 
 
-appcontentsItem item zindex videoCall = 
-            div []
-            [ div []
-                [ p [ class "m_yf_container" ]
-                    [ div [ class ("appimagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") "), onClick (videoCall item.pairing) ][],
-                         div [ id "myElement" ] [
-                            ]
-                    ]
-                ]
-            , 
-            div [ class "m_yf_work_textbox" ]
-                [ div [ class "m_yf_work_time" ]
-                    [ span []
-                        [ i [ class "fas fa-clock m_yf_timeicon" ]
-                            []
-                        ], text item.duration
-                    ]
-                , div [ class "m_yf_work_text" ]
-                    [ text ((item.exercise_part_name) ++ " - " ++  (item.difficulty_name)) ]
-                ]
-            , pre [class"wordBreak descriptionBackground"][text (item.description)]
-            , div [ class "m_work_script" ]
-                (List.indexedMap YfD.description item.exercise_items)
-            ]
+-- appcontentsItem item zindex videoCall = 
+--             div []
+--             [ div []
+--                 [ p [ class "m_yf_container" ]
+--                     [ div [ class ("appimagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") "), onClick (videoCall item.pairing) ][],
+--                          div [ id "myElement" ] [
+--                             ]
+--                     ]
+--                 ]
+--             , 
+--             div [ class "m_yf_work_textbox" ]
+--                 [ div [ class "m_yf_work_time" ]
+--                     [ span []
+--                         [ i [ class "fas fa-clock m_yf_timeicon" ]
+--                             []
+--                         ], text item.duration
+--                     ]
+--                 , div [ class "m_yf_work_text" ]
+--                     [ text ((item.exercise_part_name) ++ " - " ++  (item.difficulty_name)) ]
+--                 ]
+--             , pre [class"wordBreak descriptionBackground"][text (item.description)]
+--             , div [ class "m_work_script" ]
+--                 (List.indexedMap YfD.description item.exercise_items)
+--             ]
+
+web : Msg -> Model -> Html Msg
 web msg model= 
     if model.falseData.is_buy then
     div [ class "container" ]
@@ -409,26 +395,25 @@ web msg model=
 
     else
         selectedItem model
-    
+
+contentsBody : DetailData -> Bool -> String -> String -> Html Msg
 contentsBody item loading zindex title =
     
     div [ class "yf_yfworkout_search_wrap" ]
         [ div [ class "tapbox" ]
             [ div [ class "yf_large" ]
                 [ text title ],
-                contentsItem item loading zindex
-               
+                contentsItem item loading zindex  
             ]
-        
         ]
 
+contentsItem : DetailData-> Bool -> String -> Html Msg
 contentsItem item loading zindex =
             div [ class "tile is-parent is-vertical" ]
             [lazy2 div [ class "yf_notification" ]
                 [ p [ class "video_title" ]
                     [ 
                         div [ class ("imagethumb " ++ zindex),style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") , onClick (VideoCall item.pairing) ][]
-                        -- img [class zindex, src item.thumbnail, onClick (VideoCall item.pairing)] []
                         , div [ id "myElement", style "height" (if String.isEmpty zindex then "0px" else "auto") ] [
                             ]
                     ]
@@ -448,7 +433,7 @@ contentsItem item loading zindex =
                (List.indexedMap description item.exercise_items)
             ]
 
-
+justok : Maybe String -> String
 justok casees = 
     case casees of
         Just a ->
@@ -458,6 +443,7 @@ justok casees =
             "-"
 
 
+description : Int -> DetailDataItem -> Html Msg
 description idx item = 
     ul [] [
             if item.is_rest then    
@@ -465,7 +451,8 @@ description idx item =
             else 
                 li [] [text ((String.fromInt(item.sort)) ++ " . " ++  item.title ++ " " ++ String.fromInt(item.value) ++ "세트")] 
     ]
-    
+
+goBtnBox : Msg -> Html Msg    
 goBtnBox backPage = 
     div [ class "searchbox_footer" ]
         [ div [ class "yf_backbtm" ]
@@ -474,7 +461,7 @@ goBtnBox backPage =
             ]
         ]
 
-
+selectedItem : Model -> Html Msg
 selectedItem model = 
         div [class "container"]
         [
@@ -513,13 +500,13 @@ selectedItem model =
         ]
 
 
-
+askDetailItems : AskDetailItem -> Html Msg
 askDetailItems item = 
     li [][
         text ((String.fromInt item.sort) ++ ". " ++ item.title ++ " x " ++ String.fromInt item.value ++ (if item.is_rest then " 분 " else " 세트 "))
     ]
 
-
+payConfirmLayer : Model -> Html Msg
 payConfirmLayer model =
     div [ class "layerStyleWarn", style "display" ( if model.isActive then "flex" else "none"), id ( if model.isActive then "noScrInput" else "") ] [
     div [ class "yf_popup" ]

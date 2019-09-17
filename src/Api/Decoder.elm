@@ -19,9 +19,11 @@ type alias UserData =
     , username : String
     , profile : Maybe String}
 
+resultD : Decoder Success
 resultD = 
     Decode.succeed Success
         |> required "result" string
+
 
 resultDecoder result = 
     Decode.succeed result

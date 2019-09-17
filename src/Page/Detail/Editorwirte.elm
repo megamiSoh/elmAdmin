@@ -12,7 +12,7 @@ import Markdown.Inline as Inline
 import Regex exposing (Regex)
 
 
--- editorView : String -> msg  -> Html msg
+editorView : String -> (String -> msg) -> Bool -> String -> Html msg
 editorView md textAreaInput readOnly placeh=
         textarea
             [ onInput textAreaInput
@@ -24,7 +24,7 @@ editorView md textAreaInput readOnly placeh=
             ]
             []
 
-
+editorViewInput : String -> (String -> msg) -> Bool -> String -> String -> Html msg
 editorViewInput md textAreaInput readOnly placeh inputstyle=
         input
             [ onInput textAreaInput
@@ -35,13 +35,7 @@ editorViewInput md textAreaInput readOnly placeh inputstyle=
             , placeholder placeh
             ]
             []
--- detailmarkdownView { options, textarea, onDemandText, showToC, selectedPreviewTab }detailText =
---     let
---         textToParse =
---                 detailText
---     in
---     Html.Lazy.lazy3 render options showToC textToParse
--- markdownView : String -> Html msg
+ 
 markdownView { options, textarea, onDemandText, showToC, selectedPreviewTab } =
     let
         textToParse =

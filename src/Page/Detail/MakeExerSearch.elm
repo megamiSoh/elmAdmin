@@ -66,6 +66,7 @@ type alias Paginate =
     , total_count : Int
     }
 
+bodyEncode : Int -> Int -> String -> Session -> Cmd Msg
 bodyEncode page perpage title session= 
     let
         list = 
@@ -80,7 +81,7 @@ bodyEncode page perpage title session=
     (Decoder.makeExerList GetListData ListData Paginate)
     |> Api.post Endpoint.makeExerList (Session.cred session) GetData body 
     
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile =
     let
         listmodel = 
@@ -148,9 +149,11 @@ toCheck : Model -> Bool
 toCheck model =
     model.check
 
+scrollEvent : (ScreenInfo -> msg) -> Attribute msg
 scrollEvent msg = 
     on "scroll" (Decode.map msg scrollInfoDecoder)
 
+scrollInfoDecoder : Decode.Decoder ScreenInfo
 scrollInfoDecoder =
     Decode.map3 ScreenInfo
         (Decode.at [ "target", "scrollHeight" ] Decode.int)
@@ -165,6 +168,7 @@ subscriptions model=
         , Api.successId SaveIdComplete
     ]
 
+onLoad : msg -> Attribute msg
 onLoad msg =
     on "load" (Decode.succeed msg)
 
@@ -236,12 +240,10 @@ update msg model =
         SaveIdComplete str ->
             if model.saveCheckVal == "" then
             (model, 
-            -- -- Api.historyUpdate (Encode.string "makeExerciseDetail")
             Route.pushUrl (Session.navKey model.session) Route.MakeDetail
             )
             else 
             (model,
-            --  -- Api.historyUpdate (Encode.string "togetherWrite")
             Route.pushUrl (Session.navKey model.session) Route.TogetherW
             )
         CheckId id str->
@@ -290,6 +292,7 @@ view model =
         , div[](List.map appItemContent model.getlistData.data)
     ]}
 
+appItemContent : ListData -> Html Msg
 appItemContent item=
         div [ class "m_make_yf_box2" ]
             [ div [ class "m_make_videoimg", onClick (CheckId item.id "") ]
@@ -324,78 +327,3 @@ appItemContent item=
             ]
             ]
 
--- bodyItem item=
---     div [ class "make_box_card_wrap" ]
---     [ div [ class "make_videoboxwrap"]
---         [ div [ class "video_image" , onClick (CheckId item.id "")]
---             [ img [ class "vpic1",src item.thembnail, alt "dummy_video_image" ]
---                 []
---             ]
---         , div [ class "Customtextbox"]
---             [ div [ class "m1"  , onClick (CheckId item.id "")]
---                 [ h1 [ class "make_yf_titlename" ]
---                     [ text item.title ]
---                 ]
---             , div [ class "m2" ]
---                 [ text (String.dropRight 10 (item.inserted_at)), 
---                 div [] [
---                     i [ class "fas fa-stopwatch" ]
---                         []
---                         , text " "
---                         , text item.duration
---                 ]
---                 , p [class "makebtn"]
---                     [ div  [ class "button is-dark darkbtn make_share"
---                     , onClick (CheckId item.id "share") ]
---                         [ i [ class "fas fa-share-square" ]
---                             [] , text "공유" 
---                         ]
---                     , div [ class "button" ,onClick (Delete item.id)]
---                         [ i [ class "far fa-trash-alt" ]
---                             [] , text "삭제" 
---                         ]
---                     ]
---                 ]
---             ]
---         ]
---     ]
-
--- pagenation = 
---     div [ class "customyf_Pagination" ]
---         [ nav [ class "pagination is-centered" ]
---             [ ul [ class "pagination-list" ]
---                 [ li [ class "" ]
---                     [ a [ class "pagination-link"]
---                         [ text "<" , text "<" ]
---                     ]
---                 , a [ class "pagination-link"]
---                     [ text "<" ]
---                 , li []
---                     [ a [ class "pagination-link is-current yf_cut" ]
---                         [ text "5" ]
---                     ]
---                 , li []
---                     [ a [ class "pagination-link" ]
---                         [ text ">" ]
---                     ]
---                 , a [ class "pagination-link" ]
---                     [ text ">>" ]
---                 ]
---             ]
---         ]
-
-
--- bodyContentTitle =
---           div [ class "make_yf_box" ] 
-        
---                 [ 
---             img [ src "image/runimage.png", alt "runimage" ]
---                 []
---            ,
---                     h1 [ class "make_yf_h1" ]
---                 [ text "하나뿐인 나만의 운동을 만들어보세요!" ]
---              , a [ class "button is-dark make_yf_darkbut", Route.href Route.Filter ]
---                 [ text "시작하기" ]
---             , br []
---                 []
---             ]

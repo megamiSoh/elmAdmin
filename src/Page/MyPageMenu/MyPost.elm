@@ -14,7 +14,8 @@ import Api.Endpoint as Endpoint
 import Api.Decoder as Decoder
 import Http as Http
 import Page.Detail.MyPostDetail as MyD
-
+import Page.Detail.YourFitDetail as YfD
+import Page.Together as T
 
 type alias Model = 
     { session : Session
@@ -318,7 +319,7 @@ view model =
                     ,  div [style "display" (if List.isEmpty model.data.data then "block" else "none")] [ app model noappcontentsBody]
                 ]
                 , div [class ("container myaccountStyle " ++ (if model.showDetail then "account" else ""))] [
-                    MyD.app model VideoCall GoBack
+                    myDapp model VideoCall GoBack
                 ]
             ]
         }
@@ -493,3 +494,41 @@ deltelayer show =
                 ]
             ]
     ]
+
+myDapp : Model -> (List MyD.Pairing -> msg) -> msg -> Html msg
+myDapp model video goback = 
+        div []
+        ( List.map( \x-> 
+            appcontentsItem x model video goback
+        ) (MyD.justList model.getData.detail)) 
+
+appcontentsItem : MyD.DetailTogether -> Model -> (List MyD.Pairing -> msg) -> msg -> Html msg
+appcontentsItem item model video goback= 
+            div []
+            [  appHeaderRDetailClick2 (MyD.caseString item.title) "myPageHeader" goback "fas fa-times" 
+                , div [class "PostVideo"] [
+                     div [ class ("appimagethumb " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ (MyD.caseString item.thembnail) ++") ") , onClick (video (T.justListData item.pairing)) ][]
+                    , div [id "myElement"][]
+                ], 
+                div [ class "m_yf_post_textbox" ]
+                [ div [ class "m_yf_work_time" ]
+                    [ span []
+                        [ i [ class "fas fa-clock m_yf_timeicon" ]
+                            []
+                        ], text (MyD.justokData item.duration)
+                    ]
+                , div [ class "m_yf_work_text" ]
+                    [ text (MyD.justokData item.exercise_part_name)
+                    ,  text " "
+                    ,  text (MyD.justokData item.difficulty_name) ]
+                ]
+            ,  div []
+                [ pre [class "wordBreak descriptionBackground"]
+                    [ 
+                    text (MyD.justokData model.getData.content)
+                    ]
+                ]
+            , div [ class "m_work_script" ]
+                  (List.indexedMap YfD.description (List.sortBy .sort (T.exerciseItemCase item.exercise_items)))
+                
+            ]

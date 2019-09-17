@@ -41,6 +41,7 @@ type alias TogetherData =
     , recommend_cnt : Int
     , nickname: Maybe String
     }
+
 type alias DetailTogether = 
     { thembnail : Maybe String
     , difficulty_name : Maybe String
@@ -74,7 +75,7 @@ type alias Snippet =
 type alias DetailItems = 
     { id : String }
 
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
         { session = session
@@ -100,8 +101,7 @@ init session mobile
         ]
         
     )
-    -- 
--- 
+
 type Msg 
     = GotSession Session
     | BackPage
@@ -130,6 +130,7 @@ subscriptions model =
     , Api.videoSuccess Loading
     , Session.changes GotSession (Session.navKey model.session) ]
 
+justList : Maybe (List a) -> List a
 justList item = 
     case item of
         Just a ->
@@ -137,6 +138,7 @@ justList item =
     
         Nothing ->
             []
+
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -200,8 +202,6 @@ update msg model =
                 case d of
                     Ok item ->
                         ({model | loading = False},Cmd.none)
-                        -- (model, Cmd.none)
-                
                     Err _->
                          ({model | loading = False},Cmd.none)
         GetId id ->
@@ -225,21 +225,12 @@ update msg model =
             )
         BackPage ->
             (model, 
-            -- -- Api.historyUpdate (E.string "myPost")
             Route.pushUrl (Session.navKey model.session) Route.MyPost
             )
           
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    -- if model.check then
-    --     { title = "내 게시물 관리"
-    --     , content = 
-    --         div [] [
-    --             app BackPage model
-    --         ]
-    --     }
-    -- else
         { title = "내 게시물 관리"
         , content = 
             div [] [
@@ -247,6 +238,8 @@ view model =
                 , web BackPage model
             ]
         }
+
+web : msg -> Model -> Html Msg
 web msg model= 
     div [class "container"] [
         div [ class "yf_yfworkout_search_wrap" ]
@@ -254,18 +247,11 @@ web msg model=
         ( List.map( \x-> 
             contentsItem x model
         ) (justList model.getData.detail)) 
-        -- ( List.map( \x-> 
-        --     appcontentsItem x model
-        -- ) model.getData.detail) 
-        -- contentsBody model.getData model.loading
         , goBtn
         ]
     ]
-app model video goback = 
-        div []
-        ( List.map( \x-> 
-            appcontentsItem x model video goback
-        ) (justList model.getData.detail)) 
+
+goBtn : Html Msg
 goBtn  = 
     div [ class "make_yf_butbox" ]
         [ div [ class "yf_backbtm" ]
@@ -278,18 +264,9 @@ goBtn  =
             ]
         ]
 
-contentsBody item model=
-    
-    div [ class "yf_yfworkout_search_wrap" ]
-        [ div [ class "tapbox" ]
-            [ div [ class "yf_large" ]
-                [ text (caseString item.title) ],
-                contentsItem item model
-               
-            ]
-        
-        ]
 
+
+contentsItem : DetailTogether -> Model -> Html Msg
 contentsItem item model=
             div [ class "tile is-parent is-vertical" ]
             [div [ class "yf_notification" ]
@@ -298,13 +275,9 @@ contentsItem item model=
                     [ div [ class "yf_large" ]
                         [ text (caseString item.title) ]
                     ]
-                , div [class "postVideoWrap"] [
-                    div [ class ("imagethumb " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ (caseString item.thembnail) ++") ") , onClick (VideoCall (T.justListData item.pairing)) ][]
-
-
-                    -- img [class "postImg" ,src item.thembnail, onClick (VideoCall item.pairing) ] []
-                , div [id "myElement", style "height" (if String.isEmpty model.zindex then "0px" else "auto") ] []
-
+                    , div [class "postVideoWrap"] [
+                        div [ class ("imagethumb " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ (caseString item.thembnail) ++") ") , onClick (VideoCall (T.justListData item.pairing)) ][]
+                    , div [id "myElement", style "height" (if String.isEmpty model.zindex then "0px" else "auto") ] []
                 ]
                 ], 
             div [ class "yf_subnav" ]
@@ -327,6 +300,7 @@ contentsItem item model=
                (List.indexedMap YfD.description (List.sortBy .sort (T.exerciseItemCase item.exercise_items)))
             ]
 
+caseString : Maybe String -> String
 caseString item = 
     case item of
         Just string ->
@@ -334,50 +308,10 @@ caseString item =
         _ ->
             ""
 
-appcontentsItem item model video goback= 
-            div [ ]
-            [  appHeaderRDetailClick2 (caseString item.title) "myPageHeader" goback "fas fa-times" 
-                , div [class "PostVideo"] [
-                     div [ class ("appimagethumb " ++ model.zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ (caseString item.thembnail) ++") ") , onClick (video (T.justListData item.pairing)) ][]
-                    , div [id "myElement"][]
-                ], 
-                div [ class "m_yf_post_textbox" ]
-                [ div [ class "m_yf_work_time" ]
-                    [ span []
-                        [ i [ class "fas fa-clock m_yf_timeicon" ]
-                            []
-                        ], text (justokData item.duration)
-                    ]
-                , div [ class "m_yf_work_text" ]
-                    [ text (justokData item.exercise_part_name)
-                    ,  text " "
-                    ,  text (justokData item.difficulty_name) ]
-                ]
-            ,  div []
-                [ pre [class "wordBreak descriptionBackground"]
-                    [ 
-                    text (justokData model.getData.content)
-                    ]
-                ]
-            , div [ class "m_work_script" ]
-                  (List.indexedMap YfD.description (List.sortBy .sort (T.exerciseItemCase item.exercise_items)))
-                
-            ]
+justokData : Maybe String -> String
 justokData result = 
     case result of
         Just ok ->
             ok
         Nothing ->
             ""
-
--- goBtn back  = 
---     div [ class "make_yf_butbox" ]
---         [ div [ class "yf_backbtm" ]
---             [ div [ class "button yf_largebut", Route.href Route.MyPost ]
---                 [ text "뒤로" ]
---             ]
---         , div [ class "yf_nextbtm" ]
---             [ a [ class "button is-dark yf_editbut", Route.href Route.EditFilter]
---                 [ text "수정" ]
---             ]
---         ]

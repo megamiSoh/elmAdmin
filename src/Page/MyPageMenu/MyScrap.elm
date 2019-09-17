@@ -14,6 +14,7 @@ import Api.Endpoint as Endpoint
 import Json.Decode as Decode
 import Api.Decoder as Decoder
 import Page.Detail.MyScrapDetail as MyD
+import Page.Detail.YourFitDetail as YfD
 
 type alias Model = 
     { session : Session
@@ -348,7 +349,7 @@ view model =
                             infiniteSpinner
                             ]
                         ]
-                        , div [class ("myaccountStyle myScrapStyle " ++ (if model.showDetail then "account" else "")) ][MyD.app model BackBtn GoVideo]
+                        , div [class ("myaccountStyle myScrapStyle " ++ (if model.showDetail then "account" else "")) ][app model BackBtn GoVideo]
                 ]
             }
         else
@@ -443,3 +444,38 @@ scrapItem item=
                 ]
             ]
         ]
+
+app : Model -> msg -> (List MyD.Pairing -> msg) -> Html msg
+app model back videoCall= 
+        div [ class "container" ]
+                [
+                   appHeaderRDetailClick model.listData.title  "myPageHeader whiteColor" back "fas fa-times"
+                   , div [] [
+                        appcontentsItem model.listData model.zindex videoCall
+                     ]
+                ]
+
+appcontentsItem item zindex videoCall = 
+            div []
+            [ div []
+                [ p [ class "m_yf_container" ]
+                    [ div [ class ("appimagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") "), onClick (videoCall item.pairing) ][],
+                         div [ id "myElement" ] [
+                            ]
+                    ]
+                ]
+            , 
+            div [ class "m_yf_work_textbox" ]
+                [ div [ class "m_yf_work_time" ]
+                    [ span []
+                        [ i [ class "fas fa-clock m_yf_timeicon" ]
+                            []
+                        ], text item.duration
+                    ]
+                , div [ class "m_yf_work_text" ]
+                    [ text ((MyD.justok item.exercise_part_name) ++ " - " ++  (MyD.justok item.difficulty_name)) ]
+                ]
+            , pre [class"wordBreak descriptionBackground"][text (MyD.justok item.description)]
+            , div [ class "m_work_script" ]
+                (List.indexedMap YfD.description item.exercise_items)
+            ]

@@ -45,7 +45,7 @@ type alias DetailData =
     , id : Int
     , title : String }
 
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
         {session = session
@@ -66,7 +66,6 @@ init session mobile
 
 type EditorTab
     = Editor
-
 
 type PreviewTab
     = RealTime
@@ -146,12 +145,15 @@ view model =
         ]
     }
 
+web : DetailData -> Model -> Html Msg
 web data model= 
     div [class "container"] [
         commonJustHeader "/image/icon_notice.png" "공지사항" ,
         contentsBox data model,
         backBox
     ]
+
+app : DetailData -> Model -> Html Msg
 app data model =
     div [class "container"] [
         appHeaderRDetail (
@@ -162,13 +164,13 @@ app data model =
         ) "myPageHeader whiteColor" Route.Info "fas fa-times",
         appContentsBox data model
     ]
+
+contentsBox : DetailData -> Model -> Html Msg
 contentsBox item model = 
     div [ class "info_mediabox" ]
         [ div [ class "infoDetail_titlebox" ]
             [ div [ class "infoDetail_title" ]
                 [ text item.title  ]
-            -- , div [ class "infoDetail_yf_date" ]
-            --     [ text item.createDate ]
             ]
         , div [ class "infoDetail_textbox" ]
             [ 
@@ -176,19 +178,18 @@ contentsBox item model =
             ]
         ]
 
+appContentsBox : DetailData -> Model -> Html Msg
 appContentsBox item model= 
     div [ class "mediabox" ]
         [ div [ class "titlebox" ]
-            [ 
-                --  div [ class "m_infoDetail_yf_date" ]
-                -- [ text item.createDate ]
-            ]
+            []
         , div [ class "m_infoDetail_textbox" ]
             [ 
                 markdownView model
             ]
         ]
 
+backBox : Html Msg
 backBox = 
     div [ class "make_yf_butbox" ]
         [ a [ class "button infoDetail_yf_back", Route.href Route.Info]

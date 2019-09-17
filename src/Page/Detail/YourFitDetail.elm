@@ -29,6 +29,7 @@ type alias Model =
     , zindex : String
     , video : String
     , errType : String
+    , detailShow : Bool
     }
 
 type alias GetData = 
@@ -84,6 +85,7 @@ init session mobile
             , description = Nothing}
         , video = ""
         , errType = ""
+        , detailShow = False
         }
         , Cmd.batch [
             Api.getId ()
@@ -269,10 +271,11 @@ app model backpage scrap goVideo=
                 [
                    appHeaderRDetailClick model.listData.title  "yourfitHeader" backpage "fas fa-times"
                    ,
-                    appcontentsItem model.listData model.loading scrap model model.zindex goVideo
+                    appcontentsItem model.listData model.loading scrap model.scrap model.zindex goVideo
                     
                 ]
 
+web : Msg -> Model -> Html Msg
 web msg model= 
     div [ class "container" ]
                 [
@@ -285,20 +288,19 @@ web msg model=
                         goBtnBox msg
                     ]
                 ]
+
+contentsBody : DetailData -> Bool -> msg -> Bool -> (List Pairing -> msg) -> String -> String -> Html msg
 contentsBody item model scrap modelscrap goVideo scrapText zindex=
-    
     div [ class "yf_yfworkout_search_wrap" ]
         [ div [ class "tapbox" ]
             [ div [ class "yf_large" ]
                 [ text item.title ],
                 contentsItem item model scrap modelscrap goVideo scrapText zindex
-               
             ]
-        
         ]
 
 
-
+contentsItem : DetailData -> Bool -> msg -> Bool -> (List Pairing -> msg) -> String -> String -> Html msg
 contentsItem item loading scrap modelscrap govideo scrapText zindex=
             div [ class "tile is-parent is-vertical" ]
             [lazy2 div [ class "yf_notification" ]
@@ -335,7 +337,7 @@ contentsItem item loading scrap modelscrap govideo scrapText zindex=
                (List.indexedMap description item.exercise_items)
             ]
 
-
+justok : Maybe String -> String
 justok casees = 
     case casees of
         Just a ->
@@ -344,8 +346,9 @@ justok casees =
         Nothing ->
             "  "
 
+appcontentsItem : DetailData -> Bool -> msg -> Bool -> String -> (List Pairing -> msg) -> Html msg
 appcontentsItem item loading scrap modelscrap zindex goVideo = 
-            div [ ]
+            div []
             [  p [ class "m_yf_container" ]
                     [ 
                         div [ class ("appimagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") , onClick (goVideo item.pairing) ][]
@@ -365,7 +368,7 @@ appcontentsItem item loading scrap modelscrap zindex goVideo =
                 , div [ class "m_yf_scrapt", onClick scrap ]
                     [ span []
                         [ i [ class  (
-                            if modelscrap.scrap then
+                            if modelscrap then
                             "fas fa-bookmark"
                             else
                             "far fa-bookmark"
@@ -382,16 +385,17 @@ appcontentsItem item loading scrap modelscrap zindex goVideo =
             ]
             ]
 
+description : Int -> DetailDataItem -> Html msg
 description idx item = 
     ul [class "yf_text"] [
             if item.is_rest then    
                 li [] [text ((String.fromInt(item.sort)) ++ " . " ++  item.title ++ " " ++ String.fromInt(item.value) ++ "분")]
             else 
                 li [] [text ((String.fromInt(item.sort)) ++ " . " ++  item.title ++ " " ++ String.fromInt(item.value) ++ "세트")] 
-                    
-        -- li [] [text]
     ]
     
+
+goBtnBox : msg -> Html msg
 goBtnBox backPage = 
     div [ class "searchbox_footer" ]
         [ div [ class "yf_backbtm" ]
@@ -400,6 +404,6 @@ goBtnBox backPage =
             ]
         ]
 
-
+videoCall : Html msg
 videoCall =
     div [id "myElement"] []

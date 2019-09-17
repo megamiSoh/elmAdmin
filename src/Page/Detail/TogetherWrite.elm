@@ -61,7 +61,7 @@ type alias DetailData =
     , thumbnail: String
     , description : Maybe String}
 
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
         {session = session
@@ -95,9 +95,9 @@ init session mobile
         , getFile = []}
         , Api.getId ()
     )
+
 type EditorTab
     = Editor
-
 
 type PreviewTab
     = RealTime
@@ -116,24 +116,19 @@ type Msg
     | ListShow 
     | WriteComplete (Result Http.Error Decoder.Success)
     | GotPreviews (List String)
-    -- | OnemoreTry Encode.Value
-    -- | KeyDown Int
 
--- openFile = 
---     on "click" Decode.value (\_ -> "together_bottom_btn")
 
+shareTogether : String -> Session -> String -> Cmd Msg
 shareTogether id session content= 
     let
         body = 
             Encode.object   
                 [ ("content" , Encode.string content)]
                 |> Http.jsonBody     
-            -- "content="
-            -- ++ content 
-            --     |> Http.stringBody "application/x-www-form-urlencoded"
     in
     Api.post (Endpoint.togetherShare id) (Session.cred session) ShareComplete body (Decoder.resultD)
 
+togetherWrite : List File.File -> String -> Session -> Cmd Msg
 togetherWrite getFile title session = 
     let
         body = 
@@ -157,14 +152,11 @@ subscriptions model =
     Sub.batch [
         Api.receiveId GetShare
         , Session.changes GotSession (Session.navKey model.session)
-        -- , Api.reOpenFile OnemoreTry
     ]
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        -- OnemoreTry try ->
-        --     (model, Api.openFile ())
         GotPreviews url ->
             let
                 getUrl =
@@ -194,11 +186,6 @@ update msg model =
             )
         ListShow -> 
             ({model | listShow = not model.listShow}, Cmd.none)
-        -- KeyDown key ->
-        --     if key == 13 then
-        --         update GoShare model
-        --     else
-        --         (model, Cmd.none)
         GetList(Ok ok) ->
             ({model | getData = ok.data}, Cmd.none)
         GetList(Err err) ->
@@ -256,7 +243,6 @@ update msg model =
                 Just a ->
                    
                     ({model | fileName = File.name a, getFile = filename}
-                    -- , Cmd.none
                    , Task.perform GotPreviews <| Task.sequence <|
                     List.map File.toUrl filename
                     )
@@ -265,6 +251,7 @@ update msg model =
                     (model, Cmd.none)
         BackBtn ->
             (model, Route.pushUrl (Session.navKey model.session) Route.Together)
+
 
 view : Model -> {title : String , content : Html Msg}
 view model =
@@ -295,6 +282,8 @@ view model =
         ]
     }
 
+
+web : Model -> Html Msg
 web model = 
   div [class "container"] [
     div [class "notification yf_workout"] [
@@ -305,6 +294,8 @@ web model =
         ]
     ]  ]
 
+
+app : Model -> Html Msg
 app model= 
     div [class "container"] [
         if model.checkDevice == "" then
@@ -314,6 +305,9 @@ app model=
         ,
         bodyContents_app model
     ]
+
+
+bodyContents : Model -> Html Msg
 bodyContents model = 
     div [ class "togetherWrite_searchbox" ]
         [ div [ class "togetherWrite_mediabox" ]
@@ -323,7 +317,6 @@ bodyContents model =
                     p [class "no_preview"][text "선택 된 이미지가 없습니다."]
                     else 
                     img [src model.previewUrl ][]
-                    -- ]
                 else
                 videoContent model
                , div [class "togethertextarea to_yf_textarea"] [
@@ -357,6 +350,8 @@ bodyContents model =
             ]
         ]
 
+
+bodyContents_app : Model -> Html Msg
 bodyContents_app model = 
     div [ class "m_togetherWrite_searchbox" ]
         [ div [ class "m_togetherWrite_mediabox" ]
@@ -377,8 +372,8 @@ bodyContents_app model =
                     []
             ]]
     
-        -- ]
-                
+
+videoContent : Model -> Html Msg                
 videoContent model = 
     div [ class "columns togetherWrite_yf_box" ]
         [ 
@@ -400,7 +395,6 @@ videoContent model =
                         ul [] (
                             List.indexedMap ( \idx x ->
                             exerciseItems idx x model
-                                -- exerciseItems idx (List.sortBy x.sort)
                             ) (List.sortBy .sort model.getData.exercise_items)
                             
                         )
@@ -422,6 +416,8 @@ videoContent model =
             ]
         ]       
 
+
+exerciseItems : Int -> YfD.DetailDataItem -> Model -> Html Msg
 exerciseItems idx item model= 
         li [
             classList
@@ -434,6 +430,8 @@ exerciseItems idx item model=
                 String.fromInt item.value ++ "세트"
         ))]
 
+
+goBtn : Model -> Html Msg
 goBtn model = 
     div [] [
         div [ class " togetherWrite_yf_dark" ]
@@ -454,7 +452,7 @@ goBtn model =
     ]
 
 
-
+videoContent2 : Model -> Html Msg
 videoContent2 model = 
     div [ class "columns m_togetherWrite_yf_box" ]
         [ 
@@ -476,7 +474,6 @@ videoContent2 model =
                         ul [] (
                             List.indexedMap ( \idx x ->
                             exerciseItems idx x model
-                                -- exerciseItems idx (List.sortBy x.sort)
                             ) (List.sortBy .sort model.getData.exercise_items)
                             
                         )
@@ -498,9 +495,6 @@ videoContent2 model =
             ]
         ]  
 
-
-
-
-
+targetFiles : Decode.Decoder (List File)
 targetFiles = 
     Decode.at ["target", "files"] (Decode.list File.decoder)

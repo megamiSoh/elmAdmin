@@ -68,7 +68,7 @@ type alias Protain =
 
 type alias DataWrap = 
     { data : MyData }
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+
 type alias MyData =
     { exercise : Int
     , share : Int
@@ -91,7 +91,7 @@ type alias File =
     , origin_name : String
     , path : String}
 
-
+init : Session -> Bool -> (Model, Cmd Msg)
 init session mobile
     = (
         { session = session
@@ -188,6 +188,7 @@ onKeyDown:(Int -> msg) -> Attribute msg
 onKeyDown tagger = 
     on "keydown" (Decode.map tagger keyCode)
 
+justFloat: String -> Float
 justFloat item = 
     let
         flaot = String.toFloat item
@@ -200,6 +201,7 @@ justFloat item =
         Nothing ->
             0
 
+saveEncode : Model -> Cmd Msg
 saveEncode model =
     let
         body = 
@@ -213,6 +215,9 @@ saveEncode model =
     in
     Decoder.resultD
     |> Api.post Endpoint.bodyRecord (Session.cred model.session) SaveComplete body 
+
+
+pwdEncode : Model -> Session -> Cmd Msg
 pwdEncode model session = 
     let
         list = 
@@ -225,6 +230,7 @@ pwdEncode model session =
     Decoder.resultD
     |> Api.post Endpoint.pwdChange (Session.cred session) PwdComplete list 
 
+profileEncode : List Files.File -> Session -> Cmd Msg
 profileEncode profileImg session =
     let
         body = (List.map (Http.filePart "profile")profileImg)
@@ -233,6 +239,7 @@ profileEncode profileImg session =
     (Decoder.profileData FileData File)
     |> Api.post Endpoint.profileImg (Session.cred session) ChangeComplete body 
 
+updateFieldBodyInfo : String -> Model -> ( Model, Cmd Msg )
 updateFieldBodyInfo item model = 
     case String.toFloat item of
         Just ok ->
@@ -266,7 +273,6 @@ update msg model =
 
         ChangeProfile ->
             (model, profileEncode model.profileImg model.session)
-            -- (model, Cmd.none)
         GotPreviews urls ->
             ({model | preview = urls}, Cmd.none)
         ChangeProfileImage file->
@@ -391,7 +397,6 @@ update msg model =
             in
             ({model | currentPage = "body"}, Cmd.batch
             [ Api.showToast text
-            -- , -- Api.historyUpdate (Encode.string "myAccount")
             , Route.pushUrl (Session.navKey model.session) Route.MyAccount
             ])
         SaveComplete (Err err) ->
@@ -414,7 +419,6 @@ update msg model =
                     ) tail
                 head = List.take 1 split
                 result = String.join "." (head ++ len)
-                -- toInt = String.toFloat result
             in
             if what == "" then
             (case info of
@@ -540,13 +544,10 @@ update msg model =
         BackBtn ->
             ( model, 
             Route.pushUrl (Session.navKey model.session) Route.MyPage 
-            -- -- Api.historyUpdate (Encode.string "myPage")
             )
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    -- case model.currentPage of
-    --     "nick" ->
             { title = "닉네임 변경"
             , content =
                 div [] [
@@ -561,6 +562,7 @@ view model =
                 ]
             }
 
+previewLayout : String -> Model -> Html Msg
 previewLayout item model = 
     div [class ("control has-icons-right myaccountStyle "  ++ (if model.currentPage == "image" then model.currentPage else ""))] [
         ul [class "accountHeader"] 
@@ -573,6 +575,8 @@ previewLayout item model =
                 ],
         img [src item] []
     ]
+
+justData : Maybe String -> String
 justData cases = 
     case cases of
         Just a ->
@@ -580,6 +584,8 @@ justData cases =
     
         Nothing ->
             " 닉네임을 등록 해 주세요. "
+
+nicknameContents : Model -> Html Msg
 nicknameContents model =    
     div [ class ("control has-icons-right myaccountStyle "  ++ (if model.currentPage == "nick" then model.currentPage else ""))] [
         ul [class "accountHeader"] 
@@ -599,6 +605,7 @@ nicknameContents model =
         ]
     ]
 
+accountContents : Model -> Html Msg
 accountContents model = 
         div [ class ("container yf_container myaccountStyle "  ++ (if model.currentPage == "account" then model.currentPage else ""))]
             [ ul [class "accountHeader", id (if model.currentPage == "account" then "noScrInput" else "" )] 
@@ -611,8 +618,6 @@ accountContents model =
                 ],
                 div [ class "settingbox" ]
                 [ text "계정기록"  
-                --, a [ class "button is-large is-fullwidth settingmenu" ]
-                --     [ text "기록초기화" ], text "계정연결" 
                 ,  a [ class "button m_settingmenu", Route.href Route.Logout ]
                     [ text "로그아웃" ], text "계정관리" 
                 , div [ class "button is-danger m_settingmenu", onClick DeleteConfirm ]
@@ -620,6 +625,8 @@ accountContents model =
                 , mremovelayer model.show AccountDelete
                 ]
             ]
+
+contents : Model -> Html Msg
 contents model = 
         div [ class ("container yf_container account_container "++ (if model.currentPage /= "" then "fadeContainer" else ""))]
             [ 
@@ -713,12 +720,10 @@ contents model =
                 ]
             ]
 
+bodysex : Model -> Html Msg
 bodysex model = 
    div [ class "editTop showAccount" ]
-    [ 
-        -- appHeaderConfirmDetailR "성별" "myPageHeader whiteColor" (ShowDetail "")  (ShowDetail "")  "확인"
-        -- , 
-        div [ class "editData" ]
+    [ div [ class "editData" ]
         [  ul [class "accountHeader"] 
                 [ li[onClick (ShowDetail "")]
                     [ span [class "fas fa-times"][] ]
@@ -742,7 +747,6 @@ bodysex model =
                 ) ]
                     [] 
                 ]
-                -- ,div [] [text "남자"]
             , label [ class "radio" ]
                 [ input [ type_ "radio", name "question"
                 , value model.sex
@@ -756,11 +760,12 @@ bodysex model =
                         "fas fa-venus waman"
                 ) ]
                     []
-                -- ,div [] [text "여자" ]
                 ]
             ]
         ]
     ]
+
+bodyweight : Model -> Html Msg
 bodyweight model = 
     div [class "editTop showAccount"] [
         div [  class "editData"]
@@ -783,10 +788,9 @@ bodyweight model =
     ]
 
 
+goalweight : Model -> Html Msg
 goalweight model = 
     div [class "editTop showAccount"] [
-        --  appHeaderConfirmDetailR "목표체중" "myPageHeader whiteColor" (ShowDetail "goalWeightInput")  (ShowDetail "goalWeightInput")  "확인"
-        -- , 
         div [  class "editData"]
         [ ul [class "accountHeader"] 
                 [ li[onClick (ShowDetail "")]
@@ -806,10 +810,9 @@ goalweight model =
         ]
     ]
 
+height : Model -> Html Msg
 height model = 
     div [class "editTop  showAccount"] [
-        --  appHeaderConfirmDetailR "신장" "myPageHeader whiteColor" (ShowDetail "heightInput")  (ShowDetail "heightInput")  "확인"
-        -- , 
         div [  class "editData"]
         [ 
             ul [class "accountHeader"] 
@@ -830,11 +833,10 @@ height model =
         ]
     ]
 
+
+birth : Model -> Html Msg
 birth model = 
     div [class "editTop showAccount"] [
-        
-        --  appHeaderConfirmDetailR "생년월일" "myPageHeader whiteColor" (ShowDetail "birthInput")  (ShowDetail "birthInput")  "확인"
-        -- ,
          div [  class "editData"]
         [ ul [class "accountHeader"] 
                 [ li[onClick (ShowDetail "")]
@@ -855,6 +857,7 @@ birth model =
     ]
 
 
+bodyRecord : Model -> Html Msg
 bodyRecord model = 
    div [ class ("settingboxes myaccountStyle " ++ (if model.currentPage == "body" then model.currentPage else "")) ]
     [ 
@@ -866,8 +869,6 @@ bodyRecord model =
                    text (if model.weight == "" then "등록" else "수정")
                 ]
                 ],
-        -- appHeaderConfirmDetailR "신체정보" "myPageHeader whiteColor"  (ChangePage "") SaveBody  (if model.weight == "" then "등록" else "수정")
-        -- , 
         div [ class "physical_setting" ]
         [ label [ class "label physical_title" ]
             [ text "성별" ]
@@ -875,10 +876,7 @@ bodyRecord model =
             [ 
             label [ class "radio" ]
                 [ input [ type_ "radio", name "question"
-                , value model.sex
-                -- , onClick (Sex "Male")
-                         ]
-                    []
+                , value model.sex ][]
                 , i [ class (
                     if model.sex == "Male" then
                         "fas fa-mars man man_colorChange"
@@ -887,21 +885,15 @@ bodyRecord model =
                 ) ]
                     [] 
                 ]
-                -- ,div [] [text "남자"]
             , label [ class "radio" ]
                 [ input [ type_ "radio", name "question"
-                , value model.sex
-                -- , onClick (Sex "Female")
-                 ]
-                    []
+                , value model.sex][]
                 , i [ class (
                     if model.sex == "Female" then
                         "fas fa-venus waman woman_colorChange"
                     else
                         "fas fa-venus waman"
-                ) ]
-                    []
-                -- ,div [] [text "여자" ]
+                ) ][]
                 ]
             ]
         ]
@@ -953,6 +945,7 @@ bodyRecord model =
     ]
 
 
+pwdContents : Model -> Html Msg
 pwdContents  model =
     div [class ("m_pwd myaccountStyle " ++ (if model.currentPage == "pwd" then model.currentPage else ""))] [
         ul [class "accountHeader"] 
@@ -970,8 +963,6 @@ pwdContents  model =
         []
         ,input [ class "input myPage_yf_input", type_ "text", placeholder "변경할 패스워드를 한번 더 입력 해 주세요." , onInput NewPwd]
         []
-        -- , div [ class "button mypage_nickbtn", onClick ChangePwd ]
-        --     [ text "적용" ]
         ]
 
 

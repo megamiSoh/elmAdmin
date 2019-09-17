@@ -27,7 +27,6 @@ editorView md textAreaInput readOnly=
             []
 
 
-
 markdownView { options, textarea, onDemandText, showToC, selectedPreviewTab } =
     let
         textToParse =
