@@ -44,6 +44,7 @@ type alias Model =
     , per_page : Int
     , title : String
     }
+
 type alias FilterResult = 
     { data : List FilterData
     , paginate : FilterPaginate }
@@ -85,7 +86,7 @@ type alias ScreenInfo =
     , offsetHeight : Int}
 
 
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = 
     (
@@ -143,8 +144,8 @@ init session mobile
     )
 
 
-
-filterEncoder model session page per_page= 
+filterEncoder : GetFilter -> Session -> Int -> Int -> Cmd Msg
+filterEncoder model session page per_page = 
     let
         list =  
             Encode.object
@@ -198,7 +199,7 @@ type Msg
     | KeyDown Int
     | NoOp
     | GoFilter
-    -- | SearchExercise STring
+
 toSession : Model -> Session
 toSession model =
     model.session
@@ -208,6 +209,7 @@ toCheck : Model -> Bool
 toCheck model =
     model.check
 
+listEncoder : FilterData -> Encode.Value
 listEncoder model = 
     Encode.object   
         [
@@ -247,19 +249,21 @@ listEncoder model =
               
         ]
 
+sendDataEncoder : List FilterData -> Encode.Value
 sendDataEncoder model = 
     Encode.list listEncoder model
 
 
-onKeyDown:(Int -> msg) -> Attribute msg
+onKeyDown :(Int -> msg) -> Attribute msg
 onKeyDown tagger = 
     on "keydown" (Decode.map tagger keyCode)
 
+scrollEvent : (ScreenInfo -> msg) -> Attribute msg
 scrollEvent msg = 
     on "scroll" (Decode.map msg scrollInfoDecoder)
 
 
-
+scrollInfoDecoder : Decode.Decoder ScreenInfo
 scrollInfoDecoder =
     Decode.map3 ScreenInfo
         (Decode.at [ "target", "scrollHeight" ] Decode.int)
@@ -445,7 +449,6 @@ update msg model =
             (model,
             Cmd.batch [ 
                 Api.deleteData (),
-                -- -- Api.historyUpdate (Encode.string "filter")
                  Route.pushUrl (Session.navKey model.session) Route.Filter
                 ]
                  )
@@ -455,12 +458,11 @@ unfocus : Cmd Msg
 unfocus =
     Task.attempt(\_ -> NoOp) (Dom.blur "keyboardBlur")
 
-
-
+filterItem : Int -> List FilterData-> List FilterData
 filterItem item list =
     List.filter(\x -> x.id == item) list
 
-
+justokData : Maybe String -> String
 justokData data = 
     case data of
         Just ok ->
@@ -468,6 +470,8 @@ justokData data =
     
         Nothing ->
             ""
+
+justIntData : Maybe Int -> Int
 justIntData data = 
     case data of
         Just ok ->
@@ -475,28 +479,21 @@ justIntData data =
     
         Nothing ->
             0
+
+
 view : Model -> {title : String , content : Html Msg}
 view model =
     if model.check then
-        -- if model.loading then
         { title = "맞춤운동 필터 Step 1"
         , content = 
                 div [] [
-                    div [class "spinnerBack", style "display" (if model.loading then "block" else "none")] [spinner]
+                    div [class "spinnerBack", style "display" (if model.loading then "flex" else "none")] [spinner]
                     , div [] [
                     appHeader model
                     , appitemContainer model
                 ]
                 ]
             }
-        -- else
-        -- { title = "맞춤운동 필터 Step 1"
-        -- , content = 
-        --         div [] [
-        --             appHeader model
-        --             , appitemContainer model
-        --         ]
-        --     }
     else
     { title = "맞춤운동 필터 Step 1"
     , content = 
@@ -505,23 +502,8 @@ view model =
             ]
         }
 
-app model = 
-    div [] [
-        div [] [
-            if model.loading then
-            div [class "spinnerBack"] [spinner]
-            else
-            div [] []
-        ]
-        , appHeader model , 
-        div [] [
-            if model.loading then
-            div [] []
-            else
-            appitemContainer model
-        ]
-    ]
 
+appHeader : Model -> Html Msg
 appHeader model = 
     div [class "appheadermakeExer"] [
         ul [ class "commonHeaderBoth makeExerHeader"]
@@ -543,21 +525,19 @@ appHeader model =
         
     ]
 
--- 
+web : Model -> Html Msg
 web model = 
         div [ class "container con_filterStep1" ]
             [
                 commonHeader2 "/image/icon_customworkout.png" "맞춤운동"
                 ,search model,
             div [] [
-                -- if model.loading then
-                --     spinner
-                -- else
                 itemContainer model
             ]
             , goBtn model 
     ]
 
+itemContainer : Model -> Html Msg
 itemContainer model = 
      div [class"filter_box"] [
             div[class "filterStep1_listbox"] [
@@ -576,7 +556,6 @@ itemContainer model =
                     else 
                     div [] [text "검색 된 운동이 없습니다. "]
                 ]
-                -- , text "helloworld"
             ]
             , 
             if List.length (model.addItem) == 0 then
@@ -597,13 +576,12 @@ itemContainer model =
                         )model.addItem )
                 ]
             ]
-            -- , text model.what
         ]
 
+appitemContainer : Model -> Html Msg
 appitemContainer model = 
     div [] [
         div ([class "m_filterStep1_filter_box"]
-    -- ++ [id "infinite"]
     ++ [style "left"
                  (if model.menuleft then
                      "0"
@@ -624,7 +602,6 @@ appitemContainer model =
             )
             [
             div([class "m_filterStep1_listbox"]
-            -- ++ [ style "height"  "85vh"] 
             ++ Swiper.onSwipeEvents SwipedLeft
             
             ) [
@@ -660,12 +637,6 @@ appitemContainer model =
                 ]
                  else 
                     div [class "noResult"] [text "검색 된 운동이 없습니다."]
-                , if model.infiniteLoading then
-                    div [class "loadingPosition"] [
-                    spinner
-                    ]
-                    else
-                    span [] []
             ]
             , 
             if List.length (model.addItem) == 0 then
@@ -706,6 +677,7 @@ appitemContainer model =
         ]
     ]
 
+search : Model -> Html Msg
 search model = 
         div [ class "filterstep1_yf_box" ]
             [ div [ class "filterstep1_yf_full" ]
@@ -726,15 +698,17 @@ search model =
                 ]
             ]
 
+resultCount : List FilterData -> String -> String -> Html Msg
 resultCount model style title =  
     div [ class style ]
         [ text ("총 " ++ String.fromInt(List.length model) ++ "건의 " ++ title ++"결과") ]          
 
+stringresultCount : String -> String -> String -> Html Msg
 stringresultCount model style title =  
     div [ class style ]
         [ text ("총 " ++ model ++ "건의 " ++ title ++"결과") ]   
 
-    
+workoutItem : Int -> FilterData -> String -> Html Msg    
 workoutItem idx item style=
             if justokData item.title == "" then
             breakTime "fas fa-minus-circle" (BackItem idx)
@@ -767,6 +741,8 @@ workoutItem idx item style=
                         []
                     ]
                 ]
+
+appworkoutItem : Int -> FilterData -> String -> (Int -> Msg) -> Html Msg
 appworkoutItem idx item style addItem =
             if justokData item.title == "" then
             appbreakTime "fas fa-minus-circle" (BackItem idx)
@@ -803,6 +779,7 @@ appworkoutItem idx item style addItem =
                     ]
                 ]
 
+breakTime : String -> Msg -> Html Msg
 breakTime style addBreak=
         div [ class "breaktimetbox" , onClick addBreak]
         [ div [ class "filterStep1_iconbox" ]
@@ -823,6 +800,7 @@ breakTime style addBreak=
             ]
         ]
 
+appbreakTime : String -> Msg -> Html Msg
 appbreakTime style addBreak=
         div [ class "m_breaktimetbox" , onClick addBreak]
         [ div [ class "m_filterStep1_iconbox" ]
@@ -843,7 +821,7 @@ appbreakTime style addBreak=
             ]
         ]
 
-
+goBtn : Model -> Html Msg
 goBtn model=
     div [ class "make_yf_butbox" ]
         [ div [ class "yf_backbtm" ]

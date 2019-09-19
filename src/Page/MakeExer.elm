@@ -65,6 +65,7 @@ type alias Model =
     , yourfitPriceOpen : Bool
     , slideWidth : String
     }
+
 type alias Format = 
     { ask_id : Int
     , content : String
@@ -87,7 +88,6 @@ type alias AskDetail =
     , is_ing: Bool 
     , pairing : List Pairing
     }
-
 
 type alias AskDetailItem = 
     { exercise_id : Int
@@ -753,9 +753,6 @@ update msg model =
                     ({model | categoryPaperWeight = "sex", axerCode = "", askSelected = caseItem model.askyours.default True} , Cmd.batch[askYourData model  GetQuestions Endpoint.askgender (Decoder.askyours AskYours AskYourData AskItems)
                     , Api.hideFooter ()])
                 "paperWeightConfirm" ->
-                    -- if model.check then
-                    -- ({model | isActive = "reset"}, Cmd.none)
-                    -- else
                     ({model | isActive = "reset"}, scrollToTop NoOp)
                 "newRecommend" ->
                     ({model | isActive = "recommend"}, Cmd.none)
@@ -846,12 +843,10 @@ update msg model =
             if model.saveCheckVal == "" then
             (model, 
             Route.pushUrl (Session.navKey model.session) Route.MakeDetail
-            -- Api.historyUpdate (Encode.string "makeExerciseDetail")
             )
             else 
             (model, 
             Route.pushUrl (Session.navKey model.session) Route.TogetherW
-            -- Api.historyUpdate (Encode.string "togetherWrite")
             )
         CheckId id str->
             let
@@ -922,7 +917,6 @@ view model =
                         , selectedItemApp model
                         , resetLayer "yf_popup" model
                         ]
-                    
                     }
     
         False ->
@@ -949,13 +943,16 @@ view model =
                             _ ->
                                 paperWeightBody model            
                     ]
-                     
                 ]
                 , paperweightStart model
                 , selectedItem model
                 , resetLayer "yf_popup" model
                 , div [class "yp_price_container", style "display" (if model.yourfitPriceOpen then "flex" else "none")][
-                    yp_price_list model.yf_price Yf_price_Msg "닫기"
+                div [class "yp_price_layer"][
+                    div [class "button yf_price_top_btn is-danger", onClick OpenPop][text "닫기"]
+                    , YP.weblayout model.yf_price
+                        |> Html.map Yf_price_Msg 
+                    ]
                 ]
             ]
             }
@@ -972,20 +969,17 @@ makeExerBody model =
                             [ text "맞춤운동 리스트" ]
                         ],
                     div [] [
-                        if List.isEmpty model.getlistData.data then
-                            div [class "nopaperWeightResult"] [
+                            div [class "nopaperWeightResult", style "display" (if List.isEmpty model.getlistData.data then "flex" else "none")] [
                             text "맞춤운동이 없습니다."
                             ]
-                        else
-                            div[][
-                                div [ class "make_boxwrap" ]
+                            , div[][
+                                div [ class "make_boxwrap", style "display" (if List.isEmpty model.getlistData.data then "none" else "block") ]
                                 (List.map bodyItem model.getlistData.data)
-                                ,pagination
+                                , pagination
                                     PageBtn
                                     model.getlistData.paginate
                                     model.pageNum]
                         ]
-
                 ]
            ]
 
@@ -1000,18 +994,9 @@ app model =
         [ h1 [ class "m_make_yf_h2" ]
             [ text "맞춤운동 리스트" ]
         ]
-            ,div [class "yf_noResult_make"] [
-                if List.isEmpty model.newList then
-                div [][text "맞춤운동이 없습니다."]
-                else 
-                div[](List.map appItemContent model.newList)
-                ,
-                if model.infiniteLoading then
-                    div [class "loadingPosition"] [
-                    infiniteSpinner
-                    ]
-                else
-                    span [] []
+            ,div [] [
+                div [class "yf_noResult_make", style "display" ( if List.isEmpty model.newList then "block" else "none")][text "맞춤운동이 없습니다."]
+                , div[style "display" ( if List.isEmpty model.newList then "none" else "block")](List.map appItemContent model.newList)
             ]
     ]
 
@@ -1034,6 +1019,7 @@ appStartBox =
         ]
     ]
 
+paperWeightStartApp : Model -> Html Msg
 paperWeightStartApp model = 
      div [ class "container", class "scroll", scrollEvent ScrollEvent, style "height" "85vh" ][
          activeTab model ,
@@ -1182,8 +1168,6 @@ bodyItem item=
         ]
     ]
 
-
-
 bodyContentTitle : Html msg
 bodyContentTitle =
    div [ class "columns make_mj_box" ]
@@ -1198,14 +1182,12 @@ bodyContentTitle =
             [ text "사용자가 필터를 통해 직접 나만의 유어핏 운동을 제작합니다." ]
         , p []
             [ text "나에게 꼭 필요한 운동으로 개성있는 내 운동을 만들어보세요." ]
-        -- , a [ class "button is-link yf_make_b" ]
-        --     [ text "요금제 선택" ]
         , a [ class "button is-primary yf_make_b", Route.href Route.Filter ]
             [ text "시작하기" ]
         ]
     ]
 
-appdeltelayer: Model -> Html Msg
+appdeltelayer : Model -> Html Msg
 appdeltelayer model =
     div [class ("m_delete_post " ++ model.show)] [
          div [ class "yf_delete_popup" ]
@@ -1649,6 +1631,7 @@ answerExamplePoint idx model item =
                 ]
 
 
+caseItem : Maybe Bool -> Bool -> Bool
 caseItem item charaterType =
     case item of
         Just i ->
@@ -1657,7 +1640,7 @@ caseItem item charaterType =
         Nothing ->
             charaterType
 
-
+videoItem : AskExer -> Html Msg
 videoItem item = 
     div [ class "yf_workoutvideoboxwrap makeExerMjboxWrap" , onClick (CloseTrial item.ask_no item.exercise_id)]
         [ div [class "list_overlay_mj"]
@@ -1682,6 +1665,7 @@ videoItem item =
                     , text item.duration ]
         ]
 
+videoItemApp : AskExer -> Html Msg
 videoItemApp item = 
     div [ class "mjList_container mj_wrap", onClick (CloseTrial item.ask_no item.exercise_id)]
         [div [class "mj_wrap"][
@@ -1707,12 +1691,10 @@ videoItemApp item =
                     ]
             ]
         ]
-    
+
+selectedItemApp : Model -> Html Msg
 selectedItemApp model = 
-    div [class ("container myaccountStyle " ++ (if model.trialShow then "account" else "") ++ " scrollStyle ")
-    -- , style "overflow-y" "scroll"
-    -- , id (if model.trialShow then "noScrInput" else "")
-        ]
+    div [class ("container myaccountStyle " ++ (if model.trialShow then "account" else "") ++ " scrollStyle ")]
         [
             appHeaderRDetailClick  model.askDetail.title "makeExerHeader paperweightmobileFontsize" ((CloseTrial 0 0)) "fas fa-times"
             ,
@@ -1749,17 +1731,12 @@ selectedItemApp model =
         else
         a [class "button is-link freeTrial", Route.href Route.YP
         ][text  "결제하기"]
-            
-        
-            
-            ]
         ]
-        
-        
         ]
-        
+        ]
     ]
 
+selectedItem : Model -> Html Msg
 selectedItem model = 
     div [class "paperweightLayer", style "display" 
         (if model.trialShow then "flex" else "none")
@@ -1798,15 +1775,23 @@ selectedItem model =
         ]
         ]
         ]
-        , yp_price_slide model.yf_price Yf_price_Msg "돌아가기"]
+        , div [class "yp_price_slide_layer"][
+            div [class "button yf_price_top_btn is-danger", onClick (OpenSlide "second")][text "돌아가기"]
+            , YP.weblayout model.yf_price
+                |> Html.map Yf_price_Msg
+            
+            ]
+        ]
         ]
     ]
 
+askDetailItems : AskDetailItem -> Html Msg
 askDetailItems item = 
     li [style "font-size" ".7rem"][
         text ((String.fromInt item.sort) ++ ". " ++ item.title ++ " x " ++ String.fromInt item.value ++ (if item.is_rest then " 분 " else " 세트 "))
     ]
 
+resetLayer : String -> Model -> Html Msg
 resetLayer layerStyle model =
     div [ class "layerStyleWarn", style "display" ( if model.isActive == "reset" || model.isActive == "recommend" then "flex" else "none"), id ( if model.isActive == "reset" || model.isActive == "recommend" then "noScrInput" else "") ] [
     div [ class layerStyle ]
@@ -1834,16 +1819,5 @@ resetLayer layerStyle model =
     ]
     ]
 
-yp_price_list model msg btnText = 
-    div [class "yp_price_layer"][
-    div [class "button yf_price_top_btn is-danger", onClick OpenPop][text btnText]
-    , YP.weblayout model
-        |> Html.map msg
-    ]
-yp_price_slide model msg btnText = 
-    div [class "yp_price_slide_layer"][
-     div [class "button yf_price_top_btn is-danger", onClick (OpenSlide "second")][text btnText]
-    , YP.weblayout model
-        |> Html.map msg
+
     
-    ]

@@ -24,9 +24,6 @@ defaultOptions =
     { softAsHardLineBreak = False
     , rawHtml = ParseUnsafe
     }
--- import Regex exposing (Regex)
-
-
 
 type alias Model =
     { session : Session
@@ -103,7 +100,6 @@ infoEncoder page per_page session =
                 |> Http.jsonBody    
     in
     Api.noSessionpost Endpoint.infolist GetList body (Decoder.infoData Data DataList Paginate)
-    -- |>Api.post Endpoint.infolist (Session.cred session) GetList body 
 
 init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
@@ -151,11 +147,11 @@ init session mobile
             infoEncoder 1 10 session
         ]
     )
-
+scrollEvent : (ScreenInfo -> msg) -> Attribute msg
 scrollEvent msg = 
     on "scroll" (Decode.map msg scrollInfoDecoder)
 
-
+scrollInfoDecoder : Decode.Decoder ScreenInfo
 scrollInfoDecoder =
     Decode.map3 ScreenInfo
         (Decode.at [ "target", "scrollHeight" ] Decode.int)
@@ -266,7 +262,6 @@ update msg model =
             case suc of
                 Ok ok ->
                    (model, 
-                   -- Api.historyUpdate (Encode.string "infoDetail")
                    Route.pushUrl (Session.navKey model.session) Route.InfoD
                    ) 
             
@@ -300,7 +295,6 @@ update msg model =
         BackBtn ->
             (model , 
             Route.pushUrl (Session.navKey model.session) Route.Home
-            -- Api.historyUpdate (Encode.string "mypage")
             )
 
 view : Model -> {title : String , content : Html Msg}
@@ -318,6 +312,8 @@ view model =
         , content = 
         div [] [ web model]
         }
+
+editorView : String -> (String -> msg) -> Bool -> Html msg       
 editorView md textAreaInput readOnly=
         textarea
             [ onInput textAreaInput
@@ -329,7 +325,7 @@ editorView md textAreaInput readOnly=
             ]
             []
 
-
+web : Model -> Html Msg
 web model= 
     div [ class "container" ]
         [
@@ -340,6 +336,8 @@ web model=
                 model.data.paginate
                 model.pageNum
         ]
+
+app : Model -> Html Msg
 app model = 
     div [class ("container topSearch_container " ++ if model.detailShow then "fadeContainer" else "")] [
         appHeaderRDetail "공지사항" "myPageHeader whiteColor" Route.Home "fas fa-angle-left",
@@ -354,22 +352,18 @@ app model =
                     td [colspan 3] [text "공지사항이 없습니다."]
                 ]
             ]
-        , if model.infiniteLoading then
-                div [class "loadingPosition"] [
-                spinner
-                ]
-        else
-        span [] []
     ]
     
     ]
 
+appContentsBody : DataList -> Html Msg
 appContentsBody item =
     div [class "m_tableRow",  onClick (DetailGo item.id)] [
         td[class "m_infor_tableCell"][text item.title],
         td[class" m_infor_notice_date_tableCell"][text (String.dropRight 10 (item.inserted_at))]
     ]
 
+contentsBody : Model -> Html Msg
 contentsBody model =
     div [ class "info_mediabox" ]
         [ div [ class "table info_yf_table" ]
@@ -391,10 +385,10 @@ contentsBody model =
                     td [colspan 3, style "text-align" "center", style "padding" "3rem"] [text "공지사항이 없습니다."]
                 ]
             ]
-           
-
             ]
         ]
+
+contentsBodyLayout : Int -> DataList -> Model -> Html Msg   
 contentsBodyLayout idx item model =
         div [ class "tableRow",  onClick (DetailGo item.id)]
             [                                                           
@@ -405,6 +399,7 @@ contentsBodyLayout idx item model =
                 div [class "tableCell info_date_text"] [text (String.dropRight 10 (item.inserted_at))]
             ]
 
+appDetail : DetailData -> Model -> Html Msg
 appDetail data model =
     div [class ("container myaccountStyle " ++ if model.detailShow then "account" else ""), style "overflow-y" "scroll"] [
         appHeaderRDetailClick (
@@ -416,13 +411,11 @@ appDetail data model =
         appContentsBox data model
     ]
 
+appContentsBox : DetailData -> Model -> Html Msg
 appContentsBox item model= 
     div [ class "mediabox" ]
         [ div [ class "titlebox" ]
-            [ 
-                --  div [ class "m_infoDetail_yf_date" ]
-                -- [ text item.createDate ]
-            ]
+            []
         , div [ class "m_infoDetail_textbox" ]
             [ 
                 markdownView model

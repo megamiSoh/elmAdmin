@@ -14,6 +14,7 @@ import Api.Endpoint as Endpoint
 import Json.Decode as Decode
 import Api.Decoder as Decoder
 import Page.Detail.MyScrapDetail as MyD
+import Page.Detail.YourFitDetail as YfD
 
 type alias Model = 
     { session : Session
@@ -68,7 +69,7 @@ type alias Paginate =
     , total_count : Int
     , user_id : Int }
 
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
         {session = session
@@ -150,18 +151,22 @@ toCheck : Model -> Bool
 toCheck model =
     model.check
 
+scrollEvent : (ScreenInfo -> msg) -> Attribute msg
 scrollEvent msg = 
     on "scroll" (Decode.map msg scrollInfoDecoder)
 
+onLoad : msg -> Attribute msg
 onLoad msg =
     on "load" (Decode.succeed msg)
 
+scrollInfoDecoder : Decode.Decoder ScreenInfo
 scrollInfoDecoder =
     Decode.map3 ScreenInfo
         (Decode.at [ "target", "scrollHeight" ] Decode.int)
         (Decode.at [ "target", "scrollTop" ] Decode.int)
         (Decode.at [ "target", "offsetHeight" ] Decode.int)  
 
+scrapDataEncoder : Int -> Int -> Session -> Cmd Msg
 scrapDataEncoder page per_page session = 
     let
         list = 
@@ -271,7 +276,6 @@ update msg model =
                     Ok ok ->
                         (model, 
                         Route.pushUrl (Session.navKey model.session) Route.ScrapD
-                        -- Api.historyUpdate (Encode.string "myScrapDetail")
                         )
                 
                     Err _ ->
@@ -298,18 +302,10 @@ update msg model =
             ({model | count = model.count + 1}, Cmd.none)
         ScrollEvent { scrollHeight, scrollTop, offsetHeight } ->
              if (scrollHeight - scrollTop) <= offsetHeight then
-                -- case toInt of
-                --     Just val ->
-                        -- if (val  < (model.takeList + 10)) then
-                        --     ({model | takeList = val, infiniteLoading = False},Cmd.none)
-                        -- else 
                 if List.length model.checkList > 0 then
                 (model, Cmd.none)
                 else
                 ({model | infiniteLoading = True}, scrapDataEncoder model.page model.per_page model.session)
-                    -- Nothing ->
-                    --     (model, Cmd.none)
-                
             else
                 (model, Cmd.none)
         NoOp ->
@@ -353,7 +349,7 @@ view model =
                             infiniteSpinner
                             ]
                         ]
-                        , div [class ("myaccountStyle myScrapStyle " ++ (if model.showDetail then "account" else "")) ][MyD.app model BackBtn GoVideo]
+                        , div [class ("myaccountStyle myScrapStyle " ++ (if model.showDetail then "account" else "")) ][app model BackBtn GoVideo]
                 ]
             }
         else
@@ -384,15 +380,19 @@ view model =
                 ]]
         }
 
+listwebDetail : DataList -> Html Msg
 listwebDetail item = 
    div [onClick (GetCodeId (item.scrap_code, item.scrap_id))] (
         List.map scrapItem item.detail
     )
+
+listappDetail : DataList -> Html Msg
 listappDetail item = 
     div [onClick (GetCodeId (item.scrap_code, item.scrap_id))] (
         List.map appcontent item.detail
     )
 
+appcontent : DetailData -> Html Msg
 appcontent item= 
         div [ class "containerm_mypage_scrap" ]
         [ div []
@@ -411,6 +411,7 @@ appcontent item=
             ]
         ]
 
+justData : Maybe String -> String
 justData just =
     case just of
         Just a ->
@@ -418,6 +419,8 @@ justData just =
     
         Nothing ->
             ""
+
+contentsCount : Int -> Html Msg
 contentsCount count=
     div []
         [ div [ class "myScrap_yf_large" ]
@@ -425,6 +428,7 @@ contentsCount count=
         ]
  
 
+scrapItem :  DetailData -> Html Msg
 scrapItem item= 
     div [ class "myScrap_yf_box" ]
         [ img [ src item.thembnail ]
@@ -440,3 +444,38 @@ scrapItem item=
                 ]
             ]
         ]
+
+app : Model -> msg -> (List MyD.Pairing -> msg) -> Html msg
+app model back videoCall= 
+        div [ class "container" ]
+                [
+                   appHeaderRDetailClick model.listData.title  "myPageHeader whiteColor" back "fas fa-times"
+                   , div [] [
+                        appcontentsItem model.listData model.zindex videoCall
+                     ]
+                ]
+
+appcontentsItem item zindex videoCall = 
+            div []
+            [ div []
+                [ p [ class "m_yf_container" ]
+                    [ div [ class ("appimagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") "), onClick (videoCall item.pairing) ][],
+                         div [ id "myElement" ] [
+                            ]
+                    ]
+                ]
+            , 
+            div [ class "m_yf_work_textbox" ]
+                [ div [ class "m_yf_work_time" ]
+                    [ span []
+                        [ i [ class "fas fa-clock m_yf_timeicon" ]
+                            []
+                        ], text item.duration
+                    ]
+                , div [ class "m_yf_work_text" ]
+                    [ text ((MyD.justok item.exercise_part_name) ++ " - " ++  (MyD.justok item.difficulty_name)) ]
+                ]
+            , pre [class"wordBreak descriptionBackground"][text (MyD.justok item.description)]
+            , div [ class "m_work_script" ]
+                (List.indexedMap YfD.description item.exercise_items)
+            ]

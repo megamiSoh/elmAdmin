@@ -12,6 +12,7 @@ import Api.Decoder as Decoder
 import Api.Endpoint as Endpoint
 import Http as Http
 import Route as Route
+
 type alias Model =
     { session : Session
     , check : Bool
@@ -23,10 +24,8 @@ type alias Model =
     , errType : String
     }
 
-
 type alias PriceData = 
     { data : List Price }
-
 
 type alias Price = 
     { day_num : Int
@@ -51,7 +50,7 @@ type alias WatchCheckData =
     { data : Bool }
 
 
-
+orderApi : Int -> Session -> Cmd Msg
 orderApi product_id session = 
     let
         body = 
@@ -61,9 +60,11 @@ orderApi product_id session =
     in
     Api.post Endpoint.orderGo (Session.cred session) OrderComplete body (Decoder.orderData OrderData Order)
 
+priceApi : Session -> Cmd Msg
 priceApi session = 
     Api.get GetList Endpoint.priceData (Session.cred session) (Decoder.priceData PriceData Price)
 
+promoteApi : Int -> Session -> Cmd Msg
 promoteApi product_id session = 
     let
         body = 
@@ -232,9 +233,11 @@ view model =
             div [] [weblayout model ]
     }
 
+commaFormat : String -> Html msg
 commaFormat item = 
     span [][text item]
 
+priceLayout : Price -> Model -> String -> Html Msg
 priceLayout item model price = 
     div [ class ("plan " ++ if item.is_pay then (
         if item.day_num >= 30 then "ultimite" else "standard"
@@ -272,6 +275,7 @@ priceLayout item model price =
         ]
     ]
 
+weblayout : Model -> Html Msg
 weblayout model = 
     div [ class "yf_pricewrap" ]
     [ div [ class "container" ]
@@ -298,7 +302,7 @@ weblayout model =
 
     ]
 
-
+applayout : Model -> Html Msg
 applayout model = 
     div [ class "yf_pricewrap" ]
         [div [ class "searchbox_wrap" ]

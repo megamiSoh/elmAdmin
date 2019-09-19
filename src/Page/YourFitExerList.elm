@@ -68,6 +68,7 @@ type alias DetailData =
     , thembnail: String
     , title : String
     }
+
 type alias LevelData = 
     { data : List Level }
 

@@ -30,7 +30,7 @@ type alias Model =
     , videoId : CodeId
     , errType : String
     }
--- Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
+
 type alias GetData = 
     { data : DetailData }
 
@@ -63,7 +63,7 @@ type alias Pairing =
     , image : String
     , title : String}
 
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
         { session = session
@@ -92,6 +92,7 @@ init session mobile
         }
         , Api.getId ()
     )
+
 subscriptions :Model -> Sub Msg
 subscriptions model =
     Sub.batch
@@ -103,14 +104,11 @@ subscriptions model =
         ]
 type Msg 
     = BackPage
-    -- | CheckDevice Encode.Value 
     | ReceiveId Encode.Value
     | GetListData (Result Http.Error GetData)
     | Loading Encode.Value
     | GoVideo
     | GotSession Session
-    -- | Scrap Int
-    -- | ScrapComplete (Result Http.Error Decoder.Success)
     | BackDetail
     | VideoCall (List Pairing)
     | VideoEnd Encode.Value
@@ -221,7 +219,6 @@ update msg model =
                 case d of
                     Ok item ->
                         ({model | loading = False},Cmd.none)
-                        -- (model, Cmd.none)
                 
                     Err _->
                          ({model | loading = False},Cmd.none)
@@ -243,7 +240,6 @@ update msg model =
         BackPage ->
             ( model, 
             Route.pushUrl (Session.navKey model.session) Route.MyScrap
-            -- -- Api.historyUpdate (Encode.string "myScrap")
             )
 
 view : Model -> {title : String , content : Html Msg}
@@ -256,28 +252,17 @@ view model =
             ]
         
         }
-app model back videoCall= 
-        div [ class "container" ]
-                [
-                   appHeaderRDetailClick model.listData.title  "myPageHeader whiteColor" back "fas fa-times"
-                   , div [] [
-                        --  if model.need2login then
-                        -- need2loginAppDetail BackDetail
-                        -- else
-                        appcontentsItem model.listData model.zindex videoCall
-                     ]
-                ]
 
+web : Msg -> Model -> Html Msg
 web msg model= 
     div [ class "container" ]
                 [
-                    -- appHeaderRDetailClick  model.listData.title  "yourfitHeader" BackPage "fas fa-times"  
-                    -- ,
                     contentsBody model.listData model.loading model.zindex
                     ,goBtnBox msg
                 ]
+
+contentsBody : DetailData -> Bool -> String -> Html Msg
 contentsBody item loading zindex=
-    
     div [ class "yf_yfworkout_search_wrap" ]
         [ div [ class "tapbox" ]
             [ div [ class "yf_large" ]
@@ -288,18 +273,13 @@ contentsBody item loading zindex=
         
         ]
 
+contentsItem : DetailData -> Bool -> String -> Html Msg
 contentsItem item loading zindex =
             div [ class "tile is-parent is-vertical" ]
             [lazy2 div [ class "yf_notification" ]
                 [ p [ class "video_title" ]
-                    [ 
-                    --    div [class ("imagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") , onClick (GoVideo item.pairing)] [] ,
-                    --          videoCall
-
-
-                         div [ class ("imagethumb " ++ zindex),style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") , onClick (VideoCall item.pairing) ][]
-                        -- img [class zindex, src item.thumbnail, onClick (VideoCall item.pairing)] []
-                        , div [ id "myElement", style "height" (if String.isEmpty zindex then "0px" else "auto") ] [
+                    [ div [ class ("imagethumb " ++ zindex),style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") , onClick (VideoCall item.pairing) ][]
+                    , div [ id "myElement", style "height" (if String.isEmpty zindex then "0px" else "auto") ] [
                             ]
                     ]
                 ], 
@@ -319,6 +299,7 @@ contentsItem item loading zindex =
             ]
 
 
+justok : Maybe String -> String
 justok casees = 
     case casees of
         Just a ->
@@ -327,31 +308,8 @@ justok casees =
         Nothing ->
             "-"
 
-appcontentsItem item zindex videoCall = 
-            div []
-            [ div []
-                [ p [ class "m_yf_container" ]
-                    [ div [ class ("appimagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") "), onClick (videoCall item.pairing) ][],
-                         div [ id "myElement" ] [
-                            ]
-                    ]
-                ]
-            , 
-            div [ class "m_yf_work_textbox" ]
-                [ div [ class "m_yf_work_time" ]
-                    [ span []
-                        [ i [ class "fas fa-clock m_yf_timeicon" ]
-                            []
-                        ], text item.duration
-                    ]
-                , div [ class "m_yf_work_text" ]
-                    [ text ((justok item.exercise_part_name) ++ " - " ++  (justok item.difficulty_name)) ]
-                ]
-            , pre [class"wordBreak descriptionBackground"][text (justok item.description)]
-            , div [ class "m_work_script" ]
-                (List.indexedMap YfD.description item.exercise_items)
-            ]
 
+description : Int -> DetailDataItem -> Html Msg
 description idx item = 
     ul [] [
             if item.is_rest then    
@@ -359,7 +317,8 @@ description idx item =
             else 
                 li [] [text ((String.fromInt(item.sort)) ++ " . " ++  item.title ++ " " ++ String.fromInt(item.value) ++ "세트")] 
     ]
-    
+
+goBtnBox : msg -> Html msg   
 goBtnBox backPage = 
     div [ class "searchbox_footer" ]
         [ div [ class "yf_backbtm" ]

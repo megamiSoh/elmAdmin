@@ -32,6 +32,7 @@ init session mobile =
     , Cmd.none
     )
 
+faqEncode : String -> String -> Session -> (Result Http.Error Decoder.Success -> msg) -> Cmd msg
 faqEncode titleString content session msg = 
     let
         new string = 
@@ -122,14 +123,6 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    -- if model.check then
-    --     { title = "1:1문의"
-    --     , content = 
-    --         div [] [
-    --             app
-    --         ]
-    --     }
-    -- else
         { title = "1:1문의"
         , content = 
                 div [] [
@@ -138,12 +131,7 @@ view model =
             ]
         }
 
--- app =
---     div [class "container faqcontainer"] [
---         appHeaderConfirmDetailleft "문의하기" "myPageHeader" GoBack GoRegist "등록" 
---         , apptitle
---         , apptextArea
---     ]
+web : Html Msg
 web = 
     div [class "container"] [
         commonJustHeader "/image/icon_qna.png" "1:1문의"
@@ -152,26 +140,29 @@ web =
         , uploadBtn
         , backBtn
     ]
+
+title : Html Msg
 title = 
         input [ class "input tapbox", type_ "text", placeholder "제목을 입력해주세요" , onInput Title, maxlength 50]
                 []
+
+textArea : Html Msg
 textArea =
         textarea [ class "textarea tapbox", placeholder "내용을 입력해주세요", rows 10 , onInput Content, maxlength 250]
         []
+
+
+uploadBtn : Html Msg
 uploadBtn = 
     div [ class "togetherWrite_yf_dark" ]
         [ div [ class "button is-dark", onClick GoRegist]
                     [ text "올리기" ]
         ]
+
+backBtn : Html Msg
 backBtn = 
     div [ class "faqWrite_backbtn" ]
         [ a [ class "button yf_back",Route.href Route.C]
             [ text "뒤로" ]
         ]
 
-apptitle titleinput model = 
-        input [ class "input", type_ "text", placeholder "제목을 입력해주세요" , maxlength 50, onInput titleinput, id (if model.showWrite then "noScrInput" else ""), value model.title]
-                []
-apptextArea contentinput model =
-        textarea [ class "textarea m_textarea", placeholder "내용을 입력해주세요", rows 10, maxlength 250 , onInput contentinput, value model.content ]
-        []

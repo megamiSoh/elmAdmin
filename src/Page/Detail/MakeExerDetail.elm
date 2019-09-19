@@ -28,8 +28,10 @@ type alias Model =
     , deleteAuth: String
     , errType : String
     }
+
 type alias GetData = 
     { data : DetailData }
+
 type alias DetailData =    
     { difficulty_name : Maybe String
     , duration : String
@@ -146,7 +148,6 @@ update msg model =
             case decodestr of
                 Ok ok ->
                    (model,
-                --    -- Api.historyUpdate (E.string "togetherWrite")
                    Route.pushUrl(Session.navKey model.session) Route.TogetherW
                    ) 
             
@@ -211,8 +212,6 @@ update msg model =
                 case d of
                     Ok item ->
                         ({model | loading = False},Cmd.none)
-                        -- (model, Cmd.none)
-                
                     Err _->
                          ({model | loading = False},Cmd.none)
         GetId id ->
@@ -249,23 +248,11 @@ update msg model =
 view : Model -> {title : String , content : Html Msg}
 view model =
     if model.check then
-        if model.loading then
         { title = "맞춤운동"
         , content = 
             div [class "container"] [
                 appHeaderConfirmDetail model.getData.title "makeExerHeader" Route.MakeExer "fas fa-times"  Route.EditFilter "수정"
-                , div [class "spinnerBack"] [
-                        spinner
-                        ]
-            ]
-        }
-
-        else
-         { title = "맞춤운동"
-        , content = 
-            div [class "container"] [
-            appHeaderConfirmDetail model.getData.title "makeExerHeader" Route.MakeExer "fas fa-times"  Route.EditFilter "수정"
-            , appcontentsItem model.getData model GoVideo model.zindex
+                , appcontentsItem model.getData model GoVideo model.zindex
             ]
         }
     else
@@ -277,6 +264,7 @@ view model =
         }
 
 
+web : msg  -> Model -> Html Msg
 web msg model= 
     div [class "container"] [
         commonHeader "/image/icon_customworkout.png" "맞춤운동" ,
@@ -284,19 +272,20 @@ web msg model=
         goBtn BackPage 
 
     ]
+
+app : msg -> Model -> Html Msg
 app msg model= 
     div [class "container"] [
         appHeaderConfirmDetail model.getData.title "makeExerHeader" Route.MakeExer "fas fa-times"  Route.EditFilter "수정"
         , div [] [
-            if model.loading then
-            div [class "spinnerBack"] [
+            div [class "spinnerBack", style "display" (if model.loading then "inline-block" else "none")] [
                 spinner
                 ]
-            else 
-            div [] []
         ]
         , appcontentsItem model.getData model GoVideo model.zindex
     ]
+
+goBtn : msg -> Html msg
 goBtn back  = 
     div [ class "make_yf_butbox" ]
         [ div [ class "yf_backbtm" ]
@@ -310,7 +299,7 @@ goBtn back  =
         ]
 
 
-
+appcontentsItem : DetailData -> Model -> (List Pairing -> msg) -> String -> Html Msg
 appcontentsItem item model goVideo zindex= 
             div [ ]
             [ div []
@@ -320,11 +309,6 @@ appcontentsItem item model goVideo zindex=
                         div [class ("appimagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") , onClick (GoVideo item.pairing)] [] ,
                              videoCall
                          ]
-                        
-                        -- i [ class "far fa-play-circle m_yf_container_circle" ][]
-                        -- , img [src item.thumbnail, onClick (GoVideo item.pairing)] []
-                        -- , videoCall
-                    -- ]
                 ]
             , div [ class "m_yf_work_textbox" ]
                 [ div [ class "m_yf_work_time" ]
@@ -344,33 +328,27 @@ appcontentsItem item model goVideo zindex=
                         ]
                     ]
                 ]
-         
-        
-            
              , pre [class"m_work_maketext descriptionBackground wordBreak"] [
                 text (justokData item.description)    
                  ]
                 
                 , div [ class "m_yfwork_script" ]
-                  (List.indexedMap YfD.description item.exercise_items)
-           
-                
+                  (List.indexedMap YfD.description item.exercise_items)   
             ]
-            ]
+        ]
+
+
+contentsBody : DetailData -> Bool ->  (Int -> msg) -> Bool -> (List Pairing -> msg) -> String -> String -> Html msg
 contentsBody item model scrap modelscrap goVideo scrapText zindex=
-    
     div [ class "yf_yfworkout_search_wrap" ]
         [ div [ class "tapbox" ]
             [ div [ class "yf_large" ]
                 [ text item.title ],
-                contentsItem item model scrap modelscrap goVideo scrapText zindex
-               
-            ]
-        
+                contentsItem item model scrap modelscrap goVideo scrapText zindex  
+            ]        
         ]
 
-
-
+contentsItem : DetailData -> Bool -> (Int -> msg) -> Bool -> (List Pairing -> msg) -> String -> String -> Html msg
 contentsItem item loading scrap modelscrap govideo scrapText zindex =
             div [ class "tile is-parent is-vertical" ]
             [ div [ class "yf_notification" ]
@@ -403,19 +381,16 @@ contentsItem item loading scrap modelscrap govideo scrapText zindex =
                         ], text scrapText
                     ]
                 ]
-            -- if loading then 
-            -- div [] []
-            -- else
             
             , div [ class "yf_explanation" ]
             [
                 pre [class "descriptionBackground wordBreak"] [ text (justokData item.description)]
                 , div [ class "yf_text" ] (List.indexedMap YfD.description item.exercise_items)
             ]
-               
             ]
 
-            
+
+justokData : Maybe String -> String            
 justokData result = 
     case result of
         Just ok ->
@@ -429,5 +404,6 @@ justokData result =
         Nothing ->
             ""
 
+videoCall : Html msg
 videoCall = 
     div [id "myElement"] []

@@ -52,6 +52,7 @@ type alias Pagenate  =
     , total_count : Int
     , user_id : Int }
 
+dataListApi : Int -> Int -> String -> Session -> Cmd Msg
 dataListApi page per_page selected_item session = 
     let
         body = 
@@ -226,7 +227,7 @@ view model =
 
 
 
-
+recentBuylist : Model -> Html Msg
 recentBuylist model = 
     div [ class "searchbox_wrap" ]
                     [  if model.ableToWatch then
@@ -283,7 +284,7 @@ recentBuylist model =
                     ]
              
         
-
+listDataLayout : DataList -> String -> Html Msg
 listDataLayout item price =
     tr [class "history_tr"][
     td [class"history_td"]

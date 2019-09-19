@@ -14,7 +14,7 @@ import Api.Decoder as Decoder
 import Api.Endpoint as Endpoint
 import Html.Lazy exposing (lazy, lazy2)
 import Page as Page
-import Task
+import Task as Task
 
 type alias Model =
     { session : Session
@@ -73,8 +73,10 @@ type alias WebTogetherData =
 
 type alias WebDetailTogether = 
     { id : Int
-    , title : String
-    , thembnail : String
+    , title : Maybe String
+    , thembnail : Maybe String
+    , content : Maybe String
+    , photo : Maybe String
     }
 
 type alias TogetherDataWrap = 
@@ -97,10 +99,8 @@ type alias TogetherData =
     , profile : Maybe String
     }
 
-
-
 type alias DetailTogether = 
-    { thembnail : String
+    { thembnail : Maybe String
     , difficulty_name : Maybe String
     , duration : Maybe String
     , exercise_items : Maybe (List TogetherItems)
@@ -108,9 +108,10 @@ type alias DetailTogether =
     , id : Int
     , inserted_at : Maybe String
     , pairing : Maybe (List Pairing)  
-    , title : String
+    , title : Maybe String
     , content : Maybe String
     , snippet : Maybe Snippet
+    , photo : Maybe String
     }
 
 type alias Snippet = 
@@ -125,20 +126,24 @@ type alias TogetherItems =
     , sort : Int
     , title : String
     , value : Int }
+
 type alias Pairing = 
     { file : String
     , image : String
     , title : String 
     }
+
 type alias Paginate = 
     { page : Int
     , per_page : Int
     , total_count : Int }
+
 type alias Like = 
     { data : LikeData}
 
 type alias LikeData = 
     { count : Int }
+
 type alias ScreenInfo = 
     { scrollHeight : Int
     , scrollTop : Int
@@ -150,7 +155,6 @@ type alias ShareTypeData =
 type alias ShareType = 
     { code : String
     , name : String }
-
 
 init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
@@ -226,7 +230,6 @@ init session mobile
             else
             webDataEncoder 1 9 session ""
         )
-        -- , mydata session
         , Cmd.batch [
             Api.removeJw ()
             , Api.scrollControl ()
@@ -234,6 +237,7 @@ init session mobile
             , Api.hamburgerShut ()
         ]]
     )
+
 webDataEncoder : Int -> Int -> Session -> String -> Cmd Msg
 webDataEncoder page perpage session share_code = 
     let
@@ -263,6 +267,7 @@ dataEncoder page perpage session share_code =
     (Decoder.togetherdatawrap TogetherDataWrap TogetherData DetailTogether Paginate TogetherItems Pairing Snippet DetailItems)
     |> Api.post Endpoint.togetherList (Session.cred session) GetData list 
 
+loadingEncoder : Int -> Int -> Session -> String -> Cmd Msg
 loadingEncoder page perpage session share_code = 
     let
         list = 
@@ -276,14 +281,18 @@ loadingEncoder page perpage session share_code =
     (Decoder.togetherdatawrap  TogetherDataWrap TogetherData DetailTogether Paginate TogetherItems Pairing Snippet DetailItems)
     |> Api.post Endpoint.togetherList (Session.cred session) LoadingGetData list 
 
+scrollEvent : (ScreenInfo -> msg) -> Attribute msg
 scrollEvent msg = 
     on "scroll" (Decode.map msg scrollInfoDecoder)
 
+scrollInfoDecoder : Decode.Decoder ScreenInfo
 scrollInfoDecoder =
     Decode.map3 ScreenInfo
         (Decode.at [ "target", "scrollHeight" ] Decode.int)
         (Decode.at [ "target", "scrollTop" ] Decode.int)
         (Decode.at [ "target", "offsetHeight" ] Decode.int)    
+
+onLoad : msg -> Attribute msg
 onLoad msg =
     on "load" (Decode.succeed msg)
 
@@ -301,7 +310,6 @@ type Msg
     = IsActive String
     | CheckDevice Encode.Value
     | GetData (Result Http.Error TogetherDataWrap)
-    -- | Loading Encode.Value
     | IsLike (Int, Int)
     | LikeComplete (Result Http.Error Like)
     | PageBtn (Int, String)
@@ -325,8 +333,10 @@ type Msg
     | ReceiveScroll Encode.Value
     | ShareComplete (Result Http.Error ShareTypeData)
     | YoutubeVideoCall (String, Int)
-    -- | HideThumb Encode.Value
+    | GoWrite
+    | GoNextPage Encode.Value
 
+mydata : Session -> Cmd Msg
 mydata session = 
     Decoder.sessionCheckMydata
         |> Api.get MyInfoData Endpoint.myInfo (Session.cred session)    
@@ -346,23 +356,28 @@ subscriptions model=
     , Session.changes GotSession (Session.navKey model.session)
     , Api.videoWatchComplete VideoEnd
     , Api.touch ReceiveScroll
-    -- , Api.hideThum HideThumb
+    , Api.receivetogetherId GoNextPage
     ]
-    -- Api.videoSuccess Loading
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        -- HideThumb hide ->
-        --     case Decode.decodeValue Decode.string hide of
-        --         Ok ok ->
-        --             ({model |video_id = ok}, Cmd.none)
-        --         Err err ->
-        --             (model, Cmd.none)
+        GoNextPage go ->
+            (model, Route.pushUrl (Session.navKey model.session) Route.TogetherW)
+        GoWrite ->
+            (model,
+            
+            case model.session of
+                LoggedIn _ val ->
+                    Api.togetherId ()
+                Guest _ ->
+                    Route.pushUrl (Session.navKey model.session) Route.Login
+            )
         YoutubeVideoCall (videoId, id) ->
             let
                 youtubeEncode = 
                     Encode.object
+
                         [ ("videoId", Encode.string videoId)
                         , ("youtube_id", Encode.string (String.fromInt id))]
             in
@@ -487,8 +502,6 @@ update msg model =
                         [ ("file", Encode.string x.file)
                         , ("image", Encode.string x.image)
                         , ("title", Encode.string x.title)]
-                -- id = 
-                --     Encode.string (String.fromInt(idx))
             in
             ({model | videoStart = stringint, zindex = "zindex" ++ String.fromInt(idx)}, Api.togetherDataList pair)
         ScrapComplete (Ok ok) ->
@@ -516,7 +529,6 @@ update msg model =
             ({model| infiniteLoading = False, loading = False}, Cmd.none)
             else
             ({model | appData = model.appData ++ ok.data, infiniteLoading = False, loading = False}, Cmd.none
-            -- , Api.togetherDataList page 
             )
         LoadingGetData (Err err) ->
             ({model | loading = False}, Cmd.none)
@@ -567,7 +579,11 @@ update msg model =
         GetData (Err err) ->
             ({model | loading = False}, Cmd.none)
         IsActive title ->
-            ({model | isActive = title, page = 1} , webDataEncoder model.page model.per_page model.session title)
+            if model.check then
+                ({model | isActive = title, page = 1, share_code = title} ,dataEncoder 1 2 model.session title)
+            else
+                ({model | isActive = title, page = 1, share_code = title} , webDataEncoder 1 model.per_page model.session title)
+            
         CheckDevice str ->
            let 
                 result =
@@ -587,13 +603,7 @@ view model =
     { title = "함께해요"
     , content = 
             div [] [
-                if model.loading then
-                    div [class "spinnerBack"] [
-                        spinner
-                        ]
-                else 
-                    div [] []
-                    , app model
+                app model
             ]
     }
     else
@@ -611,6 +621,8 @@ view model =
                     web model nocontentsBody
                 ]
             }
+
+justData : Maybe String -> String
 justData item = 
     case item of
         Just val ->
@@ -619,6 +631,7 @@ justData item =
         Nothing ->
             "Guest"
 
+justDatadescription : Maybe String -> String
 justDatadescription item = 
     case item of
         Just val ->
@@ -627,10 +640,17 @@ justDatadescription item =
         Nothing ->
             " - "
 
-web model contentsItem= 
-    div [
-        ] [
-                div [class "container",
+justString : Maybe String -> String
+justString item = 
+    case item of    
+        Just string ->
+            string
+        Nothing ->
+            ""
+
+web : Model -> (Model -> Html Msg) -> Html Msg
+web model contentsItem = 
+    div [] [div [class "container",
                 scrollEvent ScrollEvent, id "searchHeight"][
                     if model.need2login then
                     need2loginAppDetailRoute Route.Together
@@ -648,80 +668,74 @@ web model contentsItem=
                     ]
             ]
 
+app : Model -> Html Msg
 app model =
-     
     div [class "container scrollContainer"] [
         justappHeader "함께해요" "togetherHeader",
-        div [class "scroll", id "scrollE" ] [
+        div [class "spinnerBack", style "display" (if model.loading then "flex" else "none")] [
+        spinner
+        ]
+        , div [class "scroll", id "scrollE" ] [
             if model.need2login then
             need2loginAppDetailRoute Route.Together
             else
             div [  scrollEvent ScrollEvent, class "scrollHegiht", id "searchHeight"] [
-                -- appTab model,
+                appTab model,
                 appStartBtn,
                 div [class "togetherscrollContent" ] (List.indexedMap (
                         \idx x -> appContentsItem idx x model ) model.appData )
-                -- ,if model.infiniteLoading then
-                , div [class "loadingPosition", style "display" (if model.infiniteLoading then "block" else "none")] [
-                infiniteSpinner
-                ]
-                -- else
-                -- span [] []
             ]
         ]
     ]
 
+apptabItem : Model -> ShareType -> Html Msg
+apptabItem model item = 
+    li [ classList [
+                    ("m_together_yf_active" , model.isActive == item.code)
+                ], onClick (IsActive item.code ) ] 
+                [ i [class ("m_to_menubox_icon" ++ 
+                (
+                    case item.name of
+                        "전체" ->
+                            " fab fa-amilia"
+                        "피플" ->
+                            " fas fa-users"
+                        "레시피" ->
+                            " fas fa-utensils"
+                        "피트니스" ->
+                             " fas fa-dumbbell"
+                        _ ->
+                            ""
+                )
+                ) ]       
+                    [],  text item.name
+                ]
+
+appTab : Model -> Html Msg
 appTab model = 
-        div [ class "m_to_menubox" ]
-                  [ div [ classList [
-                    ("m_together_yf_active" , model.isActive == "All")
-                ], onClick (IsActive "All") ] 
-                [ i [class "fab fa-amilia m_to_menubox_icon" ]
-                    [], text "전체" 
-                ]
-            , div [ classList [
-                    ("m_together_yf_active" , model.isActive == "people")
-                ], onClick (IsActive "people") ] 
-                [ i [class "fas fa-users m_to_menubox_icon" ]
-                    [], text "피플" 
-                ]
-            , div [ classList [
-                    ("m_together_yf_active" , model.isActive == "recipe")
-                ], onClick (IsActive "recipe") ] 
-                [ i [class "fas fa-utensils m_to_menubox_icon" ]
-                    [], text "레시피" 
-                ]
-            , div [ classList [
-                    ("m_together_yf_active" , model.isActive == "news")
-                ], onClick (IsActive "news") ] 
-                [ i [class "fas fa-file-alt m_to_menubox_icon" ]
-                    [], text "뉴스" 
-                ]
-            , div [ classList [
-                    ("m_together_yf_active" , model.isActive == "fitness")
-                ], onClick (IsActive "fitness") ] 
-                [ i [class "fas fa-dumbbell m_to_menubox_icon" ]
-                    [], text "피트니스" 
-                ]
-            ]
-
+    div [  ]
+        [  ul [ class "m_to_menubox", style "width" "100%" ] 
+              ( apptabItem model model.all :: List.map (\x -> apptabItem model x) model.shareCode )
             
-
+        ]
+            
+appStartBtn : Html Msg
 appStartBtn = 
     div [ class "m_to_mediabox" ]
         [ div [ class "media-content m_to_yf_content" ]
-            [ 
-                text "내가 만든 운동을 공유하는 공간입니다."
-                -- text "운동, 다이어트, 식단, 일상에 대한 대화를 나눠요." 
-            -- , p []
-            --     [ a [ class "button is-dark m_to_edit_btn", Route.href Route.TogetherW ]
-            --         [ i [ class "fas fa-edit" ]
-            --             []
-            --         ]
-            --     ]
+            [ text "내가 만든 운동을 공유하는 공간입니다."
+            , text "운동, 다이어트, 식단, 일상에 대한 대화를 나눠요." 
+            , p []
+                [ div [ class "button is-dark m_to_edit_btn", onClick GoWrite ]
+                    [ i [ class "fas fa-edit" ]
+                        []
+                    ]
+                ]
             ]
         ]
 
+
+justListData : Maybe (List b) -> List b
 justListData item = 
     case item of
         Just a ->
@@ -730,6 +744,7 @@ justListData item =
         Nothing ->
             []
 
+appContentsItem : Int -> TogetherData -> Model -> Html Msg
 appContentsItem idx item model=
     if item.is_delete then
      span [] []
@@ -761,117 +776,163 @@ appContentsItem idx item model=
             List.head
                 (
                     List.map(\x ->
-                        x.thembnail   
+                        justString x.thembnail   
                     )(justListData item.detail)
                 ) 
-
+        userPhoto =
+            List.head
+                (
+                  List.map (\x ->
+                    justString x.photo
+                )(justListData item.detail)
+                )
     in
-    div [ class "m_to_mediabox2" ]
-        [   
-            div [ class "m_to_yf_boxtop" ]
-            [
-            div [ class "m_to_yf_id" ]
-                [ case item.profile of
-                    Just image ->
-                        img [src image] []
-                
-                    Nothing ->
-                        i [ class "fas fa-user profile" ]
+    case item.link_code of
+        "30" ->
+            div [ class "m_to_mediabox2" ]
+                [   
+                    div [ class "m_to_yf_boxtop" ]
+                    [
+                    div [ class "m_to_yf_id" ]
+                        [ case item.profile of
+                            Just image ->
+                                img [src image] []
+                        
+                            Nothing ->
+                                i [ class "fas fa-user profile" ]
+                                []
+                        , div [class "profileText"] [
+                            strong []
+                            [  text (justData item.nickname) ]
+                            , div [class"togetherData"] [
+                                text (String.dropRight 10 (item.inserted_at))
+                            ]
+                        ]
+                        ]
+                    ], 
+                div [][
+                    img [src (justString userPhoto)][]
+                ]
+                , pre [class "togetherArticle descriptionBackground"]
+                        [ text (justDatadescription item.content)
+                        , div [] [
+                            div [] 
+                            (List.map (\x-> appDetailData x model item.id) (justListData item.detail))
+                        ]
+                        ]
+                , div [ class "level-left m_to_yf_like", onClick (IsLike (item.id, item.recommend_cnt)) ]
+                    [ text( "좋아요" ++ String.fromInt (item.recommend_cnt) ++"개" ) 
+                    , 
+                    if List.member item.id model.likeList  then
+                        i [ class "fas fa-heart together_heart" ]
                         []
-                , div [class "profileText"] [
-                    strong []
-                    [  text (justData item.nickname) ]
-                    , div [class"togetherData"] [
-                        text (String.dropRight 10 (item.inserted_at))
+                    else 
+                        i [ class "far fa-heart together_heart"]
+                        []
+                        
                     ]
                 ]
-                ]
-            ], 
-            case thumbnail of
-            Just thumb ->
-                div [class"m_to_video"][
-                    div ([class "thumbTest_m"
-                    , style "position" 
-                        ( if model.youtube_id == item.id
-                            then "absolute" else ""
-                        )
-                    ]
-                    )[
-                        div [class "clickThis"
-                        , onClick 
-                        (if item.link_code == "10" then
-                            VideoCall ((
-                                case pairing of
-                                    Just a ->
-                                        a
-                                    Nothing ->
-                                        []
-                                    ), idx)
-                        else
-                            YoutubeVideoCall (
-                                (case youtube of 
-                                    Just a ->
-                                        a
-                                    Nothing ->
-                                        ""
-                                ), item.id
+            
+        _ ->
+                div [ class "m_to_mediabox2" ]
+                [   
+                    div [ class "m_to_yf_boxtop" ]
+                    [
+                    div [ class "m_to_yf_id" ]
+                        [ case item.profile of
+                            Just image ->
+                                img [src image] []
+                        
+                            Nothing ->
+                                i [ class "fas fa-user profile" ]
+                                []
+                        , div [class "profileText"] [
+                            strong []
+                            [  text (justData item.nickname) ]
+                            , div [class"togetherData"] [
+                                text (String.dropRight 10 (item.inserted_at))
+                            ]
+                        ]
+                        ]
+                    ], 
+                    case thumbnail of
+                    Just thumb ->
+                        div [class"m_to_video"][
+                            div ([class "thumbTest_m"
+                            , style "position" 
+                                ( if model.youtube_id == item.id
+                                    then "absolute" else ""
+                                )
+                            ]
+                            )[
+                                div [class "clickThis"
+                                , onClick 
+                                (if item.link_code == "10" then
+                                    VideoCall ((
+                                        case pairing of
+                                            Just a ->
+                                                a
+                                            Nothing ->
+                                                []
+                                            ), idx)
+                                else
+                                    YoutubeVideoCall (
+                                        (case youtube of 
+                                            Just a ->
+                                                a
+                                            Nothing ->
+                                                ""
+                                        ), item.id
+                                    )
+                                )
+                                ] [
+                                div [class ("appimagethumb " ++ (model.zindex ++ String.fromInt(idx)) ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ thumb ++") ")  ][]
+                        ],
+                        div [id ("myElement" ++ String.fromInt(idx)) ]  [] ] 
+                        , div [id 
+                            ("playerHere" ++ (String.fromInt item.id )
                             )
-                        )
-                        ] [
-                        div [class ("appimagethumb " ++ (model.zindex ++ String.fromInt(idx)) ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ thumb ++") ")  ][]
-                ],
-                div [id ("myElement" ++ String.fromInt(idx)) ]  [] ] 
-                , div [id 
-                    ("playerHere" ++ (String.fromInt item.id )
-                    )
-                , style "height" 
-                        ( if  model.youtube_id == item.id
-                             then "270px" else "0"
-                        )
-                ][]
+                        , style "height" 
+                                ( if  model.youtube_id == item.id
+                                    then "270px" else "0"
+                                )
+                        ][]
+                        ]
+                    Nothing ->
+                        pre [class "togetherArticle descriptionBackground"]
+                            [ text (justDatadescription item.content)
+                            , div [] 
+                            (List.map (\x-> appDetailData x model item.id) (justListData item.detail))
+                        ]
+                , pre [class "togetherArticle descriptionBackground"]
+                        [ text (justDatadescription item.content)
+                        , div [] [
+                            div [] 
+                            (List.map (\x-> appDetailData x model item.id) (justListData item.detail))
+                        ]
+                        ]
+                , div [ class "level-left m_to_yf_like", onClick (IsLike (item.id, item.recommend_cnt)) ]
+                    [ text( "좋아요" ++ String.fromInt (item.recommend_cnt) ++"개" ) 
+                    , 
+                    if List.member item.id model.likeList  then
+                        i [ class "fas fa-heart together_heart" ]
+                        []
+                    else 
+                        i [ class "far fa-heart together_heart"]
+                        []
+                        
+                    ]
                 ]
-            Nothing ->
-                pre [class "togetherArticle descriptionBackground"]
-                    [ text (justDatadescription item.content)
-                    , div [] 
-                    (List.map (\x-> appDetailData x model item.id) (justListData item.detail))
-                ]
-        , pre [class "togetherArticle descriptionBackground"]
-                   [ text (justDatadescription item.content)
-                   , div [] [
-                       div [] 
-                    (List.map (\x-> appDetailData x model item.id) (justListData item.detail))
-                   ]
-                ]
-        , div [ class "level-left m_to_yf_like", onClick (IsLike (item.id, item.recommend_cnt)) ]
-            [ text( "좋아요" ++ String.fromInt (item.recommend_cnt) ++"개" ) 
-            , 
-            if List.member item.id model.likeList  then
-                i [ class "fas fa-heart together_heart" ]
-                []
-            else 
-                 i [ class "far fa-heart together_heart"]
-                []
-                
-            ]
-
-        -- --  div [ class "level-left m_to_yf_scrap", onClick (Scrap item.id) ]
-        --     [
-        --     --      text( "스크랩" ++ String.fromInt(item.isLike) ++"개" ) 
-        --     -- , 
-        --     -- i [ class "fas fa-bookmark together_bookmark" ]
-        --     --     []
-        --     ] 
-        
-        ]
 
 
+tabItem : Model -> ShareType -> Html Msg
 tabItem model item = 
     li [ classList [
             ("together_yf_active" , model.isActive == item.code)
         ], onClick (IsActive item.code ) ]
         [ text item.name ]
 
+tabbox : Model -> Html Msg
 tabbox model=
     div [ class "tapbox" ]
         [ div [ class "tabs is-toggle is-fullwidth is-large" ]
@@ -880,22 +941,17 @@ tabbox model=
               ( tabItem model model.all :: List.map (\x -> tabItem model x) model.shareCode )
             ]
         ]
+nocontentsBody : Model -> Html Msg
 nocontentsBody model=
     div [ class "together_searchbox_wrap" ]
         [ div [ class "together_searchbox" ]
-            [ div [ class "together_mediabox" ]
-                [ div [ class "media-content together_yf_content"]
-                [ img [ src "image/takeimage.png", alt "takeimage" ]
-                []
-                ],
-                   h1 [ class "to_yf_h2" ]
-                   [ text "내가 만든 운동을 공유하는 공간입니다." ] ,
+            [
                 div [class "noResult"] [text "게시물이 없습니다."]
             ]
         
         ]
-    ]
 
+contentsBody : Model -> Html Msg
 contentsBody model=
     div [ class "together_searchbox_wrap" ]
         [ div [ class "together_searchbox" ]
@@ -905,9 +961,15 @@ contentsBody model=
                 []
                 ],
                    h1 [ class "to_yf_h2" ]
-                   [ text "내가 만든 운동을 공유하는 공간입니다." ]
-                ]
-            , div [] [
+                   [ text "운동, 다이어트, 식단, 일상에 대한 대화를 나눠요!" ]
+                   , p []
+                        [ div [ class "button is-dark together_edit_btn" , onClick GoWrite]
+                            [ i [ class "fas fa-edit" ]
+                                []
+                            ]
+                        ]
+                ],
+            div [] [
                 if model.showDetail then
                 div [class "togetherdetail"] [
                        div [class "togetherdetailItem"] [
@@ -918,7 +980,7 @@ contentsBody model=
                 div [] []
             ]
             , div [] [
-                 div [](List.indexedMap (
+                 div [class "together_contentsbox_container"](List.indexedMap (
                     \idx x -> userItem idx x model
                 ) model.webtogetherData.data)
                 ,pagination 
@@ -930,6 +992,7 @@ contentsBody model=
         ]
     ]
 
+detailItem : TogetherData -> Model -> Html Msg
 detailItem item model =
     let
         pairing = 
@@ -943,7 +1006,7 @@ detailItem item model =
             List.head
                 (
                     List.map(\x ->
-                        x.thembnail   
+                        justString x.thembnail   
                     )(justListData item.detail)
                 ) 
         detail = 
@@ -967,104 +1030,148 @@ detailItem item model =
                                     ""
                     )(justListData item.detail)
                 )  
+        userPhoto =
+            List.head
+                (
+                  List.map (\x ->
+                    justString x.photo
+                )(justListData item.detail)
+                )
     in
-    div [] [
-        div [ class "together_yf_text togetherVideo" ]
-                [    div [class "button is-danger together_closebtn", onClick (TogetherDetail 0)] [text "닫기"],
-                -- case thumbnail of
-                --     Just thumb ->
-                        div ([class "thumbTest"])[  
-                            div [class "clickThis"
-                            , style "display" 
-                            ( if item.id == model.youtube_id then "none" else ""
-                            )
-                            , onClick 
-                                (if item.link_code == "10" then
-                                    VideoCall ((
-                                        case pairing of
-                                            Just a ->
-                                                a
-                                            Nothing ->
-                                                []
-                                            ), item.id)
-                                else
-                                    YoutubeVideoCall (
-                                        (case youtube of 
-                                            Just a ->
-                                                a
-                                            Nothing ->
-                                                ""
-                                        ), item.id
-                                    )
-                                )
-                            ] [
-                            div [ class ("appimagethumb " ++ model.zindex ),
-                            style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ (justData thumbnail) ++") ") 
-                            -- ,onClick (VideoCall ((
-                            --     case pairing of
-                            --         Just a ->
-                            --             a
-                            --         Nothing ->
-                            --             []
-                            -- ), item.id))
-                             ][]
-                        ],
-                            div [id ("myElement" ++ String.fromInt(item.id)) ]  [] 
-                            , div [id 
-                                ("playerHere" ++ 
-                                    ( String.fromInt item.id
-                                        -- case youtube of 
-                                        --     Just a ->
-                                        --         a
-                                        --     Nothing ->
-                                        --         ""
-                                    )
-                                )
-                            , class "ytplayerStyle"
-                            ][]
-                        ]
-                    , 
-                    pre [class"together_list descriptionBackground"]
-                    [ text (justDatadescription item.content)]
-                    , if List.length (justListData detail) < 5 then
-                    div [class "detailData"]  
-                        (List.indexedMap (\idx x ->
-                            webdetailData idx x model.showAllText
-                        ) (List.sortBy .sort (justListData detail)))
-                    
-                    else
-                        if model.showAllText then
-                        div [][
+    case item.link_code of
+        "30" ->
+            div [] [
+            div [ class "together_yf_text togetherVideo" ]
+                    [    div [class "button is-danger together_closebtn", onClick (TogetherDetail 0)] [text "닫기"],
+                        div [class "detail_photo_position"][
+                            img [src (justString userPhoto)][]
+                        ], 
+                        pre [class"together_list descriptionBackground"]
+                        [ text (justDatadescription item.content)]
+                        , if List.length (justListData detail) < 5 then
                         div [class "detailData"]  
-                        (List.indexedMap (\idx x ->
-                            webdetailData idx x model.showAllText
-                        )  (List.sortBy .sort (justListData detail)))
-                        , div [class "cursor moreStyle", onClick ShowAllText] [text "닫기.."]
-                        ]
+                            (List.indexedMap (\idx x ->
+                                webdetailData idx x 
+                            ) (List.sortBy .sort (justListData detail)))
+                        
                         else
-                        div [][
-                        div [class "detailData"]  
-                        (List.indexedMap (\idx x ->
-                            webdetailData idx x model.showAllText
-                        ) (List.take 4 (List.sortBy .sort (justListData detail))))
-                        , div [class "cursor moreStyle", onClick ShowAllText] [text "더보기.."]
+                            if model.showAllText then
+                            div [][
+                            div [class "detailData"]  
+                            (List.indexedMap (\idx x ->
+                                webdetailData idx x 
+                            )  (List.sortBy .sort (justListData detail)))
+                            , div [class "cursor moreStyle", onClick ShowAllText] [text "닫기.."]
+                            ]
+                            else
+                            div [][
+                            div [class "detailData"]  
+                            (List.indexedMap (\idx x ->
+                                webdetailData idx x
+                            ) (List.take 4 (List.sortBy .sort (justListData detail))))
+                            , div [class "cursor moreStyle", onClick ShowAllText] [text "더보기.."]
+                            ]
+                , div [class"together_nav"]
+                    [
+                        div [class "level-left together_yf_like", onClick (IsLike (item.id, item.recommend_cnt))] [
+                            text( "좋아요"++ String.fromInt (item.recommend_cnt) ++"개")  
+                    , if List.member item.id model.likeList  then
+                    i [ class "fas fa-heart together_heart" ]
+                        []
+                    else  
+                        i [ class "far fa-heart together_heart"]
+                        []
+                        
                         ]
-            , div [class"together_nav"]
-                [
-                    div [class "level-left together_yf_like", onClick (IsLike (item.id, item.recommend_cnt))] [
-                        text( "좋아요"++ String.fromInt (item.recommend_cnt) ++"개")  
-                , if List.member item.id model.likeList  then
-                i [ class "fas fa-heart together_heart" ]
-                    []
-                else  
-                    i [ class "far fa-heart together_heart"]
-                    []
-                    
                     ]
                 ]
             ]
-        ]
-webdetailData idx item len = 
+        _ ->
+            div [] [
+            div [ class "together_yf_text togetherVideo" ]
+                    [    div [class "button is-danger together_closebtn", onClick (TogetherDetail 0)] [text "닫기"],
+                            div ([class "thumbTest"])[  
+                                div [class "clickThis"
+                                , style "display" 
+                                ( if item.id == model.youtube_id then "none" else ""
+                                )
+                                , onClick 
+                                    (if item.link_code == "10" then
+                                        VideoCall ((
+                                            case pairing of
+                                                Just a ->
+                                                    a
+                                                Nothing ->
+                                                    []
+                                                ), item.id)
+                                    else
+                                        YoutubeVideoCall (
+                                            (case youtube of 
+                                                Just a ->
+                                                    a
+                                                Nothing ->
+                                                    ""
+                                            ), item.id
+                                        )
+                                    )
+                                ] [
+                                div [ class ("appimagethumb " ++ model.zindex ),
+                                style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ (justData thumbnail) ++") ") 
+                                ][]
+                            ],
+                                div [id ("myElement" ++ String.fromInt(item.id)) ]  [] 
+                                , div [id 
+                                    ("playerHere" ++ 
+                                        ( String.fromInt item.id
+                                        )
+                                    )
+                                , class "ytplayerStyle"
+                                ][]
+                            ]
+                        , 
+                        pre [class"together_list descriptionBackground"]
+                        [ text (justDatadescription item.content)]
+                        , if List.length (justListData detail) < 5 then
+                        div [class "detailData"]  
+                            (List.indexedMap (\idx x ->
+                                webdetailData idx x 
+                            ) (List.sortBy .sort (justListData detail)))
+                        
+                        else
+                            if model.showAllText then
+                            div [][
+                            div [class "detailData"]  
+                            (List.indexedMap (\idx x ->
+                                webdetailData idx x
+                            )  (List.sortBy .sort (justListData detail)))
+                            , div [class "cursor moreStyle", onClick ShowAllText] [text "닫기.."]
+                            ]
+                            else
+                            div [][
+                            div [class "detailData"]  
+                            (List.indexedMap (\idx x ->
+                                webdetailData idx x 
+                            ) (List.take 4 (List.sortBy .sort (justListData detail))))
+                            , div [class "cursor moreStyle", onClick ShowAllText] [text "더보기.."]
+                            ]
+                , div [class"together_nav"]
+                    [
+                        div [class "level-left together_yf_like", onClick (IsLike (item.id, item.recommend_cnt))] [
+                            text( "좋아요"++ String.fromInt (item.recommend_cnt) ++"개")  
+                    , if List.member item.id model.likeList  then
+                    i [ class "fas fa-heart together_heart" ]
+                        []
+                    else  
+                        i [ class "far fa-heart together_heart"]
+                        []
+                        
+                        ]
+                    ]
+                ]
+            ]
+
+webdetailData : Int -> TogetherItems -> Html Msg
+webdetailData idx item  = 
     div [] [
         ul [] [
         li [][text ((String.fromInt (item.sort)) ++ ". " ++ item.title ++ " x " ++ (
@@ -1075,63 +1182,114 @@ webdetailData idx item len =
         ))]
     ]
     ]
+
+userItem : Int -> WebTogetherData -> Model -> Html Msg
 userItem idx item model =
     let
-         thumbnail = 
-            List.head
-                (
-                    List.map(\x ->
-                        x.thembnail   
-                    )(justListData item.detail)
-                ) 
+        contentsHead contents = 
+            justString
+            (case contents of
+                "thumb" ->
+                    List.head
+                        (
+                            List.map(\x ->
+                                justString x.thembnail   
+                            )(justListData item.detail)
+                        ) 
+                "content" ->
+                    List.head
+                        (
+                            List.map(\x ->
+                                justString x.content   
+                            )(justListData item.detail)
+                        )
+                "photo" ->
+                    List.head
+                        (
+                            List.map(\x ->
+                                justString x.photo   
+                            )(justListData item.detail)
+                        )
+                _ ->
+                    List.head
+                        (
+                            List.map(\x ->
+                                justString x.thembnail   
+                            )(justListData item.detail)
+                        ))
     in
-    
     if item.is_delete then
     span [] []
     else
+        case item.link_code of
+            "30" ->
+                div [class"together_grid"] [
+                    div [ class "together_user_write", onClick (TogetherDetail item.id) ]
+                    [ div [ class "together_yf_boxtop" ]
+                        [ p [ class "image is-64x64 together_imgbox" ]
+                            [ 
+                                case item.profile of
+                                    Just a ->
+                                        img [src a ] []
+                                    Nothing ->
+                                        img [ src "../image/profile.png" ]
+                                        []
+                            ]
+                        , div [ class "together_yf_id" ]
+                            [ strong []
+                                [ text (justData item.nickname) ]
+                            , div [] [text (String.dropRight 10 item.inserted_at)]
+                            ]
+                        ]
+                    , img [class "toImg", src (contentsHead "photo")] []
+                    ]
+                ]     
+            _ ->
+                div [class"together_grid"] [
+                    div [ class "together_mediabox2", onClick (TogetherDetail item.id) ]
+                    [ div [ class "together_yf_boxtop" ]
+                        [ p [ class "image is-64x64 together_imgbox" ]
+                            [ 
+                                case item.profile of
+                                    Just a ->
+                                        img [src a ] []
+                                    Nothing ->
+                                        img [ src "../image/profile.png" ]
+                                        []
+                            ]
+                        , div [ class "together_yf_id" ]
+                            [ strong []
+                                [ text (justData item.nickname) ]
+                            , div [] [text (String.dropRight 10 item.inserted_at)]
+                            ]
+                        ]
+                    , img [class "toImg", src (contentsHead "thumb")] []
+                    ]
+                ]
     
-    div [class"together_grid"] [
-         div [ class "together_mediabox2", onClick (TogetherDetail item.id) ]
-        [ div [ class "together_yf_boxtop" ]
-            [ p [ class "image is-64x64 together_imgbox" ]
-                [ 
-                    case item.profile of
-                        Just a ->
-                            img [src a ] []
-                        Nothing ->
-                            img [ src "../image/profile.png" ]
-                            []
-                ]
-            , div [ class "together_yf_id" ]
-                [ strong []
-                    [ text (justData item.nickname) ]
-                , div [] [text (String.dropRight 10 item.inserted_at)]
-                ]
-            ]
-        , img [class "toImg", src (justData thumbnail)] []
-        ]
-        
-    ]
 
+exerciseItemCase : Maybe (List a) -> List a
 exerciseItemCase exercise_item = 
     case exercise_item of
         Just ok ->
             ok
         Nothing ->
             []
+
+detailData : DetailTogether -> Model -> Int -> Html Msg
 detailData item model id= 
-    if List.length item.exercise_item < 5 then
+    if List.length (exerciseItemCase item.exercise_items) < 5 then
         div[class "detailData"] [
         ul [] [
          li [] 
-         (List.indexedMap (\idx x->  exerciseItems idx x model id) (List.sortBy .sort item.exercise_item))]
+         (List.indexedMap (\idx x->  exerciseItems idx x model id) (List.sortBy .sort (exerciseItemCase item.exercise_items)))]
      ]
     else
     if model.idx == item.id then
             div[class "detailData"] [
                 ul [] [
                 li [] 
-                (List.indexedMap (\idx x->  exerciseItems idx x model id) (List.sortBy .sort item.exercise_item))
+                (List.indexedMap (\idx x->  exerciseItems idx x model id) (List.sortBy .sort (exerciseItemCase item.exercise_items)))
             ]
             , div [onClick (ShowAllTextApp 0)] [text "닫기"]
             ]
@@ -1139,11 +1297,12 @@ detailData item model id=
             div[class "detailData"] [
                 ul [] [
                 li [] 
-                (List.take 4 (List.indexedMap (\idx x->  exerciseItems idx x model id) (List.sortBy .sort item.exercise_item)))
+                (List.take 4 (List.indexedMap (\idx x->  exerciseItems idx x model id) (List.sortBy .sort (exerciseItemCase item.exercise_items))))
             ]
             , div [onClick (ShowAllTextApp item.id)] [text "더보기 .."]
             ]
 
+appDetailData : DetailTogether -> Model -> Int -> Html Msg
 appDetailData item model id= 
     if List.length (exerciseItemCase item.exercise_items) < 5 then
         div[class "detailData"] [
@@ -1169,14 +1328,9 @@ appDetailData item model id=
             , div [onClick (ShowAllTextApp item.id)] [text "더보기 .."]
             ]
      
-   
+exerciseItems : Int -> TogetherItems -> Model -> Int -> Html Msg
 exerciseItems idx item model id=
-    li [
-        -- classList 
-        -- [ ("hideList", (idx >= 3))
-        -- , ("allShow", model.showAllText == id)
-        -- ]
-    ] [
+    li [] [
         text ((String.fromInt (item.sort)) ++ ". " ++ item.title ++ " x " ++ (
             if item.is_rest == False then
             String.fromInt (item.value) ++ "세트"

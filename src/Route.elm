@@ -1,19 +1,15 @@
 module Route exposing (..)
 
--- import Article.Slug as Slug exposing (Slug)
 import Browser.Navigation as Nav
 import Html exposing (Attribute)
 import Html.Attributes as Attr
 import Url exposing (Url)
 import Session exposing (Session)
 import Url.Parser as Parser exposing ((</>), Parser, oneOf, s, string)
--- import Browser.Navigation as Nav
 
 
 -- ROUTING
 
--- navKey : Nav.Key
--- navKey key = key
 
 
 type Route
@@ -139,7 +135,7 @@ fromUrl url =
     { url | path = Maybe.withDefault "" url.fragment, fragment = Nothing }
         |> Parser.parse parser
 
--- backUrl : Session -> Nav.Key -> Int -> Cmd msg
+backUrl : Nav.Key -> Int -> Cmd msg
 backUrl key int =
     Nav.back key int
 
@@ -147,6 +143,8 @@ pushUrl : Nav.Key -> Route ->Cmd msg
 pushUrl key route =
     Nav.pushUrl key (routeToString route)
 -- INTERNAL
+
+load : String -> Cmd msg
 load url = 
     Nav.load url
 

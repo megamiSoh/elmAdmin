@@ -1,6 +1,5 @@
 module Page exposing (..)
 
--- import VideoCall exposing(VidioCallPortMsg)
 import Browser exposing (Document)
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -11,6 +10,7 @@ import Json.Encode as E
 import Json.Decode as Decode
 import Api exposing(..)
 import Page.Common exposing(..)
+
 type Page 
     = Home
     | Other
@@ -58,7 +58,8 @@ type Page
     | YP
     | GP
 
--- view:Maybe Cred -> Api.Check  -> Page -> {check : String , title : String, content: Html msg} -> Browser.Document msg
+
+view : Maybe Cred -> Bool -> Page -> { title : String, content: Html msg} -> Browser.Document msg
 view maybeViewer checkB  page { title, content}  =
     if checkB then
         {title = title , body =
@@ -72,7 +73,7 @@ view maybeViewer checkB  page { title, content}  =
 
 
 
-
+footerCommon : Page -> Html msg
 footerCommon page = 
     if page == MakeExer then
         appFooter page
@@ -87,7 +88,7 @@ footerCommon page =
     else
         div [] []
 
-
+need2login : Html msg
 need2login = 
     div [ class "need2login" ]
         [img [src "../image/login.png"]
@@ -96,7 +97,7 @@ need2login =
         , a [class "button is-link need2login_btn", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
     ]
     
-
+need2loginApp : Html msg
 need2loginApp = 
     div [ class "m_nave2login" ]
         [img [src "../image/login.png"]
@@ -106,9 +107,9 @@ need2loginApp =
     ]
        
 
-type Msg = NoOp
 
 
+webContents : Html msg -> Page -> Maybe Cred -> Html msg
 webContents content page maybeViewer=
         case maybeViewer of
         Just _ ->
@@ -129,7 +130,7 @@ webContents content page maybeViewer=
                 _ ->
                     div [] [content, webtoastPop]
   
-
+appContents : Html msg -> Page -> Maybe Cred -> Html msg
 appContents content page maybeViewer=
   case maybeViewer of
         Just _ ->
@@ -161,13 +162,14 @@ appContents content page maybeViewer=
                 _ ->
                     div [] [content, apptoastPop]
   
-
+menuBottom : {icon : String , title : String, route : Route} -> Html msg
 menuBottom item = 
         a [ class "m_mypage_mypagemenu" , Route.href item.route]
         [ img [ src item.icon ]
             [], text item.title
         ]
 
+menu : List {icon : String , title : String, route : Route}
 menu = 
     [
     {icon = "/image/icon_qna.png", title ="자주하는 질문", route = Route.Faq},
@@ -175,11 +177,12 @@ menu =
     {icon = "/image/icon_qna.png", title ="로그인", route = Route.Login}
     ]
 
-
+webtoastPop : Html msg
 webtoastPop = 
     div [ id "webToast" ]
     [ text "" ]
-                
+
+apptoastPop : Html msg                
 apptoastPop = 
     div [ id "appToast" ]
     [ text "" ]
@@ -219,12 +222,8 @@ viewHeader page maybeViewer =
                         case page of
                             MyPage ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
-                            -- Faq ->
-                            --     a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             MyC ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
-                            -- Info ->
-                            --     a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             ScrapD ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             PostD ->
@@ -233,8 +232,6 @@ viewHeader page maybeViewer =
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             FaqD ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
-                            -- InfoD ->
-                            --     a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             MealR ->
                                 a [class "navbar-item yf_item",  Route.href Route.MyPageBottomMenu ] [text "마이페이지"]
                             MyPost ->
@@ -314,7 +311,7 @@ appFooter page=
                 []
             ]
         ]
--- viewFooter : Html msg
+viewFooter : Html msg
 viewFooter =
         footer [ class "footer yf_footer" ]
             [ div [ class "yf_address" ]
@@ -327,9 +324,6 @@ viewFooter =
                         [ text "사업장소재지 서울특별시 종로구 종로 19, 르메이르스포츠센터 B3층 연구소  │ 이메일 info@finalcompany.co.kr" ]
                     , li []
                         [ text "Copyright © 2019 Final Company, Inc. All Rights Reserved" ]
-                    -- , li [] [
-                    --     button [onClick Calling] []
-                    -- ]
                     ]
                 ]
             ]
@@ -366,6 +360,7 @@ viewErrors dismissErrors errors =
             List.map (\error -> p [] [ text error ]) errors
                 ++ [ button [ onClick dismissErrors ] [ text "Ok" ] ]
 
+mlogoutlayer : Html msg
 mlogoutlayer =
     div [ id "logoutPop"] [
         div [ class "myf_popup" ]
@@ -382,6 +377,7 @@ mlogoutlayer =
     ]
     ]
 
+logoutlayer : Html msg
 logoutlayer =
     div [ id "logoutPop"] [
         div [ class "yf_popup" ]

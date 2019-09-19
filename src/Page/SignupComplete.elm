@@ -6,15 +6,17 @@ import Session exposing(..)
 import Html exposing (..)
 import Api as Api
 import Route as Route
+
 type alias Model 
     = {
         session : Session
         , check : Bool
     }
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
-        {session = session
+        { session = session
         , check = mobile}
         , Cmd.none
     )
@@ -46,7 +48,6 @@ view model =
         div [] [
 
              img [ src "image/sign_image.png", alt "sign_image" ][]
-            --  text "회원가입이 완료 되었습니다."
         ]
         ,
         div [] [

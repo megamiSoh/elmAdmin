@@ -105,9 +105,11 @@ type alias ExercisePaginate =
     , total_count : Int
     , user_id : Int }
 
+diaryApi : String -> Session -> Cmd Msg
 diaryApi date session = 
     Api.get GetData (Endpoint.diary date) (Session.cred session) (Decoder.diaryData Meal MealData Body Kcal Photo Bmi)
 
+imgEncoder : List Files.File -> String -> Session -> String -> (String -> Endpoint.Endpoint) -> Cmd Msg
 imgEncoder img date session whatKindOf endpoint= 
     let
         body = (List.map (Http.filePart whatKindOf)img)
@@ -115,6 +117,7 @@ imgEncoder img date session whatKindOf endpoint=
     in
     Api.post (endpoint date) (Session.cred session) ImgUploadComplete body (Decoder.myBodyImg ImgData BodyImg)
 
+exerciseCompleteList : Int -> Int -> String -> Session -> Cmd Msg
 exerciseCompleteList page per_page date session = 
     let
         body = 
@@ -352,7 +355,6 @@ view model =
     , content =
        div [] [
            app model
-        --    , div [] (List.map (\x -> previewLayout x model) model.preview )
        ]
     }
     else
@@ -367,18 +369,8 @@ view model =
             , web model
        ]
     }
-previewLayout item model = 
-    div [class ("control has-icons-right myaccountStyle "  ++ (if model.currentPage == "image" then "calendarImg" else "")), id "calendarImg"] [
-        ul [class "accountHeader"] 
-                [ li[onClick (ChangePage "")]
-                    [ span [class "fas fa-times"][] ]
-                , li[][text "프로필 사진"]
-                , li[onClick ChangeProfile][
-                   text "확인"
-                ]
-                ],
-        img [src item] []
-    ]
+
+web : Model -> Html Msg
 web model= 
         div [ class "container" ]
             [
@@ -395,6 +387,7 @@ web model=
                     ]
             ]
 
+app : Model -> Html Msg
 app model =
     div [class ("container topSearch_container " ++ if model.currentPage == "image" then "fadeContainer" else "")] [
         appHeaderRDetail "캘린더" "myPageHeader  whiteColor" Route.MyPage "fas fa-angle-left",
@@ -406,6 +399,8 @@ app model =
         appworkoutSum model,
         appdoneWorkOut model
     ]
+
+calendarDate : Model -> Html Msg
 calendarDate model = 
     div [ class "myCalendar_tapbox" ]
         [ div [ class "myCalendar_datebox" ]
@@ -425,6 +420,7 @@ calendarDate model =
             ]
         ]
 
+appcalendarDate : Model -> Html Msg
 appcalendarDate model  = 
     div [ class "m_myCalendar_tapbox" ]
         [ div [ class "m_myCalendar_datebox" ]
@@ -441,6 +437,8 @@ appcalendarDate model  =
                 []
             ]
         ]
+
+foodKcalLayout : String -> String -> String -> String -> String -> Html Msg
 foodKcalLayout foodImg time kcal style code =
     div [ class (style ++ " cursor"), onClick (GoMealRecord code )]
             [ img [ src foodImg ] []
@@ -457,6 +455,8 @@ foodKcalLayout foodImg time kcal style code =
                     ]
                 ]
             ]
+
+foodKcal : Kcal -> String -> Html Msg
 foodKcal item class = 
     case item.food_code of
         "10" ->
@@ -470,6 +470,7 @@ foodKcal item class =
         _ ->
             foodKcalLayout "" "" "" "" ""
 
+stringToFloat : String -> Float
 stringToFloat item = 
     case String.toFloat item of
         Just ok ->
@@ -477,10 +478,11 @@ stringToFloat item =
     
         Nothing ->
             0
-
+roundPercent : Model -> Int
 roundPercent model = 
     Basics.round((stringToFloat model.data.date_kcal) / model.data.body.bmr * 100)
 
+dietRecords : Model -> Html Msg
 dietRecords model = 
     div [ class "myCalendar_ditebox" ]
         [ div [ class "myCalendar_goal" ]
@@ -503,6 +505,8 @@ dietRecords model =
             ]
         ]
 
+
+appdietRecords : Model -> Html Msg
 appdietRecords model  = 
     div [ class "myCalendar_ditebox" ]
         [ div [ class "m_myCalendar_goal" ]
@@ -528,6 +532,8 @@ appdietRecords model  =
             ]
         ]
 
+
+weightResult : Model -> Html Msg
 weightResult model = 
     div [ class "myCalendar_weightbox" ]
         [ i [ class "fas fa-weight" ]
@@ -535,6 +541,7 @@ weightResult model =
         , p[class"gloa_weight"][text ("목표 체중까지 " ++ String.fromFloat(Basics.negate (stringToFloat model.data.body.remain_weight)) ++ "KG 남았습니다.") ]
         ]
 
+appweightResult : Model -> Html Msg
 appweightResult model = 
     div [ class "m_myCalendar_weightbox" ]
         [ i [ class "fas fa-weight" ]
@@ -542,6 +549,7 @@ appweightResult model =
         , p[][text ("목표 체중까지 " ++ model.data.body.remain_weight ++ "KG 남았습니다.") ]
         ]
 
+bodyPhoto : Model -> Html Msg
 bodyPhoto model = 
     div [ class "myCalendar_phototbox" ]
         [ div [ class "boxtitle" ]
@@ -592,6 +600,8 @@ bodyPhoto model =
             ]
         ]
 
+
+appbodyPhoto : Model -> Html Msg
 appbodyPhoto model = 
     div [ class "m_myCalendar_phototbox" ]
         [ div [ class "m_myCalendar_boxtitle" ]
@@ -635,6 +645,7 @@ appbodyPhoto model =
             ]
         ]
 
+bodyInfo : Model -> Html Msg
 bodyInfo model = 
     if model.data.body.age <= 0 then
     div [ class "myCalendar_inforbox" ]
@@ -712,9 +723,12 @@ bodyInfo model =
         ]
         ]
 
+changeWeight : Model -> Float
 changeWeight model = 
     stringToFloat model.data.body.change_weight 
-    
+
+
+appbodyInfo : Model -> Html Msg
 appbodyInfo model = 
     div [ class "m_myCalendar_inforbox" ]
         [ div [ class "m_myCalendar_boxtitle" ]
@@ -748,7 +762,7 @@ appbodyInfo model =
         ]
         ]
 
-
+workoutSum : Model-> Html Msg
 workoutSum model =
         div [ class "myCalendar_timetbox" ]
             [ div [ class "boxtitle" ]
@@ -757,6 +771,7 @@ workoutSum model =
                 [], text ( model.data.date_exercise ++ "") 
             ]
 
+appworkoutSum : Model -> Html Msg
 appworkoutSum model =
         div [ class "m_myCalendar_timetbox" ]
             [ div [ class "m_myCalendar_boxtitle" ]
@@ -765,6 +780,7 @@ appworkoutSum model =
               [], text ( model.data.date_exercise ++ "")
             ]
 
+doneWorkOutItem : ExerciseList -> Html Msg
 doneWorkOutItem item = 
     div [class"myCalendar_container_doneWork"] [
         div [ class "myCalendar_iconbox" ]
@@ -775,6 +791,7 @@ doneWorkOutItem item =
                 [ text item.title ]
     ]
 
+doneWorkOut : Model -> Html Msg
 doneWorkOut model = 
     div [ class "myCalendar_finshbox" ]
         [ div [ class "boxtitle" ]
@@ -782,16 +799,13 @@ doneWorkOut model =
         , div [style "display" ( if List.isEmpty model.completeExerciseList then "none" else "block")] [
          div [ class "myCalendar_workbox" ]
             (List.map doneWorkOutItem model.completeExerciseList)
-        -- , div [ class "myCalendar_addbtn" ]
-        --     [ a [ class "button is-dark" ]
-        --         [ text "더보기" ]
-        --     ]
         ]
         , div [style "display" (if List.isEmpty model.completeExerciseList then "block" else "none"), class "noExerciseResult"] [
                 text "완료한 운동이 없습니다."
             ]
         ]
 
+appdoneWorkOut : Model -> Html Msg
 appdoneWorkOut model = 
     div [ class "m_myCalendar_finshbox" ]
         [ div [ class "m_myCalendar_boxtitle" ]
@@ -799,16 +813,13 @@ appdoneWorkOut model =
             , div [style "display" ( if List.isEmpty model.completeExerciseList then "none" else "block")] [
          div [ class "m_myCalendar_workbox" ]
             (List.map appdoneWorkOutItem model.completeExerciseList)
-        -- , div [ class "m_myCalendar_addbtn" ]
-        --     [ a [ class "button is-dark m_myCalendar_addbtnbtn" ]
-        --         [ text "더보기" ]
-        --     ]
             ]
             , div [style "display" (if List.isEmpty model.completeExerciseList then "block" else "none"), class "noExerciseResult"] [
                 text "완료한 운동이 없습니다."
             ]
         ]
 
+appdoneWorkOutItem :  ExerciseList -> Html Msg
 appdoneWorkOutItem item = 
     div [class "appdoneWorkOut_container"] [
          div [ class "m_myCalendar_iconbox" ]
@@ -818,26 +829,3 @@ appdoneWorkOutItem item =
         , div [ class "m_myCalendar_textbox" ]
             [ text item.title ]
     ]
-
--- changePhoto = 
---     div [class ("noShowToast " ++ model.showbottomtoast)] [
---                     ul [] [
---                         li [onClick ResetProfileImg] [
---                             text "기본 이미지로 변경"
---                         ]
---                         , li [] [
---                             label [] [
---                             text "앨범에서 사진 선택"
---                             , div [] [
---                                 input [ class "appFile", type_ "file", multiple False, id "thumbFile", accept "image/*" 
---                             , on "change" (Decode.map ChangeProfileImage targetFiles)  
---                             ]
---                                 []
---                             ]
---                             ]
---                         ]
---                         , li [class "toastCancel", onClick (ChangeProfileImg False)] [
---                             text "취소"
---                         ]
---                     ]
---                 ]

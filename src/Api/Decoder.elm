@@ -19,9 +19,11 @@ type alias UserData =
     , username : String
     , profile : Maybe String}
 
+resultD : Decoder Success
 resultD = 
     Decode.succeed Success
         |> required "result" string
+
 
 resultDecoder result = 
     Decode.succeed result
@@ -297,8 +299,10 @@ webtogetherdata togetherdata detail =
 webdetailtogether detail = 
     Decode.succeed detail
         |> required "id" int
-        |> required "title" string
-        |> required "thembnail" string
+        |> optional "title" (Decode.map Just string)Nothing
+        |> optional "thembnail" (Decode.map Just string)Nothing
+        |> optional "content" (Decode.map Just string)Nothing
+        |> optional "photo" (Decode.map Just string)Nothing
 
 togetherdatawrap datawrap ogetherdata detail page item pair snippet yItem = 
     Decode.succeed datawrap
@@ -339,7 +343,7 @@ youtubeItem yItem =
 
 sdetailTogether detail item pair snippets yItem= 
     Decode.succeed detail 
-        |> required "thembnail" string
+        |> optional "thembnail" (Decode.map Just string) Nothing
         |> optional "difficulty_name" (Decode.map Just string) Nothing
         |> optional "duration" (Decode.map Just string) Nothing
         |> optional "exercise_items" (Decode.map Just (Decode.list (togetherItem item)))Nothing
@@ -347,9 +351,10 @@ sdetailTogether detail item pair snippets yItem=
         |> required "id" int
         |> optional "inserted_at" (Decode.map Just string) Nothing
         |> optional "pairing" (Decode.map Just (Decode.list (pairing pair)))Nothing
-        |> required "title" string
+        |> optional "title" (Decode.map Just string) Nothing
         |> optional "content" (Decode.map Just string) Nothing
         |> optional "snippet" (Decode.map Just (youtubeDetailItem snippets yItem)) Nothing  
+        |> optional "photo" (Decode.map Just string) Nothing
 
 
 tdata togetherdata detail item pair snippets yItem = 

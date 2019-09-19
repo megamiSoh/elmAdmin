@@ -3,9 +3,8 @@ module Page.Blank exposing (view)
 import Html exposing (Html)
 
 
-view : { title : String, content : Html msg, check : String }
+view : { title : String, content : Html msg }
 view =
-    { check="",
-        title = ""
+    { title = ""
     , content = Html.text ""
     }

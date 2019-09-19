@@ -5,7 +5,6 @@ import Html.Events exposing(..)
 import Html.Attributes exposing(..)
 import Session exposing(..)
 import Html exposing (..)
--- import Json.Encode as E
 import Json.Decode as Decode
 import Route exposing(..)
 import Page.Common exposing (..)
@@ -18,6 +17,7 @@ import Swiper
 import Html.Lazy exposing (lazy, lazy2, lazy3)
 import Page.Common exposing (..)
 import Page.Detail.YourFitDetail as YfD
+
 type alias Model = 
     { session : Session
     , title : String
@@ -60,7 +60,7 @@ type alias ExerciseList =
     , title : String
     }
 
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile =
      (
         { session = session
@@ -105,7 +105,7 @@ init session mobile =
             , Api.hamburgerShut ()
         ]
     )
-
+mydata : Session -> Cmd Msg
 mydata session = 
     Decoder.sessionCheckMydata
         |> Api.get MyInfoData Endpoint.myInfo (Session.cred session)
@@ -245,9 +245,7 @@ update msg model =
             )
         SuccessId str ->  
             (model, 
-            -- Cmd.none
             Route.pushUrl (Session.navKey model.session) Route.YourfitDetail
-            -- Api.historyUpdate (Encode.string "yourfitDetail")
             )
 
         GoContentsDetail id ->
@@ -267,7 +265,6 @@ update msg model =
         Success str ->
             (model,
             Route.pushUrl (Session.navKey model.session) Route.YourFitList
-            -- Api.historyUpdate (Encode.string "yourfitListDetail")
             )
         GoDetail code ->
             let
@@ -353,7 +350,7 @@ view model =
             
         }
 
-            
+web : Model -> Html Msg            
 web model =
     div [ class "yourfitExercise_yf_workoutcontainerwrap" ]
             [ div [ class "container" ]
@@ -367,7 +364,7 @@ web model =
                 ]
             ]
 
-
+app : Model -> Html Msg
 app model =
         div [ class "container yourfitExerContainer" ]
             [ 
@@ -377,6 +374,7 @@ app model =
             ]
             
 
+bodyContents : Int -> ListData -> Model -> Html Msg
 bodyContents idx item model = 
     div [class "webFxWrap"]
     [  
@@ -415,7 +413,7 @@ bodyContents idx item model =
        ]
     ]
 
-
+bodyContentsApp : ListData -> Model -> Html Msg
 bodyContentsApp item model= 
     div [class "notification m_yfwo_menubox1"][
     div [ class "m_menubox_wrap" ]
@@ -452,7 +450,7 @@ bodyContentsApp item model=
     ]]
 
 
-
+videoItem : Int -> ExerciseList -> String -> Bool -> Html Msg
 videoItem idx item code loading = 
     div [ class "yf_workoutvideoboxwrap" , onClick (GoContentsDetail item.id)]
         [ div [class"list_overlay"]
@@ -476,19 +474,19 @@ videoItem idx item code loading =
                     , text " "
                     , text item.duration ]
             ]
-lazyImageview item lazy= 
+lazyImageview : String -> Html Msg
+lazyImageview item = 
     img [class "m_workoutvpic",  src item ] [
        
     ]
 
+videoItemApp : Int -> ExerciseList -> Model -> String -> Html Msg
 videoItemApp idx item model code = 
     div [ class "m_workoutvideoboxwrap" , onClick (GoContentsDetail item.id)]
             [   
                 div [ class "m_yf_workoutvideo_image" ]
-                [ 
-                    -- lazy2 lazyImageview item.thembnail model.lazyImg
-                     img [ class "m_workoutvpic", 
-                    src item.thembnail, onLoad (OnLoad (code ++ String.fromInt idx))  ]
+                [ img [ class "m_workoutvpic"
+                , src item.thembnail, onLoad (OnLoad (code ++ String.fromInt idx))  ]
                     []
                 ]
             , div [ class "m_yf_workoutvideo_lavel_bg" ]

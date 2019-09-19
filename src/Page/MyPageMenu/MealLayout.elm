@@ -14,6 +14,7 @@ onKeyDown:(Int -> msg) -> Attribute msg
 onKeyDown tagger = 
     on "keyup" (Decode.map tagger keyCode)
 
+
 searchResult model scrollEvent detail = 
     div [ class "searchbox"]
         [ table [ class "table is-fullwidth yf_table"  ]
@@ -33,7 +34,6 @@ searchResult model scrollEvent detail =
         ]
 mealLayout idx item model detail = 
     tr [onClick (detail(item.name, {kcal = item.kcal, one_kcal = ""}, Nothing)), class "wordBreakTable"] [
-        -- td [] [text (String.fromInt (idx + 1))],
         td[][text (item.name ++ (String.fromInt (idx + 1)) )],
         td[][text item.kcal ]
     ]
@@ -105,7 +105,6 @@ directRegist model directinput=
         ]
 searchInput model step search  scrollEvent detail event = 
     div [ id "searchHeight", class "m_meal_box_container scrollHegiht", scrollEvent
-    -- , scrollEvent, style "height" (model.offsetHeight ++ "px")
     ] [
         div  [class "m_meal_box"]
         [ input [ class "input m_meal_yf_input", type_ "text", placeholder "음식을 검색하세요" , onInput search, onKeyDown event, id "keyboardBlur"]

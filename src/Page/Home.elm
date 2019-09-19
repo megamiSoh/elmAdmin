@@ -55,7 +55,8 @@ type alias BannerList =
     , is_vertical : Bool 
     }
 
-bannerApi session vertical msg= 
+bannerApi : Session -> Bool -> ( Result Http.Error BannerListData -> Msg ) -> Cmd Msg
+bannerApi session vertical msg = 
     let
         body = 
             E.object 
@@ -89,17 +90,16 @@ init session mobile=
         }
        , Cmd.batch[scrollToTop NoOp
        , Cmd.map Yf_price_Msg yf_price_msg
-        -- , Api.get Check Endpoint.sessionCheck (Session.cred session) (Decoder.sessionCheck SessionCheck)
         , Api.progressCalcuration ()
         , bannerApi session True BannerComplete
         , bannerApi session False HorizonTalBannerComplete
         , Api.hamburgerShut ()
         ]
     )
+
 type Msg 
     = NoOp 
     | LoadImg
-    -- | Check (Result Http.Error SessionCheck )
     | Complete E.Value
     | BannerComplete (Result Http.Error BannerListData)
     | SlideMove String
@@ -111,8 +111,6 @@ type Msg
     | OpenPop
     | HorizonTalBannerComplete (Result Http.Error BannerListData)
     | Yf_price_Msg YP.Msg
-
-    -- | GotSession Session
 
 toSession : Model -> Session
 toSession model =
@@ -133,8 +131,8 @@ subscriptions model=
     , Api.swipe SwipeDirection
     , Sub.map Yf_price_Msg (YP.subscriptions model.yf_price)
     ]
-    -- Session.changes GotSession (Session.navKey model.session)
 
+onLoad : msg -> Attribute msg
 onLoad msg =
     on "load" (Decode.succeed msg)
 
@@ -239,16 +237,6 @@ update msg model =
             (model, Cmd.none)
         Complete val ->
             ({model | splash = False}, Cmd.none)
-        -- Check (Ok ok) ->
-        --     (model, Cmd.none)
-        -- Check (Err err) ->
-        --     let 
-        --         serverErrors = Api.decodeErrors err
-        --     in
-        --     if serverErrors == "401" then
-        --     (model, Api.logout)     
-        --     else 
-        --     (model, Cmd.none)
         LoadImg ->
             ({model | image = "/image/bg_back.png"}, Cmd.none)
         NoOp ->
@@ -263,7 +251,7 @@ view model =
        webOrApp model
     }
 
-
+caseList : List BannerList -> BannerList
 caseList item = 
     case List.head item of
                 Just list ->
@@ -279,6 +267,7 @@ caseList item =
                     , backcolor = Nothing
                     , is_vertical = False}
 
+webOrApp : Model -> Html Msg
 webOrApp model =
     let
         bannerFirst = 
@@ -328,19 +317,16 @@ webOrApp model =
             ]
         , div [class "paperweightLayer", style "display" (if model.yourfitPriceOpen then "flex" else "none")][
             div [class "makeExercise_paperWeight_slideContainer"][
-            yp_price_list model.yf_price Yf_price_Msg 
+            div [class "yp_price_slide_layer"][
+                div [class "button yf_price_top_btn is-danger", onClick OpenPop][text "닫기"]
+                , YP.weblayout  model.yf_price
+                    |> Html.map Yf_price_Msg 
+                ]
         ]
         ]
         ]
-        
-
-yp_price_list model msg = 
-    div [class "yp_price_slide_layer"][
-    div [class "button yf_price_top_btn is-danger", onClick OpenPop][text "닫기"]
-    , YP.weblayout model
-        |> Html.map msg
-    ]
-
+ 
+bulletitems : Int -> BannerList -> Model -> Html Msg
 bulletitems idx item model = 
     div [classList 
         [("bullet_items", True)
@@ -350,6 +336,7 @@ bulletitems idx item model =
         , onClick (BulletGo idx)
         ][]
 
+apphomeDirecMenu : Html Msg 
 apphomeDirecMenu =
     div [ class "columns home_yf_columns" ]
         [ a [ class "home_yf_columns_column1 main_middle_1 main_middle_size" , Route.href Route.Info ]
@@ -371,6 +358,7 @@ apphomeDirecMenu =
                     ]
         ]
 
+homeDirectMenu : Html Msg 
 homeDirectMenu = 
     div [ class "home_main_middle" ]
     [ div [ class "columns home_yf_columns" ]
@@ -404,7 +392,7 @@ homeDirectMenu =
                    
     ] 
 
-
+lazyview : String -> Html Msg
 lazyview image= 
      div [ class "home_main_top lazyimage", 
         style "background-size" "cover" ,
@@ -417,18 +405,20 @@ lazyview image=
             ,
             img [src "image/bg_back.png", onLoad LoadImg, class "shut"] []
         ]
-    
+
+caseString : Maybe String -> String    
 caseString item= 
     case item of
         Just ok ->
             ok
         Nothing ->
             ""
-        
+
+banner : BannerList -> String -> Html Msg        
 banner item styles=
         a [class styles, style "background-color" (caseString item.backcolor), Atrr.href (caseString item.link), target (caseString item.target)][img [src item.src, onLoad LoadImg, class "slideItems"] []]
 
-
+home : Html Msg 
 home =
      div [class "headerSpace"] [
     div [ class " m_home_topbox" ]

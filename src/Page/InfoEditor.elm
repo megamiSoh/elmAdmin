@@ -11,66 +11,10 @@ import Markdown.Config exposing (HtmlOption(..),  defaultSanitizeOptions)
 import Markdown.Inline as Inline
 import Regex exposing (Regex)
 
+type PreviewTab
+    = RealTime
 
--- infoArticle model textAreaInput readOnly title linkUrl msg =
---     div [ class "content", id "info" ]
---         [ 
---             columnsHtml [
---             pageTitle title
---             ],
---             columnsHtml [
---                 formInputEvent "제목" "제목을 입력 해 주세요" False msg model.title
---             ],
---             columnsHtml [
---                 labelWrap "HTML 입력",
---                 labelWrap "미리보기"
---             ],
---             columnsHtml [
---                 div [ class "editorArea" ]
---                 [ 
---                     editorView model.textarea textAreaInput readOnly
---                 ],
---                 div [ class "previewStyle" ]
---                 [ 
---                 div [class "backgroundText"] []
---                 ,
---                 markdownView model
---                 ]
---             ]
---         --     ,    
---         --  linkUrl
---         ]
-
--- infoDetail model textAreaInput readOnly title linkUrl msg titleModel contents=
---     div [ class "content" ]
---         [ 
---             columnsHtml [
---             pageTitle title
---             ],
---             columnsHtml [
---                 formInputEvent "제목" "제목을 입력 해 주세요" readOnly msg titleModel
---             ],
---             columnsHtml [
---                 labelWrap "HTML 입력",
---                 labelWrap "미리보기"
---             ],
---             columnsHtml [
---                 div [ class "editorArea" ]
---                 [ 
---                     editorView model.textarea textAreaInput readOnly
---                 ],
---                 div [ class "previewStyle" ]
---                 [ 
---                 div [class "backgroundText"] []
---                 ,
---                 markdownView model
---                 ]
---             ]
-
---         --  linkUrl
---         ]
-
--- editorView : String -> msg  -> Html msg
+editorView : String -> (String -> msg) -> Bool -> Html msg
 editorView md textAreaInput readOnly=
         textarea
             [ onInput textAreaInput
@@ -82,13 +26,7 @@ editorView md textAreaInput readOnly=
             ]
             []
 
--- detailmarkdownView { options, textarea, onDemandText, showToC, selectedPreviewTab }detailText =
---     let
---         textToParse =
---                 detailText
---     in
---     Html.Lazy.lazy3 render options showToC textToParse
--- markdownView : String -> Html msg
+
 markdownView { options, textarea, onDemandText, showToC, selectedPreviewTab } =
     let
         textToParse =

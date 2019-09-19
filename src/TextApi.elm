@@ -26,11 +26,14 @@ type alias Model =
     , page : Int
     , per_page : Int}
 
+
+mypostDataWrap : Decoder TogetherDataWrap
 mypostDataWrap = 
     Decode.succeed TogetherDataWrap
         |> required "data" (Decode.list togetherdata)
         |> required "paginate" paginate
 
+togetherdata : Decoder TogetherData
 togetherdata =
     Decode.succeed TogetherData
         |> optional "content" (Decode.map Just string) Nothing
@@ -44,6 +47,7 @@ togetherdata =
         |> optional "profile" (Decode.map Just string) Nothing
 
 
+detailTogether : Decoder DetailTogether
 detailTogether = 
     Decode.succeed DetailTogether 
         |> required "thembnail" string
@@ -57,6 +61,7 @@ detailTogether =
         |> required "title" string
 
 
+togetherItem : Decoder TogetherItems
 togetherItem  = 
     Decode.succeed TogetherItems
         |> required "exercise_id" int
@@ -64,12 +69,15 @@ togetherItem  =
         |> required "sort" int
         |> required "title" string
         |> required "value" int
+
+pairing : Decoder Pairing
 pairing = 
     Decode.succeed Pairing
         |> required "file" string
         |> required "image" string
         |> required "title" string
 
+paginate : Decoder Paginate
 paginate  = 
     Decode.succeed Paginate
         |> required "page" int
@@ -92,13 +100,12 @@ post page perpage url=
         , body = togetherBody
         , expect = Http.expectJson GotData mypostDataWrap }
 
+
 type alias TogetherDataWrap = 
     { data : List TogetherData 
     , paginate : Paginate
     }
 
-
-    
 type alias TogetherData = 
     { content : Maybe String
     , detail : Maybe (List DetailTogether)
@@ -110,6 +117,7 @@ type alias TogetherData =
     , nickname : Maybe String
     , profile : Maybe String
     }
+
 type alias DetailTogether = 
     { thembnail : String
     , difficulty_name : Maybe String
@@ -121,17 +129,20 @@ type alias DetailTogether =
     , pairing : List Pairing 
     , title : String
     }
+
 type alias TogetherItems = 
     { exercise_id : Int
     , is_rest : Bool
     , sort : Int
     , title : String
     , value : Int }
+
 type alias Pairing = 
     { file : String
     , image : String
     , title : String 
     }
+
 type alias Paginate = 
     { page : Int
     , per_page : Int
@@ -167,6 +178,8 @@ type Msg
     | PerPage String
     | Page String
 
+
+toInt : Maybe Int -> Int
 toInt item = 
     case item of
         Just int ->

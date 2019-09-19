@@ -9,7 +9,16 @@ import Route exposing (..)
 import Page.Common as Common
 import Date exposing (..)
 import DatePicker exposing (Msg(..))
--- myInfo : Html msg
+import File as Files
+
+type alias UserData =
+    { id : Int
+    , nickname : Maybe String
+    , username : String
+    , profile : Maybe String}
+
+
+myInfo : UserData -> (String -> msg) -> ( String -> msg) -> String -> msg -> (String -> msg) -> msg -> String -> (String -> msg) -> (String -> msg) -> String -> (List Files.File -> msg) -> String -> String -> msg -> msg -> Bool -> Html msg
 myInfo item changeNick changeBtn wantChangeNickname changeGo pwdInput changePwd notmatchPwd repwdInput oldInput nick getFile profileImg cannotChangeImg goprofilechange resetimg abletoWatch =         
     div [ class "columns" ]
     [ div [ class "column mypage_yf_profile" ]
@@ -76,7 +85,7 @@ myInfo item changeNick changeBtn wantChangeNickname changeGo pwdInput changePwd 
             ]
         ]
     ]
--- bodyInfo : Html msg
+
 bodyInfo model inputTagger bodySave ismale  datePicker firstdate datepickerShow cannotSave= 
     div [ class "wrap", id "datepickerPosition" ]
         [
@@ -129,7 +138,7 @@ bodyInfo model inputTagger bodySave ismale  datePicker firstdate datepickerShow 
             [ label [ class "label" ]
                 [ text "체중" ]
             , p []
-                [ input [ class "input myPage2_yf_input_box",  value model.weight, onInput (inputTagger "weight") ]
+                [ input [ class "input myPage2_yf_input_box",  value model.weight, onInput (inputTagger "weight"), maxlength 3 ]
                     [], text "Kg" 
                 ]
             ]
@@ -137,40 +146,35 @@ bodyInfo model inputTagger bodySave ismale  datePicker firstdate datepickerShow 
             [ label [ class "label" ]
                 [ text "목표체중" ]
             , p []
-                [ input [ class "input myPage2_yf_input_box", value  model.goalWeight, onInput (inputTagger "goalWeight") ]
-                    [],text "Cm" 
+                [ input [ class "input myPage2_yf_input_box", value  model.goalWeight, onInput (inputTagger "goalWeight"), maxlength 3 ]
+                    [],text "Kg" 
                 ]
             ]
         , div [ class "myPage2_title" ]
             [ label [ class "label" ]
                 [ text "신장" ]
             , p []
-                [ input [ class "input myPage2_yf_input_box", value model.height, onInput (inputTagger "height") ]
-                    [], text "Kg" 
+                [ input [ class "input myPage2_yf_input_box", value model.height, onInput (inputTagger "height") , maxlength 3]
+                    [], text "Cm" 
                 ]
             ]
         , div [ class "myPage2_title" ]
             [ label [ class "label" ]
                 [ text "생년월일" ]
             ,
-            --  label []
-            --     [ 
-                    -- input [ class "input myPage2_yf_input_box2", type_ "date", value model.birth, onInput (inputTagger "birth") ]
-                    -- [] 
-                    div [ class "field datepickerOn" ]
-                        [ p [ class ("control is-expanded has-icons-right datePickerBorder input datepickerIndividualStyle" )
-                        , onClick datepickerShow
+            div [ class "field datepickerOn" ]
+                [ p [ class ("control is-expanded has-icons-right datePickerBorder input datepickerIndividualStyle" )
+                , onClick datepickerShow
+                ]
+                    [ div []
+                        [text firstdate]
+                    , span [ class "icon is-small is-right" ]
+                        [ i [ class "fa fa-calendar-alt" ]
+                            []
                         ]
-                            [ div []
-                                [text firstdate]
-                            , span [ class "icon is-small is-right" ]
-                                [ i [ class "fa fa-calendar-alt" ]
-                                    []
-                                ]
-                            ]
-                            , datePicker
+                    ]
+                    , datePicker
                         ]
-                -- ]
             ]
         
         ,div [ class "button is-dark yf_is-dark", onClick bodySave ]
@@ -180,17 +184,7 @@ bodyInfo model inputTagger bodySave ismale  datePicker firstdate datepickerShow 
 accountInfo delete deleteConfirm show= 
     div [ class "ss" ]
         [ div [ class "columns myPage3_yf_cols" ]
-            [
-                -- div [ class "column yf_colns" ]
-                -- [ img [ src "/image/setting_icon1.png" ]
-                --     []
-                -- , p [ class "myPage3_text" ]
-                --     [ text "모든 운동기록을 초기화 합니다." ]
-                -- , a [ class "button is-danger myPage3_yf_danger" ]
-                --     [ text "초기화" ]
-                -- ]
-            -- , 
-            div [ class "column yf_colns" ]
+            [ div [ class "column yf_colns" ]
                 [ img [ src "/image/setting_icon2.png" ]
                     []
                 , p [ class "myPage3_text" ]

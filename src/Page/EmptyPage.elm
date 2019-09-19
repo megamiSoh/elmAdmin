@@ -12,7 +12,8 @@ type alias Model
         session : Session
         , check : Bool
     }
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
         { session = session
@@ -55,6 +56,7 @@ view model =
         ]
     }
 
+app : Html Msg
 app = 
     div [] [
             p [] [text "로그인 후 이용 가능 한 메뉴 입니다."]
@@ -62,6 +64,7 @@ app =
             , a [ Route.href Route.Home ] [text "홈으로 이동"]
             ]
 
+web : Html Msg
 web =
      div [] [
             p [] [text "로그인 후 이용 가능 한 메뉴 입니다."]

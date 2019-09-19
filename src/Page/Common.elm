@@ -10,10 +10,6 @@ import Browser.Dom as Dom
 import Json.Decode as Decode
 import File exposing(File)
 
-
-
-
-
 commonHeader : String -> String -> Html msg
 commonHeader icon title =
     div [ class "titlewrap" ]
@@ -68,7 +64,8 @@ commonJustHeader icon title =
             ]
         ]
 
-myPageCommonHeader scrRight scrLeft another show= 
+myPageCommonHeader : msg -> msg -> msg -> Bool -> Html msg
+myPageCommonHeader scrRight scrLeft another show = 
     div [ class "submenu", id "mypageMenu", style "height"  (if show then "110px" else "0") ]
         [  
             i [ class "fas fa-caret-left scrStyle", onClick scrLeft , style "display"  (if show then "" else "none")  ]
@@ -106,18 +103,6 @@ myPageCommonHeader scrRight scrLeft another show=
                 , p []
                     [ text "내 게시물관리" ]
                 ]
-            -- , a [ class "headerIcons", Route.href Route.MJList]
-            --     [ img [ src "../image/icon_mj.png" ]
-            --         []
-            --     , p []
-            --         [ text "문진운동" ]
-            --     ]
-            -- , a [ class "headerIcons", Route.href Route.Info]
-            --     [ img [ src "../image/icon_notice.png" ]
-            --         []
-            --     , p []
-            --         [ text "공지사항" ]
-            --     ]
             , a [ class "headerIcons", Route.href Route.MJList]
                 [ img [ src "../image/icon_cart.png" ]
                     []
@@ -130,34 +115,23 @@ myPageCommonHeader scrRight scrLeft another show=
                 , p []
                     [ text "1:1문의" ]
                 ]
-            -- , a [ class "headerIcons", Route.href Route.Faq]
-            --     [ img [ src "../image/icon_stats.png" ]
-            --         []
-            --     , p []
-            --         [ text "자주하는 질문" ]
-            --     ]
             ]
             , i [ class "fas fa-caret-right scrStyle", onClick scrRight , style "display"  (if show then "flex" else "none") ]
             [] 
         ]
 
+appHeaderSearch : String -> String -> Html msg
 appHeaderSearch title style= 
     div [class "headerSpace"] [
     ul [ class ("commonHeader " ++ style) ]
-        [ 
-        --     div [ class "m_backbtn" ]
-        --     []
-        -- , 
-        li [ class "m_yf_topboxtitle" ]
+        [ li [ class "m_yf_topboxtitle" ]
             [ text title ]
         , li [ class "m_nextbtn" ]
-            [ 
-                -- i [ class "fas fa-search" ]
-                -- []
-            ]
+            [ ]
         ]
     ]
 
+appHeadermypage : String -> String -> Html msg
 appHeadermypage title style= 
     div [class "headerSpace"] [
     ul [ class ("commonHeader " ++ style) ]
@@ -169,12 +143,15 @@ appHeadermypage title style=
                 [ ]
                 ]
     ]
+
+justappHeader : String -> String -> Html msg
 justappHeader title style = 
     div [class "headerSpace"] [
         div [ class ("justHeader " ++ style) ]
         [  text title ]
     ]
 
+appHeaderDetail : String -> String -> msg -> Html msg
 appHeaderDetail title style back=
     div [ class ("commonHeader " ++ style) ]
         [ div [ class "m_backbtn", onClick back]
@@ -185,6 +162,7 @@ appHeaderDetail title style back=
             [ text title ]
         ]
 
+appHeaderback : String -> String -> msg -> Html msg
 appHeaderback title style back=
     div [ class ("commonHeader " ++ style) ]
         [ div [ class "m_backbtn" , onClick back]
@@ -198,6 +176,7 @@ appHeaderback title style back=
         ]
 
 
+appHeaderBDetail : String -> String -> msg -> Html msg
 appHeaderBDetail title style back=
     div [ class ("commonHeader " ++ style) ]
         [ div [ class "m_backbtn", onClick back]
@@ -208,6 +187,8 @@ appHeaderBDetail title style back=
             [ text title ]
 
         ]
+
+appHeaderBothBtn : String -> String -> Route.Route -> String -> String -> Route.Route -> Html msg
 appHeaderBothBtn title style back icon btnText go=
     div [class "headerSpace"] [
         ul [ class ("commonHeaderBoth " ++ style), id "focusInput" ]
@@ -226,6 +207,8 @@ appHeaderBothBtn title style back icon btnText go=
             ]
             ] 
         ]
+
+appHeaderBothfnq : String -> String -> Route.Route -> String -> String -> Route.Route -> Html msg
 appHeaderBothfnq title style back icon btnText go=
     div [ class ("commonHeader " ++ style) ]
         [ a [ class "m_backbtn", Route.href back ]
@@ -238,7 +221,7 @@ appHeaderBothfnq title style back icon btnText go=
             [ text btnText ]
         ] 
 
-
+appHeaderRDetail : String -> String -> Route.Route -> String -> Html msg
 appHeaderRDetail title style back icon=
     div [class "headerSpace"] [
     ul [ class ("commonHeaderBack " ++ style) ]
@@ -254,6 +237,7 @@ appHeaderRDetail title style back icon=
         ]
     ]
 
+appHeaderRDetailClick : String -> String -> msg -> String -> Html msg
 appHeaderRDetailClick title style back icon=
     div [class "headerSpace"] [
     ul [ class ("commonHeaderBack " ++ style) ]
@@ -269,6 +253,7 @@ appHeaderRDetailClick title style back icon=
         ]
     ]
 
+appHeaderRDetailClick2 : String -> String -> msg -> String -> Html msg
 appHeaderRDetailClick2 title style back icon=
     div [class "headerSpace"] [
     ul [ class ("commonHeaderBack " ++ style) ]
@@ -284,6 +269,7 @@ appHeaderRDetailClick2 title style back icon=
         ]
     ]
 
+appHeaderinforDetail : String -> String -> Route.Route -> String -> Html msg
 appHeaderinforDetail title style back icon=
     div [ class ("commonHeader " ++ style) ]
         [ a [ class "", Route.href back]
@@ -295,6 +281,7 @@ appHeaderinforDetail title style back icon=
  
         ]
 
+appHeaderConfirmDetail : String -> String -> Route.Route -> String -> Route.Route -> String -> Html msg
 appHeaderConfirmDetail title style back btnStyle confirm btnText =
     div [class "headerSpace"] [
     ul [ class ("commonHeaderBoth " ++ style) ,id "focusInput"]
@@ -312,7 +299,7 @@ appHeaderConfirmDetail title style back btnStyle confirm btnText =
                      ]
             ]
     ]
-
+appHeaderConfirmDetailleft : String -> String -> msg -> msg -> String -> Html msg
 appHeaderConfirmDetailleft title style back confirm btnText =
     div [class "headerSpace"] [
     ul [ class ("commonHeaderBoth " ++ style) ,id "focusInput"]
@@ -326,7 +313,8 @@ appHeaderConfirmDetailleft title style back confirm btnText =
                 [ text btnText ]
             ]
     ]
-    
+
+appHeaderConfirmDetailR : String -> String -> msg -> msg -> String -> Html msg    
 appHeaderConfirmDetailR title style back confirm btnText =
     div [class "headerSpace"] [
         ul [ class ("commonHeaderBoth " ++ style) ,id "focusInput"]
@@ -341,6 +329,7 @@ appHeaderConfirmDetailR title style back confirm btnText =
         ]
     ]
 
+appHeaderConfirmDetailmypage : String -> String -> msg -> msg -> String -> Html msg
 appHeaderConfirmDetailmypage title style back confirm btnText =
         ul [ class ("commonHeaderBoth " ++ style) ,id "focusInput"]
         [ li [ class "", onClick back ]
@@ -352,6 +341,8 @@ appHeaderConfirmDetailmypage title style back confirm btnText =
         , li [ class "app_detail_text", onClick confirm ]
             [ text btnText ]
         ]
+
+appHeaderConfirmDetail2 : String -> String -> msg -> Route.Route -> String -> Html msg
 appHeaderConfirmDetail2 title style back confirm btnText =
     div [ class ("commonHeader " ++ style) ]
         [ div [ class "m_backbtn", onClick back ]
@@ -365,7 +356,7 @@ appHeaderConfirmDetail2 title style back confirm btnText =
         ]
 
 
-
+appHeaderBackComplete : String -> String -> msg -> msg -> Html msg
 appHeaderBackComplete title style back complete = 
     div [ class ("commonHeader " ++ style) ]
         [ div [ class "m_backbtn" , onClick back]
@@ -379,9 +370,12 @@ appHeaderBackComplete title style back complete =
         ]
 
 
+spinner : Html msg
 spinner = 
     div [ class "loading-spinner" ]
         []
+
+infiniteSpinner : Html msg
 infiniteSpinner = 
    div [ class "sk-fading-circle" ]
         [ div [ class "sk-circle1 sk-circle" ]
@@ -409,6 +403,7 @@ infiniteSpinner =
         , div [ class "sk-circle12 sk-circle" ]
             []
         ]
+
 pagination btn page initNum= 
     let
         index = 
@@ -461,8 +456,8 @@ pagination btn page initNum=
             [ text "10페이지 앞으로" ]
         ]
 
-
-item  idx num current btn=
+item : Int -> Int -> Int -> ((Int, String) -> msg) -> Html msg
+item idx num current btn=
     a [class (
         if (num) == current then
         "pagination-link is-current"
@@ -470,25 +465,21 @@ item  idx num current btn=
         "pagination-link"
         ), href "",  onClick (btn ((num), "go"))] [
             div [] [ text (String.fromInt (num)) ]
-            -- ]
         ]
     
 
+need2loginAppDetail : msg -> Html msg
 need2loginAppDetail route = 
     div [class "have2login"] [
-                 
-                    div [class"have2login_text"] [text "로그인 후 이용가능한 서비스 입니다."] 
-                , a [class "button is-link have2login_btn", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
-                , div [class "button have2login_btn", onClick route] [text "이전 페이지로 이동"]
-                ]
+        div [class"have2login_text"] [text "로그인 후 이용가능한 서비스 입니다."] 
+        , a [class "button is-link have2login_btn", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
+        , div [class "button have2login_btn", onClick route] [text "이전 페이지로 이동"]
+        ]
 
-need2loginAppDetailRoute: Route.Route -> Html msg
+need2loginAppDetailRoute : Route.Route -> Html msg
 need2loginAppDetailRoute route = 
     div [class "have2login2"] [
-                    
-   
-                    p[class"have2login_text"] [text "로그인 후 이용가능한 서비스 입니다."] 
-                   
+                p[class"have2login_text"] [text "로그인 후 이용가능한 서비스 입니다."]
                 , a [class "button is-link have2login_btn", Route.href Route.Login] [text "로그인 또는 회원가입하기"]
                 , a [class "button have2login_btn", Route.href route] [text "이전 페이지로 이동"]
                 ]
@@ -497,12 +488,13 @@ scrollToTop : msg -> Cmd msg
 scrollToTop noop =
     Task.perform (\_ -> noop) (Dom.setViewport 0 0)
 
--- jumpToBottom : String -> Cmd msg
+jumpToBottom : String -> msg -> Cmd msg
 jumpToBottom id noop =
   Dom.getViewportOf id
     |> Task.andThen (\info -> Dom.setViewport 0 info.scene.height)
     |> Task.attempt (\_ -> noop)
 
+fileupload : (List File -> msg) -> String -> Html msg
 fileupload getFile thumb =
     div [ class "field is-horizontal" ] [
         div [ class "file has-name is-right is-fullwidth photo_width" ]
@@ -524,11 +516,12 @@ fileupload getFile thumb =
                         text "프로필 사진을 변경 해 주세요."
                         else
                         text thumb
-                        -- text (Debug.toString thumb)
                     ]
                 ]
             ]
         ]
+
+fileuploadapp : (List File -> msg) -> String -> Html msg
 fileuploadapp getFile thumb =
     div [ class "field is-horizontal " ] [
         div [ class "file has-name is-right is-fullwidth" ]
@@ -550,16 +543,12 @@ fileuploadapp getFile thumb =
                         text "프로필 사진을 변경 해 주세요."
                         else
                         text thumb
-                        -- text (Debug.toString thumb)
                     ]
                 ]
             ]
         ]
--- onChange: (String -> msg) -> Html.Attribute msg
--- onChange tagger = 
---     on "change" (Decode.map tagger targetValue)
 
--- targetFiles : Decode.Decoder (List File)
+targetFiles : Decode.Decoder (List File)
 targetFiles = 
     Decode.at ["target", "files"] (Decode.list File.decoder)
 

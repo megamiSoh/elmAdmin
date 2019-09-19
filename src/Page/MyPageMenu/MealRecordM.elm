@@ -18,6 +18,7 @@ import Task exposing (Task)
 import Time exposing(Month(..))
 import Page.MyPageMenu.MyPageInfoLayout exposing (..)
 import Round as Round
+
 type alias Model = 
     { session : Session
     , checkDevice : String
@@ -241,9 +242,11 @@ init session mobile = (
     , Date.today |> Task.perform ReceiveDate]
     )
 
+scrollEvent : (ScreenInfo -> msg) -> Attribute msg
 scrollEvent msg = 
     on "scroll" (Decode.map msg scrollInfoDecoder)
 
+scrollInfoDecoder : Decode.Decoder ScreenInfo
 scrollInfoDecoder =
     Decode.map3 ScreenInfo
         (Decode.at [ "target", "scrollHeight" ] Decode.int)
@@ -294,6 +297,7 @@ toCheck : Model -> Bool
 toCheck model =
     model.check
 
+justToFloat : String -> Float
 justToFloat item = 
     case String.toFloat item of
         Just a->
@@ -358,7 +362,6 @@ update msg model =
             
             if is_direct then
             ({model | editShow = False}, 
-            -- Cmd.none
             mealEditInfo directItem model.session model.diary_no
             )
             else
@@ -452,8 +455,6 @@ update msg model =
             ({model | active = "", btnDisabled = True, mealRegistInfo = result}, Cmd.batch[mealRegistInfo result model.session
             ])
         PlusOrMinus what ->
-            -- case String.toFloat model.foodQuantityString of
-            --     Just a ->
                     case what of
                         "plus" ->
                             ({model | foodQuantity = justToFloat model.foodQuantityString + justToFloat model.active, foodQuantityString = String.fromFloat(justToFloat model.foodQuantityString + justToFloat model.active)
@@ -466,15 +467,6 @@ update msg model =
                                 , btnDisabled = False}, Cmd.none)
                         _ ->
                             (model, Cmd.none)
-                -- Nothing ->
-                --     case what of
-                --         "plus" ->
-                --             ({model | foodQuantity = 1 + justToFloat model.active, foodQuantityString = String.fromFloat(1 + justToFloat model.active)
-                --             , btnDisabled = False}, Cmd.none)
-                --         "minus" ->
-                --            ({model | btnDisabled = True}, Cmd.none)
-                --         _ ->
-                --             (model, Cmd.none)
     
         Active active ->
             ({model | active = active}, Cmd.none)
@@ -569,6 +561,7 @@ view model =
         div[][allStep model]
     }
 
+stepDetailItem : String -> Model -> Html Msg
 stepDetailItem meal model= 
     div [] [
         div [class ("topSearch_container " ++ (if model.detailShow then "fadeContainer" else "") ++ (
@@ -596,7 +589,6 @@ stepDetailItem meal model=
                 
                 selectedItem model.mealDataList.data DeleteItem model.totalKcal GoDetail DirectRegist
             ]
-            -- , div [class "backToRegist", onClick ShowRegistList] [text "계속 등록하기"]
         ]
         
         , div [class ("m_mealRecordDetail  " ++ (if model.derectRegistShow then "newOne" else ""))]
@@ -628,6 +620,7 @@ stepDetailItem meal model=
         ]
     ]
 
+registLayout : String -> Model -> Html Msg
 registLayout meal model = 
      div [] [
          case model.registOrEdit of
@@ -673,7 +666,8 @@ registLayout meal model =
                 , li [class "button fas fa-minus", onClick (PlusOrMinus "minus")] []
          ]
     ]
-    
+
+allStep : Model -> Html Msg    
 allStep model =
     div [class "container", style "overflow" "hidden", style "height" "100vh"] [
     case model.key of
@@ -691,6 +685,8 @@ allStep model =
                 , whatKindOfMeal 
             ]
     ]   
+
+whatKindOfMeal : Html Msg
 whatKindOfMeal  =
     div [ class "container yf_container" ]
         [ div [ class "m_settingbox" ]

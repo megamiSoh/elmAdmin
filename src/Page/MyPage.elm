@@ -100,7 +100,7 @@ type alias Protain =
 type alias WatchCheckData = 
     { data : Bool }
 
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile = 
     let
         
@@ -159,6 +159,7 @@ init session mobile =
         ]
     )
 
+pwdEncode : Model -> Session -> Cmd Msg
 pwdEncode model session = 
     let
         list = 
@@ -171,6 +172,7 @@ pwdEncode model session =
     Decoder.resultD
     |> Api.post Endpoint.pwdChange (Session.cred session) PwdComplete list 
 
+profileEncode : List Files.File -> Session -> Cmd Msg
 profileEncode profileImg session =
     let
         body = (List.map (Http.filePart "profile")profileImg)
@@ -228,6 +230,8 @@ toSession model =
 toCheck : Model -> Bool
 toCheck model =
     model.check
+
+justInt : String -> Float
 justInt int = 
     case String.toFloat int of
         Just num ->
@@ -236,6 +240,7 @@ justInt int =
         Nothing ->
             0
 
+justTail : Maybe ( List a ) -> List a 
 justTail item =
     case item of
         Just ok ->
@@ -243,6 +248,9 @@ justTail item =
     
         Nothing ->
             []
+
+
+bodyInfoEncode : Model -> Cmd Msg
 bodyInfoEncode model = 
     let
         body = 
@@ -258,17 +266,6 @@ bodyInfoEncode model =
     |>Api.post Endpoint.bodyRecord (Session.cred model.session) SaveComplete body 
 
 
--- initFromApolloLanding : Flags -> ( Model, Cmd Msg )
--- initFromApolloLanding  =
---     let
---         datePickerData =
---             DatePicker.initFromDate "my-datepicker" (fromCalendarDate 1969 canSelectMonth 8 20)
---     in
---     ( { datePickerData = datePickerData
---       , selectedDate = Nothing
---       }
---     , Cmd.none
---     )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -349,7 +346,6 @@ update msg model =
             ({model | cannotChange = "프로필 사진을 선택 해 주세요."}, Cmd.none)
             else 
             (model, profileEncode model.profileImg model.session)
-            -- (model, Cmd.none)
         ChangeProfileImage file->
             let
                 title =
@@ -359,7 +355,6 @@ update msg model =
                 Just a ->
                    
                     ({model | profileImg = file, profileFileName = Just (Files.name a)}, Cmd.none
-                    -- Task.perform SaveProfileImage ()
                     )
             
                 Nothing ->
@@ -373,7 +368,6 @@ update msg model =
                 Ok ok ->
                     (model, 
                     Route.pushUrl (Session.navKey model.session) Route.Info
-                    -- Api.historyUpdate (E.string "info")
                     )        
             
                 Err err ->
@@ -416,7 +410,7 @@ update msg model =
             in  
             ({model | deleteAuth = "bodyInfo"}, (Session.changeInterCeptor (Just serverErrors) model.session))
         BodyRecordsInput category str ->
-            let 
+            let
                 split = String.split "." str
                 tail = List.drop 1 split
                 len = List.map (\x ->
@@ -615,7 +609,6 @@ view model =
                         justappHeader "마이페이지" "myPageHeader" ,
                         app model
                     ]
-                
             }
     
         False ->
@@ -639,8 +632,7 @@ view model =
                             model.ableToWatch
                                         ]
                         ]
-                        ]
-                                        
+                        ]         
                         }
                     
                 "bodyInfo" ->
@@ -676,11 +668,10 @@ view model =
                             web model
                             ,div [] [text "컨텐츠를 불러올 수 없습니다."]
                         ]
-                        
                     }
             
                     
-    
+app : Model -> Html Msg
 app model = 
      div [class "container"] [
         
@@ -688,6 +679,8 @@ app model =
          
          div [class "myMenuStyle", style "min-height" (String.fromInt ((List.length menu) * 70 + 77) ++ "px")](List.map menuBottom (menu))
      ]
+
+appTopMenu : Model -> Html Msg
 appTopMenu model = 
     div [ class "m_mypage_loginbox" ]
         [ div [ class "m_mypage_profilebox" ]
@@ -699,12 +692,6 @@ appTopMenu model =
                     img [src "../image/profile.png"] []
             
             ]
-        -- , div [ class "m_mypage_subbox" ]
-        --     [ p []
-        --         [ text "1" ]
-        --     , p []
-        --         [ text "게시판" ]
-        --     ]
         , div [ class "m_mypage_subbox" ]
             [ p []
                 [ text (String.fromInt(model.mydata.exercise))]
@@ -732,12 +719,15 @@ appTopMenu model =
             p[][text "유료서비스 이용중이 아닙니다"]
         ]
         ]
-        
+
+menuBottom : { icon : String, title : String, route : Route } -> Html Msg      
 menuBottom item = 
         a [ class "m_mypage_mypagemenu" , Route.href item.route]
         [ img [ src item.icon ]
             [], text item.title
         ]
+
+justData : Maybe String -> String
 justData cases = 
     case cases of
         Just a ->
@@ -745,6 +735,8 @@ justData cases =
     
         Nothing ->
             "닉네임 등록"
+
+web : Model -> Html Msg
 web model= 
     div [] [
             myPageCommonHeader ClickRight ClickLeft GoAnotherPage True
@@ -759,6 +751,8 @@ web model=
                 ]
             ]
         ]
+
+tabPanner : Model -> Html Msg        
 tabPanner model= 
         div [ class "yf_yfworkout_search_wrap" ]
         [ div [ class "tapbox" ]
@@ -799,20 +793,13 @@ tabPanner model=
             ]
         ]
 
+menu : List { icon : String, route : Route, title : String }
 menu = 
-        
-            [
-            {icon = "/image/icon_calendar.png", title ="캘린더", route = Route.MyC},
-            -- {icon = "/image/icon_diet.png", title ="식단기록", route = Route.MealRM},
-            {icon = "/image/icon_stats.png", title ="나의 통계", route = Route.MyS},
-            {icon = "/image/icon_list.png", title ="스크랩리스트", route = Route.MyScrap},
-            {icon = "/image/icon_management.png", title ="내 게시물 관리", route= Route.MyPost},
-            -- {icon = "/image/icon_mj.png", title ="문진운동 리스트", route= Route.MJList},
-            -- {icon = "/image/icon_notice.png", title ="공지사항", route = Route.Info},
-            {icon = "/image/icon_cart.png", title ="최근구매내역", route= Route.MJList},
-            -- {icon = "/image/icon_notice.png", title ="공지사항", route = Route.Info},
-            -- {icon = "/image/icon_qna.png", title ="1:1 문의", route = Route.C},
-            -- {icon = "/image/icon_stats.png", title ="자주하는 질문", route = Route.Faq},
-            {icon = "/image/icon_qna.png", title ="로그아웃", route = Route.Logout} 
-            
-            ]
+    [
+        {icon = "/image/icon_calendar.png", title ="캘린더", route = Route.MyC},
+        {icon = "/image/icon_stats.png", title ="나의 통계", route = Route.MyS},
+        {icon = "/image/icon_list.png", title ="스크랩리스트", route = Route.MyScrap},
+        {icon = "/image/icon_management.png", title ="내 게시물 관리", route= Route.MyPost},
+        {icon = "/image/icon_cart.png", title ="최근구매내역", route= Route.MJList},
+        {icon = "/image/icon_qna.png", title ="로그아웃", route = Route.Logout} 
+    ]

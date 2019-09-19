@@ -7,9 +7,6 @@ import Route exposing(..)
 port checkMobile : () -> Cmd msg
 port check : (E.Value -> msg) -> Sub msg
 
--- subscriptions : Model -> Sub Msg
+subscriptions :  (E.Value -> msg ) -> Sub msg
 subscriptions =
         check
-
-            
-

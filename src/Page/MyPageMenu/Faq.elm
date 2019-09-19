@@ -149,6 +149,7 @@ subscriptions model =
     , Session.changes GotSession (Session.navKey model.session)
     , Api.touch ReceiveScroll]
 
+faqEncode : Int -> Int -> Session -> Cmd Msg
 faqEncode page per_page session =
     let
         body = 
@@ -158,7 +159,8 @@ faqEncode page per_page session =
                     |> Http.jsonBody 
     in
     Api.post Endpoint.faqfaqList (Session.cred session) FaqList body (Decoder.faqfaqList Faq Data Page)
-    
+
+detailApi : String -> Session -> Cmd Msg    
 detailApi id session = 
     Api.get AppDetail (Endpoint.faqfaqDetail id) (Session.cred session) (Decoder.faqfaqDetail FaqDetail.Data FaqDetail.Detail)
 
@@ -193,12 +195,15 @@ toCheck : Model -> Bool
 toCheck model =
     model.check
 
+regist : Model -> (Result Http.Error Decoder.Success -> msg) -> Cmd msg
 regist model = 
     Fw.faqEncode model.title model.content model.session
 
+scrollEvent : (ScreenInfo -> msg) -> Attribute msg
 scrollEvent msg = 
     on "scroll" (Decode.map msg scrollInfoDecoder)
 
+scrollInfoDecoder : Decode.Decoder ScreenInfo
 scrollInfoDecoder =
     Decode.map3 ScreenInfo
         (Decode.at [ "target", "scrollHeight" ] Decode.int)
@@ -388,6 +393,8 @@ view model =
     , content = 
         div [] [web model]
     }
+
+web : Model -> Html Msg
 web model = 
     div [ class "container" ]
         [
@@ -403,6 +410,8 @@ web model =
                     model.pageNum
             ]
         ]
+
+app : Model -> Html Msg
 app model = 
     div [class ("container topSearch_container " ++ (if model.showWrite || model.showDetail then "fadeContainer" else ""))] [
         appHeaderConfirmDetailleft "자주하는 질문" "myPageHeader" (GoBack "home") (GoBack "write") "" 
@@ -413,10 +422,14 @@ app model =
         appContentsBody model
 
     ]
+
+appContentsBody : Model -> Html Msg
 appContentsBody model=
     div [class "table scrollHegiht" , scrollEvent ScrollEvent, id "searchHeight"] [
         div [class "m_loadlistbox"] (List.indexedMap (\idx x ->  itemLayout idx x model) model.appFaqData)
     ]
+
+itemLayout : Int -> Data -> Model -> Html Msg
 itemLayout idx item model =
         div [class "eventArea" ,onClick (Show idx item.id)] [
             div [class "eventAreaChild faqevent"] [
@@ -424,17 +437,20 @@ itemLayout idx item model =
             ]
             , expandQ idx model item.id
         ]
+
+expandAnswer : String -> Html Msg
 expandAnswer title = 
         div [class"answerbox"] [
             p[class"answerbox_text"][text ("Re: " ++  title)]
         ]
+
+showAnswer : Maybe String -> Html Msg
 showAnswer answer= 
     div [class"tr_showAnswer"]
         [  pre [class "faq_q"][text (justString answer)] 
         ]
 
-
-
+expandQ : Int -> Model -> Int -> Html Msg
 expandQ idx model id =
     div [classList [
         ("heightZero", True),
@@ -443,7 +459,7 @@ expandQ idx model id =
         markdownView model
     ]
 
-
+contentsBody : Model -> Html Msg
 contentsBody model =
     div [ class "info_mediabox" ]
         [ div [ class "table info_yf_table" ]
@@ -452,8 +468,6 @@ contentsBody model =
                         [ text "번호" ]
                     , div [class "tableCell faq_title"]
                         [ text "제목" ]
-                    -- , div [class "tableCell faq_ing"]
-                    --     [ text "진행사항" ]
                     , div [class "tableCell faq_date"]
                         [ text "등록일" ]
                     ]
@@ -462,6 +476,8 @@ contentsBody model =
             ]
         ]
 
+
+contentsLayout : Int -> Data -> Model -> Html Msg
 contentsLayout idx item model = 
     div [class "tableRow cursor", onClick (DetailGo item.id)] [
         div [class "tableCell qna_numtext"] [text (
@@ -476,7 +492,8 @@ contentsLayout idx item model =
         div [class "tableCell qna_title_date"] [text (String.dropRight 10 item.inserted_at)]
     ]
 
-pagenation=
+pagenation : Html Msg
+pagenation =
     div [ class "yf_Pagination" ]
         [ nav [ class "pagination is-centered" ]
             [ ul [ class "pagination-list" ]
@@ -501,7 +518,8 @@ pagenation=
         ]
 
 
-     
+
+justString : Maybe String -> String     
 justString item = 
     case item of
         Just ok ->
@@ -509,6 +527,8 @@ justString item =
     
         Nothing ->
             "등록된 답변이 없습니다."
+
+decodeChar : String -> String
 decodeChar char = 
     char
         |> String.replace  "%26" "&"

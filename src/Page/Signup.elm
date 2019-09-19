@@ -14,6 +14,7 @@ import Api as Api exposing (Cred)
 import Http
 import Api.Endpoint as Endpoint
 import Api.Decoder as Decoder
+
 type alias Model = 
     { session : Session
     , checkDevice : String
@@ -35,6 +36,7 @@ type alias Model =
     , emailComplate : String
     , pageChange : String
     }
+
 type alias Token =  {
     token : String
     }
@@ -42,16 +44,19 @@ type alias Token =  {
 type alias AuthSendData = {
     data : String
     }
+
 type alias CheckOverlapUserName = 
     { data : Bool}
 
+datalist : Model -> Encode.Value
 datalist model= 
     Encode.object
         [ ("username", Encode.string model.mail)
         , ("auth_no", Encode.string model.authNo)
         , ("password" , Encode.string model.password)
         , ("password_confirmation", Encode.string model.repassword)]
-        
+
+signupEncoder : Model -> Session -> Cmd Msg        
 signupEncoder model session = 
     let
         wrap = 
@@ -64,6 +69,7 @@ signupEncoder model session =
     (Decoder.tokenDecoder Api.Cred )
     |> Api.post Endpoint.signup (Session.cred session) SuccessData body 
 
+overlapIdEncoder : String -> Session -> Cmd Msg
 overlapIdEncoder username session = 
     let
         body =
@@ -74,7 +80,7 @@ overlapIdEncoder username session =
     (Decoder.checkOverlapmail CheckOverlapUserName)
     |> Api.post Endpoint.checkoverlapId (Session.cred session) CanUseUsername body 
     
-
+emailAuthEncode : String -> Session -> Cmd Msg
 emailAuthEncode email session =
     let
         body = Encode.object [("username",Encode.string email)] 
@@ -82,7 +88,9 @@ emailAuthEncode email session =
     in
     (Decoder.authMail AuthSendData)
     |> Api.post Endpoint.emailAuth (Session.cred session) AuthComplete body 
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+
+
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
         { session = session
@@ -211,9 +219,6 @@ update msg model =
             ({model | password =pwd}, Cmd.none)
             
         EmailCheck mail ->
-            -- if (mail |> String.split("@") |> List.length) /=2 then
-            --     ({model | matchStyle = "noMatch", borderMatch = "noMatchBorder", errmsg = "유효한 이메일 주소를 입력 해 주세요."}, Cmd.none)
-            -- else 
                 ({model | mail = mail}, Cmd.none)
                 
         NoOp ->
@@ -237,7 +242,7 @@ view model =
             "private" ->
                 { title = "회원가입"
                 , content = 
-                            appPrivate GoPrivateTerm
+                            appPrivate
                 }
         
             "signup" ->
@@ -256,31 +261,15 @@ view model =
                     ]
                 }
     else
-        -- case model.pageChange of
-        --     "private" ->
-        --         { title = "회원가입"
-        --         , content = 
-        --                     div [] [
-        --                         webPrivate GoPrivateTerm
-        --                     ]
-                        
-        --         }
-        
-        --     "signup" ->
                 { title = "회원가입"
                 , content = 
-                            div [] [
-                                pcLayout model
-                            ]
+                    div [] [
+                        pcLayout model
+                    ]
                         
                 }
-            -- _ ->
-            --     { title = "회원가입"
-            --     , content = 
-            --         div [] [
-            --             text "페이지를 불러올 수 없습니다."
-            --         ]
-            --     }
+
+pcLayout : Model -> Html Msg
 pcLayout model= 
     div [ class "yourfitExercise_yf_workoutcontainerwrap" ]
             [ div [ class "container" ]
@@ -337,7 +326,7 @@ pcLayout model=
                     , p [  ]
                         [ div []
                             [ 
-                                webPrivate GoPrivateTerm
+                                webPrivate 
                              ]
                         ]
                     
@@ -350,15 +339,9 @@ pcLayout model=
                 ]
             ]
 
+mobileLayout : Model -> Html Msg
 mobileLayout model = 
     div [][
-    -- div [ class "topbox" ]
-    --     [ div [ class "backbtn" ]
-    --         []
-    --     , div [ class "nextbtn" ]
-    --         []
-    --     ]
-    --     ,
         div [ class "m_signup_yf_box" ]
             
         
@@ -405,46 +388,38 @@ mobileLayout model =
                     [ div [onClick (GoPrivateTerm "private")]
                         [ text "개인정보 보호 및 약관확인" ]
                     ]
-                -- , p []
-                --     [ text "개인정보 보호 및 이용약관을 확인해주세요" ]
                 ]
             ]
         ,div [ class "button is-dark m_signup_yf_darkbut", onClick Submit ]
             [ text "약관동의 및 회원가입" ]
     ]
 
-appPrivate back = 
+appPrivate : Html Msg
+appPrivate = 
             div [] [singupAppHead  "이용약관 및 개인정보 취급방침" "signup"
                 , termsArticle "m_yf_termstext"]
             
+webPrivate : Html Msg
+webPrivate =
+         div [] [ termsArticle "yf_termstextx" ]
 
-webPrivate back =
-         div []
-                    [
-                         termsArticle "yf_termstextx" 
-                        -- , goBtn back
+
+singupAppHead : String -> String -> Html Msg
+singupAppHead title whretog = 
+    div [class "headerSpace"] [
+            ul [ class ("commonHeaderBack myPageHeader" ) ]
+                [ li [] [
+                    div [ class "", onClick (GoPrivateTerm whretog)]
+                    [ i [ class "fas fa-angle-left" ]
+                        []
                     ]
-
-
-singupAppHead  title whretog = 
-    -- div [ class "containerwrap" ]
-    --         [ div [ class "container" ]
-    --             [ 
-                    div [class "headerSpace"] [
-                    ul [ class ("commonHeaderBack myPageHeader" ) ]
-                        [ li [] [
-                            div [ class "", onClick (GoPrivateTerm whretog)]
-                            [ i [ class "fas fa-angle-left" ]
-                                []
-                            ]
-                        ]
-                        , li [ class "toptitle_2" ]
-                            [ text title ]
-                
-                        ]
-                    ]
-                    
-                -- ]
+                ]
+                , li [ class "toptitle_2" ]
+                    [ text title ]
+        
+                ]
+            ]
+            
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch[Session.changes GotSession (Session.navKey model.session)]

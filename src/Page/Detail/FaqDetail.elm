@@ -237,13 +237,6 @@ update msg model =
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    -- if model.check then
-    -- { title = "YourFitExer"
-    -- , content = 
-    --     div [] [
-    --     app model
-    -- ]}
-    -- else
     { title = "YourFitExer"
     , content = 
         div [] [
@@ -251,7 +244,7 @@ view model =
         , web model
     ]}
     
-
+justString : Maybe String -> String
 justString item = 
     case item of
         Just ok ->
@@ -260,16 +253,16 @@ justString item =
         Nothing ->
             "등록된 답변이 없습니다."
 
+web : Model -> Html Msg
 web model =
     div [class "container"] [
         commonJustHeader "/image/icon_qna.png" "자주묻는 질문",
         ques model.detail model.edit model ,
-        -- answer model.detail,
         backBtn
     ]
 
 
-
+ques : Detail -> Bool -> Model -> Html Msg
 ques item edit model = 
         div [ class "info_mediabox contentsH" ]
             [ div [ class "infoDetail_titlebox" ]
@@ -281,40 +274,25 @@ ques item edit model =
             ]
                 ]
             ]
-
--- answer item= 
---     div [ class "info_mediabox contentsH" ]
---         [ div [ class "infoDetail_titlebox", style "background" "#e4e4e4" ]
---             [ div [ class "infoDetail_titleweb" ]
---                 [ text ("Re : " ++ (decodeChar item.title)) ]
---             ]
---             ]
+backBtn : Html Msg
 backBtn =
     div [ class "make_yf_butbox" ]
     [ a [ class "button infoDetail_yf_back", Route.href Route.Faq ]
         [ text "뒤로" ]
     ]       
 
--- app model = 
---     div [class "container"] [
---         appHeaderConfirmDetailleft "문의 하기" "myPageHeader" GoBack GoEdit "수정" 
---         , apptitle model.detail.title
---         , if model.detail.is_answer then
---             div [class "appFaqleft"][text "답변완료"]
---         else
---             div [class "appFaqleft red"][text "답변 대기 중"]
---         , apptextArea model.detail.content
---     ]
 
+apptitle : String -> (String -> msg) -> Html msg
 apptitle title titleInput = 
         input [ class "input", type_ "text", placeholder "제목을 입력해주세요" , maxlength 50, onInput titleInput , value (decodeChar title) ]
                 []
+
+apptextArea : String -> (String -> msg) -> Html msg
 apptextArea content contentInput =
         textarea [ class "textarea", placeholder "내용을 입력해주세요", rows 10, maxlength 250 , onInput contentInput, value (decodeChar content)]
         []
 
-
-            
+decodeChar : String -> String
 decodeChar char = 
     char
         |> String.replace  "%26" "&"

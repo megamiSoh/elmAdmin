@@ -403,23 +403,17 @@ update msg model =
 view : Model -> {title : String , content : Html Msg}
 view model =
     if model.check then
-        if model.loading then
             { title = "맞춤운동 필터"
-            , content =  div [class "spinnerBack"] [spinner]
-            }
-        else
-            { title = "맞춤운동 필터"
-            , content = div [] [app model ]
+            , content = div [] 
+            [ div [class "spinnerBack", style "display" (if model.loading then "flex" else "none")] [spinner]
+            , app model ]
             }
     else
-        if model.loading then
-            { title = "맞춤운동 필터"
-            , content = div [class "spinnerBackWeb"] [spinner]
-            }
-        else
             { title = "맞춤운동 필터"
             , content = 
-                div [] [ web model ]
+                div [] 
+                [ div [class "spinnerBackWeb", style "display" (if model.loading then "flex" else "none")] [spinner]
+                , web model ]
             }
 justokData result = 
     case result of

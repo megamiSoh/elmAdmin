@@ -29,8 +29,9 @@ type alias Model =
     , zindex : String
     , video : String
     , errType : String
+    , detailShow : Bool
     }
--- Decoder.yfDetailDetail GetData DetailData DetailDataItem Pairing
+
 type alias GetData = 
     { data : DetailData }
 
@@ -59,7 +60,7 @@ type alias Pairing =
     , image : String
     , title : String}
 
--- init : Session -> Api.Check ->(Model, Cmd Msg)
+init : Session -> Bool ->(Model, Cmd Msg)
 init session mobile
     = (
         { session = session
@@ -84,6 +85,7 @@ init session mobile
             , description = Nothing}
         , video = ""
         , errType = ""
+        , detailShow = False
         }
         , Cmd.batch [
             Api.getId ()
@@ -93,20 +95,19 @@ init session mobile
 subscriptions :Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ 
-        --     P.check CheckDevice
-        -- , 
-        Api.receiveId ReceiveId
+        [ Api.receiveId ReceiveId
         , Session.changes GotSession (Session.navKey model.session)
         , Api.videoSuccess Loading
         , Api.videoWatchComplete VideoEnd
         ]
+
+mydata : Session -> Cmd Msg
 mydata session = 
     Decoder.sessionCheckMydata
         |> Api.get MyInfoData Endpoint.myInfo (Session.cred session)
+
 type Msg 
     = BackPage
-    -- | CheckDevice Encode.Value 
     | ReceiveId Encode.Value
     | GetListData (Result Http.Error GetData)
     | Loading Encode.Value
@@ -234,7 +235,6 @@ update msg model =
                 case d of
                     Ok item ->
                         ({model | loading = False},Cmd.none)
-                        -- (model, Cmd.none)
                 
                     Err _->
                          ({model | loading = False},Cmd.none)
@@ -255,51 +255,9 @@ update msg model =
         BackPage ->
             ( model, 
             Route.backUrl (Session.navKey model.session) 1)
-        -- CheckDevice str ->
-        --    let 
-        --         result =
-        --             Decode.decodeValue Decode.string str
-        --     in
-        --         case result of
-        --             Ok string ->
-        --                 ({model| checkDevice = string}, Cmd.none)
-        --             Err _ -> 
-        --                 ({model | checkDevice = "pc"}, Cmd.none)
-
 
 view : Model -> {title : String , content : Html Msg}
 view model =
-    -- if model.check then
-    --     if model.loading then
-    --     { title = "유어핏 운동"
-    --     , content = 
-    --                 div [ class "container" ]
-    --             [
-    --                appHeaderRDetailClick model.listData.title  "yourfitHeader" BackPage "fas fa-times"
-    --                ,
-    --                 div [class "spinnerBack"] [
-    --                     spinner
-    --                     ]
-    --         ]   
-    --     }
-    --     else
-    --     { title = "유어핏 운동"
-    --     , content = 
-    --          div [ class "container" ]
-    --             [
-    --                appHeaderRDetailClick model.listData.title  "yourfitHeader" BackPage "fas fa-times"
-    --                ,
-    --                 div [] []
-    --                  , 
-    --                 div [][
-    --                     if model.need2login then
-    --                     need2loginAppDetail BackDetail
-    --                 else
-    --                 appcontentsItem model.listData model.loading Scrap model model.zindex
-    --                 ]
-    --             ]
-    --     }
-    -- else
         { title = "유어핏 운동"
         , content = 
             div [] [
@@ -307,15 +265,17 @@ view model =
             ]   
         }
 
+
 app model backpage scrap goVideo= 
         div [class ("container myaccountStyle " ++ if model.detailShow then "account yfdetailShow" else "")]
                 [
                    appHeaderRDetailClick model.listData.title  "yourfitHeader" backpage "fas fa-times"
                    ,
-                    appcontentsItem model.listData model.loading scrap model model.zindex goVideo
+                    appcontentsItem model.listData model.loading scrap model.scrap model.zindex goVideo
                     
                 ]
 
+web : Msg -> Model -> Html Msg
 web msg model= 
     div [ class "container" ]
                 [
@@ -328,31 +288,26 @@ web msg model=
                         goBtnBox msg
                     ]
                 ]
+
+contentsBody : DetailData -> Bool -> msg -> Bool -> (List Pairing -> msg) -> String -> String -> Html msg
 contentsBody item model scrap modelscrap goVideo scrapText zindex=
-    
     div [ class "yf_yfworkout_search_wrap" ]
         [ div [ class "tapbox" ]
             [ div [ class "yf_large" ]
                 [ text item.title ],
                 contentsItem item model scrap modelscrap goVideo scrapText zindex
-               
             ]
-        
         ]
 
 
-
+contentsItem : DetailData -> Bool -> msg -> Bool -> (List Pairing -> msg) -> String -> String -> Html msg
 contentsItem item loading scrap modelscrap govideo scrapText zindex=
             div [ class "tile is-parent is-vertical" ]
             [lazy2 div [ class "yf_notification" ]
                 [ p [ class "video_title " ]
                     [ 
                             div [class ("imagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") ,onClick (govideo item.pairing)] []
-                        -- --  div [] [
-                        --     i [ class "fas fa-play-circle" , onClick (govideo item.pairing)][],
-                        --      img [class zindex, src item.thumbnail , onClick (govideo item.pairing)] []
                             , videoCall
-                        --  ]
                     ]
                 ], 
             div [ class "yf_subnav" ]
@@ -377,15 +332,12 @@ contentsItem item loading scrap modelscrap govideo scrapText zindex=
                     ]
                 ]
             , 
-            -- if loading then 
-            -- div [] []
-            -- else
             pre [class"yf_explanation descriptionBackground"] [text (justok item.description)]
             , div [ class "yf_text" ]
                (List.indexedMap description item.exercise_items)
             ]
 
-
+justok : Maybe String -> String
 justok casees = 
     case casees of
         Just a ->
@@ -394,8 +346,9 @@ justok casees =
         Nothing ->
             "  "
 
+appcontentsItem : DetailData -> Bool -> msg -> Bool -> String -> (List Pairing -> msg) -> Html msg
 appcontentsItem item loading scrap modelscrap zindex goVideo = 
-            div [ ]
+            div []
             [  p [ class "m_yf_container" ]
                     [ 
                         div [ class ("appimagethumb " ++ zindex ), style "background-image" ("url(../image/play-circle-solid.svg) ,url("++ item.thumbnail ++") ") , onClick (goVideo item.pairing) ][]
@@ -415,7 +368,7 @@ appcontentsItem item loading scrap modelscrap zindex goVideo =
                 , div [ class "m_yf_scrapt", onClick scrap ]
                     [ span []
                         [ i [ class  (
-                            if modelscrap.scrap then
+                            if modelscrap then
                             "fas fa-bookmark"
                             else
                             "far fa-bookmark"
@@ -432,16 +385,17 @@ appcontentsItem item loading scrap modelscrap zindex goVideo =
             ]
             ]
 
+description : Int -> DetailDataItem -> Html msg
 description idx item = 
     ul [class "yf_text"] [
             if item.is_rest then    
                 li [] [text ((String.fromInt(item.sort)) ++ " . " ++  item.title ++ " " ++ String.fromInt(item.value) ++ "분")]
             else 
                 li [] [text ((String.fromInt(item.sort)) ++ " . " ++  item.title ++ " " ++ String.fromInt(item.value) ++ "세트")] 
-                    
-        -- li [] [text]
     ]
     
+
+goBtnBox : msg -> Html msg
 goBtnBox backPage = 
     div [ class "searchbox_footer" ]
         [ div [ class "yf_backbtm" ]
@@ -450,6 +404,6 @@ goBtnBox backPage =
             ]
         ]
 
-
+videoCall : Html msg
 videoCall =
     div [id "myElement"] []

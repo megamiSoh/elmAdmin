@@ -16,9 +16,21 @@ if (agent.indexOf("msie") != -1) {
   alert("인터넷익스플로러 브라우저입니다.");
   
   }
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+
+
+
+
+const url ='http://13.209.49.169:4000/api/v1/'
+// const url = 'https://api.yfit.co.kr/api/v1/'
+=======
+>>>>>>> e33a8e9ff2a02731987216d7e980c860332753c0
   
 // const url ='http://13.209.49.169:4000/api/v1/'
 const url = 'https://api.yfit.co.kr/api/v1/'
+>>>>>>> 5bb4072cb425af5ca8dce716b5ec3c618365253e
 var filter = "win16|win32|win64|mac|macintel"; 
 
 if (filter.indexOf( navigator.platform.toLowerCase() ) > 0) {
@@ -95,20 +107,13 @@ app.ports.scrollRight.subscribe(function() {
 });
 })
 
-// app.ports.openPop.subscribe(function () {
-//   window.open('/#/yourfitPrice', 'popup01', 'width= 1300, height = 650 scrollbars= 0, toolbar=0, menubar=no');
-// })
 app.ports.comma.subscribe(function (x) {
   var list = x.price
   var result = []
   for(let i = 0; i < list.length; i++ ){
-    // alert(list[i])
     result.push(list[i].toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","))
   }
-  // alert()
-    // var commaFormat = x.toString()
     app.ports.commaF.send(result)
-    // alert(JSON.stringify(x.price))
 })
 
 app.ports.scrollLeft.subscribe(function() {
@@ -144,10 +149,7 @@ app.ports.getKey.subscribe(function () {
   var get = localStorage.getItem ("contentsKey") 
   if (window.location.hash == "#/mealRecord" ||  window.location.hash == "#/mealRecordM")
   {
-    var list = get.split(',')
-    // console.log(
   app.ports.receiveKey.send(get)
-  // console.log({code : list[0], date : list[1]})
   } else {
   app.ports.receiveKey.send(get)
 }
@@ -164,10 +166,12 @@ app.ports.saveId.subscribe(function (id) {
 })
 
 app.ports.getId.subscribe(function () {
-  // alert(1111)
   var get = localStorage.getItem("id")  
   if (get == null) {
-    return false
+    if (window.location.hash == "#/togetherWrite") {
+      app.ports.receiveId.send (null)
+    }else {
+    return false}
   } else {
     var parse = JSON.parse (get)
    if (parse.code ==  undefined) {
@@ -178,8 +182,21 @@ app.ports.getId.subscribe(function () {
     else {
     app.ports.receiveId.send (parse)} 
   }
+ 
 })
 
+app.ports.openFile.subscribe( function () {
+  if (document.getElementById("together_bottom_btn") !== null) {
+    var input = document.getElementById("together_bottom_btn");
+    input.click();
+  } else {
+  }
+})
+
+app.ports.togetherId.subscribe(function () {
+  localStorage.removeItem("id")
+  app.ports.receivetogetherId.send('success')
+})
 app.ports.removeId.subscribe(function() {
 localStorage.removeItem("id")
 })
@@ -359,9 +376,7 @@ app.ports.togetherDataList.subscribe(function(data) {
 }
 })
 app.ports.removeJw.subscribe( function () {
-  // jwplayer().remove()
   jwplayer().length == undefined ? "" : jwplayer().remove()
-  // alert (document.getElementById('myElement'))
 })
 app.ports.showToast.subscribe(function (text) {
     var x = document.getElementById("webToast") || document.getElementById("appToast");
@@ -379,9 +394,6 @@ app.ports.getscrollHeight.subscribe(function(data) {
     
     }
     else {
-    //   console.log (heightValue)
-    // document.documentElement.style.top = '-' + String(heightValue) + 'px'
-    // document.documentElement.style.position = "fixed"
   }
   }  else {
     if (document.getElementById("calendarImg")) {
@@ -398,12 +410,6 @@ app.ports.scrollControl.subscribe (function () {
     document.body.style.overflow = ""
   } 
   else if( window.location.hash == "#/myAccount") {
-    // document.getElementById().ontouchend = (e) => {
-    //   e.preventDefault();
-      
-    // }
-   // console.log()
-  //  document.documentElement.style.height = 0
   }
    else {
     document.body.style.overflow = "hidden"
@@ -606,7 +612,6 @@ if (document.getElementById('slide') !== null) {
       
 app.ports.hamburgerShut.subscribe(function() {
   if (document.getElementsByClassName("hamburger_is_active")[0] == undefined){
-    // document.getElementById("expandMenu").setAttribute('class','hamburger_is_active')
     }
     else {
       document.getElementById("expandMenu").removeAttribute('class','hamburger_is_active')
@@ -619,16 +624,8 @@ app.ports.hamburgerShut.subscribe(function() {
 
   
 
-app.ports.valueReset.subscribe(function (id) {
-  // alert(document.getElementById(id +"after"))
-  // document.getElementById(id +"before").value = ""
-  // document.getElementById(id +"after").value = ""
-  
-})
 
 app.ports.youtubeVideo.subscribe(function (videoId) {
-  var decodeValue = JSON.stringify(videoId)
-  // app.ports.hideThum.send(videoId)
   var iframes = document.querySelectorAll('iframe');
     for (var i = 0; i < iframes.length; i++) {
         iframes[i].parentNode.removeChild(iframes[i]);
@@ -674,12 +671,10 @@ app.ports.youtubeVideo.subscribe(function (videoId) {
       var total = scrTop + scrofh >= scrH
       if (total) {
           app.ports.touch.send(scrH)
-          console.log(scrH)
       }
      
     }
     else {
-      // console.log ("get outout")
       return;
     }
   }, 
@@ -688,14 +683,13 @@ app.ports.youtubeVideo.subscribe(function (videoId) {
 
 document.addEventListener('touchmove', function(e) {
   if (document.getElementById("noScrInput")){
-    // document.body.setAttribute('style','overflow:hidden;');
   e.preventDefault();}
   
   else {
-    // console.log ("get outout")
     return;
   }
 }, { passive: false });
+
 
 document.addEventListener('DOMContentLoaded', () => {
 

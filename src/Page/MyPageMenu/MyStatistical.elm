@@ -44,7 +44,7 @@ type alias Model =
     , activeTab : String
     , checkDevice : String
     , check : Bool
-    , statistics : List  Statistical
+    , statistics : List Statistical
     , maxTime : Float
     , minTime : Float
     , weightData : List Float
@@ -84,13 +84,13 @@ type alias Model =
     , hoverWeight : Maybe Info
     , hoverExercise : Maybe Info
     , hoverCal : Maybe Info
-    , monthExerUnit : 
-        List UnitMonthExer
+    , monthExerUnit : List UnitMonthExer
     }
 
 type alias UnitMonthExer =
     { original : String
-    , format : Float}
+    , format : Float }
+
 type alias BarChartForm = 
     { label : String
     , heights : List Float }
@@ -104,10 +104,20 @@ type alias Statistical =
     , food : Maybe String
     , weight : Maybe String }
 
+type alias Point =
+    { x : Float, y : Float }
+
+type alias Info =
+  { x : Float
+  , y : Float
+  }
+
+weekApi : Session -> Cmd Msg
 weekApi session = 
     Decoder.statisticalWeek StatisticalData Statistical
     |>Api.get GetList (Endpoint.statisticalweek) (Session.cred session) 
 
+monthApi : Session -> String -> Cmd Msg 
 monthApi session date = 
     Decoder.statisticalWeek StatisticalData Statistical
     |> Api.get GetMonthList (Endpoint.statisticalMonth date )
@@ -605,8 +615,7 @@ update msg model =
 
 
 
-type alias Point =
-    { x : Float, y : Float }
+
 
 view : Model -> {title : String , content : Html Msg}
 view model =
@@ -651,7 +660,6 @@ chart model xAcc yAcc data hover unit=
     , legends = Legends.default
     , events = Events.hoverOne (Hover xAcc)
     , junk =
-        -- Junk.default
         if model.activeTab == "weekly" then
         Junk.hoverOne hover
           [ ( xAcc, unitDecoder unit model << .y )
@@ -679,11 +687,10 @@ xAxisConfig model =
     , pixels = 700
     , range = Range.padded 20 20
     , axisLine = AxisLine.rangeFrame Colors.gray
-    -- , ticks = ticksConfig model.hovered model
     , ticks = Ticks.intCustom 7 ticksConfig
     }
 
--- ticksConfig : Maybe Data -> Ticks.Config msg
+ticksConfig : Int -> Tick.Config msg
 ticksConfig num =
     let
         s = String.fromInt num
@@ -699,6 +706,8 @@ ticksConfig num =
     , label = Just (Junk.label Colors.black (String.dropRight 4 s ++ "-"++ String.slice  4 6 s  ++ "-" ++ (String.dropLeft 6 s))
     )      
     }
+
+someCustomTick : Int -> Model -> Tick.Config msg
 someCustomTick number model = 
   Tick.custom
     { position = toFloat number
@@ -709,12 +718,9 @@ someCustomTick number model =
     , direction = Tick.negative
     , label = Just (Junk.label Colors.black (String.fromInt number))
     }
-type alias Info =
-  { x : Float
-  , y : Float
-  }
 
 
+listHeader : List Statistical -> String
 listHeader item = 
     case List.head item of
         Just a ->
@@ -722,6 +728,7 @@ listHeader item =
         Nothing ->
             ""
 
+listHeaderExer : List UnitMonthExer -> String
 listHeaderExer item = 
     case List.head item of
         Just a ->
@@ -729,9 +736,8 @@ listHeaderExer item =
         Nothing ->
             ""
 
+innerItem : String -> Float -> Float -> String -> String -> Html Msg
 innerItem item data max date unit = 
-    --  tr [ class "qtr", id "q1" ]
-    --         [
             td [ class ("bar qtr " ++ 
             ( if (String.fromFloat (percentage data max)) == "0" then "" else " sent" ))
             , style "height" (String.fromFloat (percentage data max) ++ "%") , style "min-height" "25%" , style "width" "15%",  id "q1"]
@@ -743,10 +749,9 @@ innerItem item data max date unit =
                         item ++ unit
                     ) 
                 ]
-            
-appinnerItem item data max date unit model what= 
-    --  tr [ class "qtr", id "q1" ]
-    --         [
+
+appinnerItem : String -> Float -> Float -> String -> String -> Model -> String -> Html Msg
+appinnerItem item data max date unit model what =
             td [ class ((
             case what of
                 "cal" ->
@@ -763,30 +768,24 @@ appinnerItem item data max date unit model what=
             , style "height" (String.fromFloat (percentage data max) ++ "%") , style "min-height" (if item =="기록없음" then "0" else "20%" )  , id "q1"
             , onClick (ShowInfo date item what) ]
                 [
-                        --  text (
-                        if item == "기록없음" then
-                            div [] [text ""]
+                    if item == "기록없음" then
+                        div [] [text ""]
+                    else
+                        if model.activeTab == "monthly" then
+                        div [style "display" "none"][text item]
                         else
-                            if model.activeTab == "monthly" then
-                            div [style "display" "none"][text item]
-                            else
-                            div[] [
-                            text  item 
-                                , div [][text unit]
-                            ]
+                        div[] [
+                        text  item 
+                            , div [][text unit]
+                        ]
                 ]
 
-axisY item =
-    div [ class "tick", style"height" "59px" ]
-            [ p []
-                [ text (String.fromFloat item.sortNum) ]
-            ]
-
+dateFooter : String -> Html Msg
 dateFooter item =
-     
-                td []
-                    [  text item ]
-            
+    td []
+        [  text item ]
+
+dateIdxFooter : Int -> String -> Html Msg           
 dateIdxFooter idx item =
                 td []
                     [  if Basics.modBy 2 idx == 0 then
@@ -794,6 +793,7 @@ dateIdxFooter idx item =
                     else
                     text ""  ]
 
+calBarChart : Model -> Html Msg
 calBarChart model = 
     div [class "webbarChartcontainer"][
         div [ id "ticks" ]
@@ -816,14 +816,13 @@ calBarChart model =
         ]
         
     ]
+
+appcalBarChart : Model -> Html Msg
 appcalBarChart model = 
     div [class "barChartcontainer", style "padding" "0"][
         table [ id "q-graph" ]
         [ tbody []
            [tr [style "width" "100%"] (List.map3 (\x y z-> appinnerItem x y model.maxCal z "Kcal" model "cal") model.calData model.calFloatData model.dateList)
-        --    , tr [] [
-        --        td [] []
-        --        ]
             ] 
             ,tfoot [][
               case model.activeTab of
@@ -859,6 +858,7 @@ appcalBarChart model =
         ]
     ]
 
+appweightBarChart : Model -> Html Msg
 appweightBarChart model = 
     div [class "barChartcontainer", style "padding" "0"][
         table [ id "q-graph" ]
@@ -900,6 +900,7 @@ appweightBarChart model =
         ] 
     ]
 
+appexerciseBarChart : Model -> Html Msg
 appexerciseBarChart model = 
     div [class "barChartcontainer", style "padding" "0"][
         table [ id "q-graph" ]
@@ -942,9 +943,11 @@ appexerciseBarChart model =
 
 
 
+appDate : List String
 appDate = 
     ["일", "월", "화", "수", "목", "금" ,"토"]
 
+exerciseBarChart : Model -> Html Msg
 exerciseBarChart model = 
     div [class "webbarChartcontainer"][
         div [ id "ticks" ]
@@ -968,6 +971,7 @@ exerciseBarChart model =
         ]
     ]
 
+listHeaderweight : List Statistical -> String
 listHeaderweight item = 
     case List.head item of
         Just a ->
@@ -980,6 +984,7 @@ listHeaderweight item =
         Nothing ->
             ""
 
+takeItem : Int -> List Statistical -> String
 takeItem idx item = 
     let
         takeResult = List.take idx item
@@ -987,6 +992,7 @@ takeItem idx item =
     in
     listHeader dropResult
 
+unitDecoder : String -> Model -> Float -> String
 unitDecoder unit model data= 
     case unit of
         "Kg" ->
@@ -999,6 +1005,7 @@ unitDecoder unit model data=
         _ ->
            String.fromFloat data
 
+dateDecoder : Model -> Float -> String
 dateDecoder model float = 
             case String.fromFloat float of
                 "1" ->
@@ -1018,6 +1025,7 @@ dateDecoder model float =
                 _ ->
                     takeItem (Basics.round float) model.statistics
 
+web : Model -> Html Msg
 web model = 
         div [ class "container" ]
             [
@@ -1030,6 +1038,7 @@ web model =
                 ]
             ]
 
+exerciseCase : Maybe String -> Int -> Int -> Int
 exerciseCase item a b  = 
     case item of
         Just ok ->
@@ -1038,6 +1047,7 @@ exerciseCase item a b  =
         Nothing ->
             0
 
+justInt : String -> Int
 justInt int = 
     case String.toInt int of
         Just i ->
@@ -1046,8 +1056,7 @@ justInt int =
         Nothing ->
             0
 
-
-
+app : Model -> Msg -> Html Msg
 app model btn = 
     div [class "container"] [
         appHeaderConfirmDetailR "나의 통계" "myPageHeader" btn btn "확인",
@@ -1057,6 +1066,8 @@ app model btn =
                     appbodyContents model
                 ]
     ]
+
+tabBox : Model -> Html Msg
 tabBox model = 
     div [ class "tapbox" ]
         [ div [ class "tabs is-toggle is-fullwidth is-large " ]
@@ -1076,6 +1087,8 @@ tabBox model =
                 ]
             ]
         ]
+    
+apptabBox : Model -> Html Msg
 apptabBox model = 
     div [ class "m_tapbox" ]
         [ div [ class "tabs is-toggle is-fullwidth m_myStatistical_tabs" ]
@@ -1095,6 +1108,8 @@ apptabBox model =
                 ]
             ]
         ]
+
+appbodyContents : Model -> Html Msg
 appbodyContents model =
     case model.activeTab of
         "weekly" ->
@@ -1113,6 +1128,8 @@ appbodyContents model =
         _ ->
             appbodyItem model
 
+
+appbodyItem : Model -> Html Msg
 appbodyItem model = 
     div [ class "myStatistical_searchbox" ]
         [ div [  ]
@@ -1132,6 +1149,8 @@ appbodyItem model =
             ]
         ]
 
+
+bodyContents : Model -> Html Msg
 bodyContents model =
     case model.activeTab of
         "weekly" ->
@@ -1150,6 +1169,7 @@ bodyContents model =
         _ ->
             webBodyContentsItem model
 
+webBodyContentsItem : Model -> Html Msg
 webBodyContentsItem model =
     div [ class "myStatistical_searchbox" ]
         [ div [ class "myStatistical_mediabox" ]
@@ -1181,6 +1201,8 @@ webBodyContentsItem model =
                 ]
             ]
         ]
+
+stringToFloat : Maybe Float -> String -> Float
 stringToFloat item today = 
     case item of
         Just float ->
@@ -1194,6 +1216,7 @@ stringToFloat item today =
                 Nothing ->
                     0
 
+justCase : Maybe Float -> Float
 justCase item = 
     case item of
         Just ok ->
@@ -1205,7 +1228,7 @@ justCase item =
         Nothing ->
             1
 
-
+justString : Maybe String -> String -> Float
 justString item today = 
     case item of
         Just str ->
@@ -1218,5 +1241,7 @@ justString item today =
             
                 Nothing ->
                     0
+
+percentage : Float -> Float -> Float
 percentage part max  =
     part / max * 100

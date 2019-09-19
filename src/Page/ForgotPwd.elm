@@ -36,6 +36,7 @@ init session mobile =
 type alias Data =
     {data : String}
 
+mailEncoder : String -> Session -> Cmd Msg
 mailEncoder email session= 
     let
         body =
@@ -46,6 +47,7 @@ mailEncoder email session=
     |>Api.post Endpoint.emailAuth (Session.cred session) MailSendComplete body 
     
 
+temporaryEncoder : Model -> Session -> Cmd Msg
 temporaryEncoder model session =
     let
         body =
@@ -82,7 +84,6 @@ update msg model =
     case msg of
         SendPwd ( Ok ok ) ->
             (model, Cmd.batch[
-                -- Api.historyUpdate (Encode.string "login")
                 Route.pushUrl (Session.navKey model.session) Route.Login 
                 , Api.showToast (Encode.string "임시비밀번호가 발송되었습니다")
                 ])
@@ -127,30 +128,33 @@ view model =
         if model.nextStep == "" then
         { title = "비밀번호 찾기"
         , content = 
-                        div[][appHeaderRDetail  "비밀번호 찾기" "myPageHeader" Route.Home "fas fa-angle-left"
-                        ,layout model]
+            div[][appHeaderRDetail  "비밀번호 찾기" "myPageHeader" Route.Home "fas fa-angle-left"
+            ,layout model]
         }
         else
         { title = "비밀번호 찾기"
         , content = 
-                    div[][appHeaderRDetail  "비밀번호 찾기" "myPageHeader" Route.Home "fas fa-angle-left"
-                    ,appsecondStep model]
+            div[][appHeaderRDetail  "비밀번호 찾기" "myPageHeader" Route.Home "fas fa-angle-left"
+            ,appsecondStep model]
         }
     else
         if model.nextStep == "" then
         { title = "비밀번호 찾기"
         , content = 
         div [] [
-                    forgotpwdstep1 model
+            forgotpwdstep1 model
         ]
         }
         else
         { title = "비밀번호 찾기"
         , content = 
         div [] [
-                    secondStep  model
+                secondStep  model
                 ]
         }
+
+
+forgotpwdstep1 : Model -> Html Msg
 forgotpwdstep1 model =
    div [ class "containerwrap" ]
     [ div [ class "container is-fullhd" ]
@@ -202,6 +206,7 @@ forgotpwdstep1 model =
         ]
     ]
 
+secondStep : Model -> Html Msg
 secondStep model = 
    div [ class "containerwrap" ]
     [ div [ class "container is-fullhd" ]
@@ -255,6 +260,8 @@ secondStep model =
         ]
     ]
 
+
+layout : Model -> Html Msg
 layout model = 
  div [ class "m_findpassbox" ]
                 [ img [ src "../image/lockimage.png" ]
@@ -287,6 +294,7 @@ layout model =
                 ]
 
 
+appsecondStep : Model -> Html Msg
 appsecondStep model = 
  div [ class "m_findpassbox" ]
                 [ img [ src "../image/lockimage.png" ]
